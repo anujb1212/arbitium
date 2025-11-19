@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "@arbitium/ts-shared": [
+                "./libs/ts-shared/src"
+            ],
+            "@arbitium/ts-engine-client": [
+                "./libs/ts-engine-client/src"
+            ]
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "arbitium",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "workspaces": [
+    "apps/*",
+    "libs/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:api": "npm run dev -w @arbitium/api-gateway",
+    "dev:ws": "npm run dev -w @arbitium/ws-gateway",
+    "test": "npm run test --workspaces"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anujb1212/arbitium.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/anujb1212/arbitium/issues"
+  },
+  "homepage": "https://github.com/anujb1212/arbitium#readme"
+}
