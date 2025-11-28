@@ -145,7 +145,132 @@ export class OrderBook {
         book.get(order.price)!.push(newOrder);
     }
 
+    cancelOrder(orderId: string, userId: string): {
+        success: boolean;
+        cancelledSize?: string
+    } {
+        //Check for bids
+        for (const [price, orders] of this.bids.entries()) {
+            const index = orders.findIndex(order => order.id === orderId)
 
+            if (index !== -1) {
+                const order = orders[index]
 
+                if (order.userId !== userId) {
+                    throw new Error('Unauthorized: Cannot cancel another person\'s order')
+                }
+
+                const filled = new Decimal(order.filled)
+                const size = new Decimal(order.size)
+                const cancelled = size.sub(filled)
+
+                orders.splice(index, 1)
+                if (orders.length === 0) {
+                    this.bids.delete(price)
+                }
+
+                return {
+                    success: true,
+                    cancelledSize: cancelled.toString()
+                }
+            }
+        }
+
+        //Check for asks
+        for (const [price, orders] of this.asks.entries()) {
+            const index = orders.findIndex(order => order.id === orderId)
+
+            if (index !== -1) {
+                const order = orders[index]
+
+                if (order.userId !== userId) {
+                    throw new Error('Unauthorized')
+                }
+
+                const filled = new Decimal(order.filled)
+                const size = new Decimal(order.size)
+                const cancelled = size.sub(filled)
+
+                orders.splice(index, 1)
+                if (orders.length === 0) {
+                    this.bids.delete(price)
+                }
+
+                return {
+                    success: true,
+                    cancelledSize: cancelled.toString()
+                }
+            }
+        }
+
+        return {
+            success: false
+        }
+    }
+
+    getDepth(): {
+        bids: [string, string][];
+        asks: [string, string][]
+    } {
+        const bids: [string, string][] = []
+        const asks: [string, string][] = []
+
+        //Aggregate bids
+        for (const [price, orders] of this.bids.entries()) {
+
+            let total = new Decimal('0')
+            for (const order of orders) {
+                const filled = new Decimal(order.filled)
+                const size = new Decimal(order.size)
+                const remaining = size.sub(filled)
+                total = total.add(remaining)
+            }
+
+            if (!total.isZero()) {
+                bids.push([price, total.toString()])
+            }
+        }
+
+        //Aggregate asks
+        for (const [price, orders] of this.asks.entries()) {
+
+            let total = new Decimal('0')
+            for (const order of orders) {
+                const filled = new Decimal(order.filled)
+                const size = new Decimal(order.size)
+                const remaining = size.sub(filled)
+                total = total.add(remaining)
+            }
+
+            if (!total.isZero()) {
+                asks.push([price, total.toString()])
+            }
+        }
+
+        bids.sort((a, b) => new Decimal(b[0]).valueOf > new Decimal(a[0]).valueOf ? 1 : -1)
+        asks.sort((a, b) => new Decimal(b[0]).valueOf > new Decimal(a[0]).valueOf ? 1 : -1)
+
+        return {
+            bids,
+            asks
+        }
+    }
+
+    getBestBid(): string | null {
+        if (this.bids.size === 0) return null
+
+        const prices = Array.from(this.bids.keys())
+        return prices.reduce((max, price) =>
+            new Decimal(price).valueOf < new Decimal(max).valueOf ? price : max
+        )
+    }
+
+    getBestAsk(): string | null {
+        if (this.asks.size === 0) return null
+
+        const prices = Array.from(this.asks.keys())
+        return prices.reduce((min, price) =>
+            new Decimal(price).valueOf < new Decimal(min).valueOf ? price : min
+        )
+    }
 }
-
