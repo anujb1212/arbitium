@@ -9,10 +9,12 @@
     "services/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "dev:api": "npm run dev -w @arbitium/api-gateway",
-    "dev:ws": "npm run dev -w @arbitium/ws-gateway",
-    "test": "npm run test --workspaces"
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "dev:api": "pnpm --filter @arbitium/api-gateway dev",
+    "dev:ws": "pnpm --filter @arbitium/ws-gateway dev"
   },
   "repository": {
     "type": "git",
