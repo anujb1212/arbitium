@@ -1,2 +1,2 @@
 export * from "./types";
-export * from "./OrderBook";
+export { OrderBook } from "./OrderBook";

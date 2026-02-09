@@ -67,3 +67,11 @@ export interface CancelResult {
     cancelled: boolean;
     deltas: BookDelta[]
 }
+
+export interface RestingOrder {
+    orderId: OrderId;
+    side: Side;
+    price: Price;
+    qtyRemaining: Qty;
+    seq: Seq
+}
