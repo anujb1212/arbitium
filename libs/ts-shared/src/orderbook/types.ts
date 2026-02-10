@@ -2,6 +2,8 @@ export type Side = "BUY" | "SELL";
 export type OrderId = string;
 export type MarketId = string;
 
+export type RejectReason = "MARKET_MISMATCH" | "SEQ_OUT_OF_ORDER" | "DUPLICATE_ORDER_ID" | "INVALID_PRICE" | "INVALID_QTY"
+
 export type Price = bigint;
 export type Qty = bigint;
 export type Seq = bigint;
@@ -58,12 +60,16 @@ export type BookDelta =
     };
 
 export interface PlaceLimitResult {
+    accepted: boolean;
+    rejectReason?: RejectReason;
     trades: Trade[];
     deltas: BookDelta[];
     remainingQty: Qty
 }
 
 export interface CancelResult {
+    accepted: boolean;
+    rejectReason?: RejectReason;
     cancelled: boolean;
     deltas: BookDelta[]
 }

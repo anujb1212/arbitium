@@ -1,4 +1,4 @@
-import { CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, Price, Qty, RestingOrder, Side } from "./types";
+import { CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, Price, Qty, RejectReason, RestingOrder, Seq } from "./types";
 import { insertPriceIntoLadder } from "./priceLadder";
 import { PriceLevel, prunePriceLevel, removeOrderFromPriceLevel } from "./priceLevelQueue";
 import { matchIncomingBuyOrder, matchIncomingSellOrder, createCancelDelta } from "./matching";
@@ -11,15 +11,55 @@ export class OrderBook {
     private askPricesAsc: Price[] = [];  //asc
 
     private ordersById = new Map<OrderId, RestingOrder>();
+    private lastSeq: Seq = 0n;
 
     constructor(readonly market: MarketId) { }
 
     //Core APIs  
     placeLimit(input: PlaceLimitInput): PlaceLimitResult {
-        this.ensureMarket(input.market);
-        this.assertValidLimit(input.price, input.qty);
+        const marketReject = this.validateMarket(input.market)
+        if (marketReject) {
+            return {
+                accepted: false,
+                rejectReason: marketReject,
+                trades: [],
+                deltas: [],
+                remainingQty: input.qty
+            };
+        }
 
-        if (this.ordersById.has(input.orderId)) throw new Error("Duplicate Order ID");
+        const seqReject = this.bumpSeq(input.seq);
+        if (seqReject) {
+            return {
+                accepted: false,
+                rejectReason: seqReject,
+                trades: [],
+                deltas: [],
+                remainingQty: input.qty
+            };
+        }
+
+
+        const limitReject = this.validateLimit(input.price, input.qty);
+        if (limitReject) {
+            return {
+                accepted: false,
+                rejectReason: limitReject,
+                trades: [],
+                deltas: [],
+                remainingQty: input.qty
+            };
+        }
+
+        if (this.ordersById.has(input.orderId)) {
+            return {
+                accepted: false,
+                rejectReason: "DUPLICATE_ORDER_ID",
+                trades: [],
+                deltas: [],
+                remainingQty: input.qty
+            };
+        }
 
         let remainingQty: Qty = input.qty;
         const trades: PlaceLimitResult["trades"] = [];
@@ -81,14 +121,38 @@ export class OrderBook {
 
         }
 
-        return { trades, deltas, remainingQty }
+        return { accepted: true, trades, deltas, remainingQty }
     }
 
     cancel(input: CancelInput): CancelResult {
-        this.ensureMarket(input.market);
+        const marketReject = this.validateMarket(input.market);
+        if (marketReject) {
+            return {
+                accepted: false,
+                rejectReason: marketReject,
+                cancelled: false,
+                deltas: []
+            };
+        }
+
+        const seqReject = this.bumpSeq(input.seq);
+        if (seqReject) {
+            return {
+                accepted: false,
+                rejectReason: seqReject,
+                cancelled: false,
+                deltas: []
+            };
+        }
 
         const restingOrder = this.ordersById.get(input.orderId);
-        if (!restingOrder) return { cancelled: false, deltas: [] };
+        if (!restingOrder) {
+            return {
+                accepted: true,
+                cancelled: false,
+                deltas: []
+            };
+        }
 
         //authoritative cancel
         this.ordersById.delete(input.orderId);
@@ -116,6 +180,7 @@ export class OrderBook {
         }
 
         return {
+            accepted: true,
             cancelled: true,
             deltas: [createCancelDelta({
                 market: input.market,
@@ -139,13 +204,21 @@ export class OrderBook {
     }
 
     //infra helpers
-    private ensureMarket(market: MarketId): void {
-        if (market !== this.market) throw new Error("Market Mismatch");
+    private validateMarket(market: MarketId): RejectReason | null {
+        if (market !== this.market) return "MARKET_MISMATCH";
+        return null;
     }
 
-    private assertValidLimit(price: Price, qty: Qty): void {
-        if (price <= 0n) throw new Error("Invalid Price");
-        if (qty <= 0n) throw new Error("Invalid Quantity");
+    private bumpSeq(nextSeq: Seq): RejectReason | null {
+        if (nextSeq <= this.lastSeq) return "SEQ_OUT_OF_ORDER";
+        this.lastSeq = nextSeq;
+        return null;
+    }
+
+    private validateLimit(price: Price, qty: Qty): RejectReason | null {
+        if (price <= 0n) return "INVALID_PRICE";
+        if (qty <= 0n) return "INVALID_QTY";
+        return null;
     }
 
     private getOrCreateLevel(map: Map<Price, PriceLevel>, price: Price): PriceLevel {
