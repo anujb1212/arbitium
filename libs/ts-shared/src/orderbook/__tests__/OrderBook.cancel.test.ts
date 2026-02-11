@@ -69,3 +69,41 @@ describe("OrderBook - cancel edge cases", () => {
         expect(orderBook.getBestAsk()).toBe(null);
     });
 });
+
+describe("OrderBook - cancel idempotency", () => {
+    it("Cancel same order twice: first cancels, second is no-op", () => {
+        const orderBook = new OrderBook("TATA_INR");
+
+        const place = orderBook.placeLimit({
+            market: "TATA_INR",
+            orderId: "S1",
+            side: "SELL",
+            price: 100n,
+            qty: 5n,
+            seq: 1n,
+        });
+        expect(place.accepted).toBe(true);
+
+        const cancel1 = orderBook.cancel({
+            market: "TATA_INR",
+            orderId: "S1",
+            seq: 2n
+        });
+
+        expect(cancel1.accepted).toBe(true);
+        expect(cancel1.cancelled).toBe(true);
+        expect(cancel1.deltas.length).toBe(1);
+        expect(orderBook.getOrder("S1")).toBe(null);
+        expect(orderBook.getBestAsk()).toBe(null);
+
+        const cancel2 = orderBook.cancel({
+            market: "TATA_INR",
+            orderId: "S1",
+            seq: 3n
+        });
+
+        expect(cancel2.accepted).toBe(true);
+        expect(cancel2.cancelled).toBe(false);
+        expect(cancel2.deltas).toEqual([]);
+    });
+});

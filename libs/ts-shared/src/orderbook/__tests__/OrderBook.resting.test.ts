@@ -57,7 +57,11 @@ describe("OrderBook - resting", () => {
             seq: 1n
         });
 
-        const cancelResult = orderBook.cancel({ market: "TATA_INR", orderId: "B1", seq: 2n });
+        const cancelResult = orderBook.cancel({
+            market: "TATA_INR",
+            orderId: "B1",
+            seq: 2n
+        });
 
         expect(cancelResult.cancelled).toBe(true);
         expect(orderBook.getOrder("B1")).toBe(null);

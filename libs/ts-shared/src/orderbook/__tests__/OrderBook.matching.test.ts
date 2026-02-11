@@ -73,3 +73,60 @@ describe("OrderBook - matching", () => {
         expect(buyResult.trades[0]?.price).toBe(100n);
     });
 });
+
+describe("OrderBook - matching sweep", () => {
+    it("Sweeps multiple price levels and leaves partial resting on last level", () => {
+        const orderBook = new OrderBook("TATA_INR");
+
+        orderBook.placeLimit({
+            market: "TATA_INR",
+            orderId: "S1",
+            side: "SELL",
+            price: 100n,
+            qty: 3n,
+            seq: 1n
+        });
+
+        orderBook.placeLimit({
+            market: "TATA_INR",
+            orderId: "S2",
+            side: "SELL",
+            price: 100n,
+            qty: 3n,
+            seq: 2n
+        });
+
+        orderBook.placeLimit({
+            market: "TATA_INR",
+            orderId: "S3",
+            side: "SELL",
+            price: 101n,
+            qty: 5n,
+            seq: 3n
+        });
+
+        const buy = orderBook.placeLimit({
+            market: "TATA_INR",
+            orderId: "B1",
+            side: "BUY",
+            price: 101n,
+            qty: 7n,
+            seq: 4n,
+        });
+
+        expect(buy.accepted).toBe(true);
+        expect(buy.remainingQty).toBe(0n);
+
+        // price priority then FIFO
+        expect(buy.trades.map(t => [t.makerOrderId, t.price, t.qty])).toEqual([
+            ["S1", 100n, 3n],
+            ["S2", 100n, 3n],
+            ["S3", 101n, 1n],
+        ]);
+
+        expect(orderBook.getOrder("S1")).toBe(null);
+        expect(orderBook.getOrder("S2")).toBe(null);
+        expect(orderBook.getOrder("S3")?.qtyRemaining).toBe(4n);
+        expect(orderBook.getBestAsk()).toBe(101n);
+    });
+});

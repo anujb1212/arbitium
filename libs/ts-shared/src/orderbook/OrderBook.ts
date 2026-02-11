@@ -11,6 +11,8 @@ export class OrderBook {
     private askPricesAsc: Price[] = [];  //asc
 
     private ordersById = new Map<OrderId, RestingOrder>();
+    private seenOrderIds = new Set<OrderId>();
+
     private lastSeq: Seq = 0n;
 
     constructor(readonly market: MarketId) { }
@@ -51,7 +53,7 @@ export class OrderBook {
             };
         }
 
-        if (this.ordersById.has(input.orderId)) {
+        if (this.seenOrderIds.has(input.orderId)) {
             return {
                 accepted: false,
                 rejectReason: "DUPLICATE_ORDER_ID",
@@ -60,6 +62,8 @@ export class OrderBook {
                 remainingQty: input.qty
             };
         }
+
+        this.seenOrderIds.add(input.orderId);
 
         let remainingQty: Qty = input.qty;
         const trades: PlaceLimitResult["trades"] = [];
