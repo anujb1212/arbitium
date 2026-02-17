@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "target": "ES2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
@@ -11,8 +12,14 @@
             "@arbitium/ts-shared": [
                 "./libs/ts-shared/src"
             ],
+            "@arbitium/ts-shared/*": [
+                "./libs/ts-shared/src/*"
+            ],
             "@arbitium/ts-engine-client": [
                 "./libs/ts-engine-client/src"
+            ],
+            "@arbitium/ts-engine-client/*": [
+                "./libs/ts-engine-client/src/*"
             ]
         }
     }
