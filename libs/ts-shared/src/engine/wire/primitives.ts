@@ -13,8 +13,16 @@ export function isNonEmptyString(value: unknown): value is string {
 }
 
 export function isDecimalBigintString(value: unknown): value is string {
-    if (typeof value !== "string") return false
-    return /^(0|[1-9][0-9]*)$/.test(value)
+    if (typeof value !== "string" || value.length === 0) return false
+
+    if (value[0] === "0") return value.length === 1
+
+    for (let i = 0; i < value.length; i++) {
+        const code = value.charCodeAt(i)
+        if (code < 48 || code > 57) return false  // '0'=48, '9'=57
+    }
+
+    return true
 }
 
 export function parseDecimalBigint(value: unknown): { ok: true; value: bigint } | { ok: false; reason: string } {

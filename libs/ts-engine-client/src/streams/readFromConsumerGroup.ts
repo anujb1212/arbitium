@@ -9,9 +9,10 @@ export async function readFromConsumerGroup(params: {
     groupName: string,
     consumerName: string,
     count: number,
-    blockMs: number
+    blockMs: number,
+    lastId?: ">" | "0"
 }): Promise<StreamMessage[]> {
-    const { client, streamKey, groupName, consumerName } = params
+    const { client, streamKey, groupName, consumerName, lastId = ">" } = params
 
     const count = requiredIntegerInRange({
         value: params.count,
@@ -38,7 +39,7 @@ export async function readFromConsumerGroup(params: {
         String(blockMs),
         "STREAMS",
         streamKey,
-        ">"
+        lastId
     ])
 
     return parseStreamReadReply(reply)

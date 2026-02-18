@@ -118,4 +118,61 @@ describe("Streams consumer group", () => {
             await client.sendCommand(["DEL", streamKey]);
         }
     });
+
+    it("lastId=0 re-delivers pending messages after simulated crash", async () => {
+        const client = redisManager.getClient();
+        const streamKey = makeUniqueKey("arbitium:test:cmd");
+        const groupName = "engine:TEST";
+        const consumerName = makeUniqueKey("consumer");
+
+        await ensureConsumerGroup({ client, streamKey, groupName, startId: "$" });
+
+        const command: CommandEnvelope = {
+            market: "TATA-INR",
+            kind: "PLACE_LIMIT",
+            commandId: "cmd-crash",
+            payload: {
+                orderId: "order-crash",
+                side: "BUY",
+                price: 500n,
+                qty: 1n
+            }
+        };
+
+        await appendToStream({ client, streamKey, fields: encodeCommandToStreamFields(command) });
+
+        try {
+            const first = await readFromConsumerGroup({
+                client,
+                streamKey,
+                groupName,
+                consumerName,
+                count: 10,
+                blockMs: 250
+            });
+
+            expect(first.length).toBe(1);
+
+            const reDelivered = await readFromConsumerGroup({
+                client,
+                streamKey,
+                groupName,
+                consumerName,
+                count: 10,
+                blockMs: 250,
+                lastId: "0"
+            });
+
+            expect(reDelivered.length).toBe(1);
+            expect(reDelivered[0]!.id).toBe(first[0]!.id);
+
+            const acked = await acknowledgeMessage({
+                client, streamKey, groupName,
+                messageId: reDelivered[0]!.id
+            });
+            expect(acked).toBe(1);
+        } finally {
+            await client.sendCommand(["DEL", streamKey]);
+        }
+    });
 });

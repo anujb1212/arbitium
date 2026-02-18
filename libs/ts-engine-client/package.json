@@ -11,12 +11,13 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
-    "redis": "^5.11.0"
-  },
   "devDependencies": {
     "@types/node": "^24.10.9",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@arbitium/ts-shared": "workspace:*",
+    "redis": "^5.11.0"
   }
 }
