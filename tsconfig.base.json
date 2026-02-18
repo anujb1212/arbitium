@@ -20,6 +20,12 @@
             ],
             "@arbitium/ts-engine-client/*": [
                 "./libs/ts-engine-client/src/*"
+            ],
+            "@arbitium/api-gateway": [
+                "./apps/api-gateway/src"
+            ],
+            "@arbitium/api-gateway/*": [
+                "./apps/api-gateway/src/*"
             ]
         }
     }

@@ -12,7 +12,7 @@
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "pnpm -r exec tsc --noEmit",
     "dev:api": "pnpm --filter @arbitium/api-gateway dev",
     "dev:ws": "pnpm --filter @arbitium/ws-gateway dev"
   },
