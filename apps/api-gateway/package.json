@@ -7,7 +7,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@arbitium/api-gateway": "workspace:*",
     "@arbitium/ts-engine-client": "workspace:*",
     "@arbitium/ts-shared": "workspace:*",
     "express": "^4.19.2",
