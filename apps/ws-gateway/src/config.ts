@@ -4,3 +4,4 @@ export const MAX_SUBSCRIPTIONS_PER_CLIENT = 10
 export const STREAM_READ_COUNT = 100
 export const STREAM_READ_BLOCK_MS = 50
 export const MAX_MARKET_ID_LENGTH = 64
+export const API_URL = process.env.API_URL ?? "http://localhost:3001"

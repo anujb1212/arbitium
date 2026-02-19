@@ -16,9 +16,7 @@ export class MarketFeedManager {
         if (!feed) {
             feed = new MarketFeed(market, this.commandClient)
             this.feeds.set(market, feed)
-            await this.pubSubClient.subscribe(
-                `evtPing:${market}`, () => { this.onPing(market) }
-            )
+            this.pubSubClient.subscribe(`evtPing:${market}`, () => { this.onPing(market) })
         }
 
         feed.addListener(listener)

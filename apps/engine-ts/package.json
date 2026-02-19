@@ -3,18 +3,20 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
+    "dev": "tsx src/index.ts",
     "start": "ts-node src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@arbitium/ts-shared": "workspace:*",
     "@arbitium/ts-engine-client": "workspace:*",
+    "@arbitium/ts-shared": "workspace:*",
     "redis": "^5.11.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.9",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   }

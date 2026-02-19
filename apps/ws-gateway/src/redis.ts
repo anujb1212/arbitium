@@ -4,9 +4,10 @@ import type { RedisClient } from "@arbitium/ts-engine-client/redis/types";
 
 export type PubSubClient = {
     subscribe(
-        channel: string,
+        channel: string | string[],
         listener: (messsage: string,
-            channel: string
+            channel: string,
+            bufferMode?: boolean
         ) => void
     ): Promise<void>
     unsubscribe(channel: string): Promise<void>
@@ -16,12 +17,17 @@ let commandManager: RedisManager | null = null
 let pubSubClient: ReturnType<typeof createClient> | null = null
 
 export async function connectRedis(redisUrl: string): Promise<void> {
-    const commandManager = new RedisManager(redisUrl)
-    await commandManager.connect()
+    try {
+        commandManager = new RedisManager(redisUrl);
+        await commandManager.connect();
 
-    pubSubClient = createClient({ url: redisUrl })
-    pubSubClient.on("error", (err) => console.error("Pubsub error", err))
-    await pubSubClient.connect()
+        pubSubClient = createClient({ url: redisUrl });
+        pubSubClient.on("error", (err) => console.error("[Redis:pubsub] error:", err))
+    } catch (err) {
+        commandManager = null
+        pubSubClient = null
+        throw new Error(`Redis connection failed (${redisUrl}): ${err}`)
+    }
 }
 
 export function getCommandClient(): RedisClient {

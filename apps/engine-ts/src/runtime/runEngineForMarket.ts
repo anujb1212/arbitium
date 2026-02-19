@@ -22,7 +22,7 @@ export async function runEngineForMarket(
         client,
         streamKey: config.commandStreamKey,
         groupName: config.consumerGroupName,
-        startId: "0-0"   // on restart, re-process any unacked pending first
+        startId: "0-0"
     });
 
     const orderBook = new OrderBook(config.market);
@@ -43,7 +43,6 @@ export async function runEngineForMarket(
             const decoded = decodeCommandFromStreamFields(message.fields);
 
             if (!decoded.accepted) {
-                // Malformed stream message: ack and skip (do not poison the queue)
                 await acknowledgeMessage({
                     client,
                     streamKey: config.commandStreamKey,
@@ -57,15 +56,20 @@ export async function runEngineForMarket(
                 orderBook,
                 command: decoded.value,
                 bookSeq
-            });
+            })
 
-            // XADD all events before XACK — if crash here, command re-processes (idempotent via seq)
+            let lastEventId: string | null = null
+
             for (const event of events) {
-                await appendToStream({
+                lastEventId = await appendToStream({
                     client,
                     streamKey: config.eventStreamKey,
                     fields: encodeEventToStreamFields(event)
                 });
+            }
+
+            if (lastEventId !== null) {
+                await client.sendCommand(["PUBLISH", `evtPing:${config.market}`, lastEventId])
             }
 
             bookSeq = nextBookSeq;
