@@ -1,0 +1,109 @@
+:root {
+    --bg-primary: #0f1117;
+    --bg-secondary: #161b27;
+    --bg-elevated: #1e2433;
+    --border: #252d3d;
+
+    --text-primary: #e2e8f0;
+    --text-secondary: #8892a4;
+    --text-muted: #4a5568;
+
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+}
+
+input {
+    font-family: var(--font-mono);
+}
+
+/* Shell layout */
+.app-shell {
+    display: grid;
+    grid-template-rows: 56px 1fr;
+    min-height: 100vh;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+}
+
+.app-logo {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+.market-nav {
+    display: flex;
+    gap: 4px;
+}
+
+.market-tab {
+    padding: 5px 13px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.market-tab:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.market-tab.active {
+    background: #1a2540;
+    color: var(--blue);
+}
+
+.connection-status {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.connection-status.live {
+    color: var(--green);
+}
+
+.app-main {
+    padding: 24px;
+    color: var(--text-secondary);
+}
