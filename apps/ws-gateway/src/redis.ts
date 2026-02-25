@@ -23,6 +23,7 @@ export async function connectRedis(redisUrl: string): Promise<void> {
 
         pubSubClient = createClient({ url: redisUrl });
         pubSubClient.on("error", (err) => console.error("[Redis:pubsub] error:", err))
+        await pubSubClient.connect()
     } catch (err) {
         commandManager = null
         pubSubClient = null

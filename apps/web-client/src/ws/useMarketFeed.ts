@@ -16,7 +16,7 @@ export function useMarketFeed(market: string, onEvent: FeedCallback): void {
 
     useEffect(() => {
         onEventRef.current = onEvent
-    }, [])
+    }, [onEvent])
 
     const connect = useCallback((): void => {
         if (shouldStopRef.current) return

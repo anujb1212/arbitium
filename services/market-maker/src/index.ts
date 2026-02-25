@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { API_URL, LEVELS, MARKET, MID_PRICE, QTY_PER_LEVEL, REFRESH_INTERVAL_MS, SPREAD_TICKS } from "./config";
+import { API_URL, HALF_SPREAD, LEVELS, MARKET, MID_PRICE, QTY_PER_LEVEL, REFRESH_INTERVAL_MS, SPREAD_TICKS } from "./config";
 import { cancelOrder, placeLimitOrder } from "./httpClient";
 
 type PendingOrder = {
@@ -19,19 +19,19 @@ let activeOrders: PendingOrder[] = []
 function buildLevels(): LevelOrder[] {
     const orders: LevelOrder[] = []
 
-    for (let i = 0; i <= LEVELS; i++) {
+    for (let i = 0; i < LEVELS; i++) {
         const offset = SPREAD_TICKS * BigInt(i)
 
         orders.push({
             side: "BUY" as const,
-            price: MID_PRICE - offset,
+            price: MID_PRICE - HALF_SPREAD - offset,
             qty: QTY_PER_LEVEL,
             orderId: randomUUID()
         })
 
         orders.push({
             side: "SELL" as const,
-            price: MID_PRICE + offset,
+            price: MID_PRICE + HALF_SPREAD + offset,
             qty: QTY_PER_LEVEL,
             orderId: randomUUID()
         })
@@ -48,7 +48,7 @@ async function cancelAll(): Promise<void> {
 async function placeAll(): Promise<void> {
     const levels = buildLevels()
 
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
         levels.map(async (order) => {
             await placeLimitOrder({
                 market: MARKET,
@@ -64,6 +64,14 @@ async function placeAll(): Promise<void> {
             })
         })
     )
+
+    const failed = results.filter((res) => res.status === "rejected")
+    if (failed.length > 0) {
+        console.error(`[market-maker] ${failed.length}/${levels.length} orders failed to place`)
+        failed.forEach((res) => {
+            if (res.status === "rejected") console.error("=>", res.reason)
+        })
+    }
 }
 
 async function refresh(): Promise<void> {

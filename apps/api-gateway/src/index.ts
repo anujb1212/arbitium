@@ -1,11 +1,13 @@
 import express from "express";
 import { ordersRouter } from "./routes/orders";
 import { connectRedis, disconnectRedis } from "./redis";
+import cors from "cors"
 
 const PORT = Number(process.env.PORT ?? 3001);
 
 const app = express();
 app.use(express.json());
+app.use(cors())
 
 app.use("/orders", ordersRouter);
 

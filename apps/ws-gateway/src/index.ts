@@ -32,18 +32,17 @@ async function main(): Promise<void> {
             console.error("[ws] socket error: ", err)
         })
 
-        const shutdown = async (): Promise<void> => {
-            wss.close()
-            await disconnectRedis()
-            process.exit(0)
-        }
-
-        process.on("SIGINT", shutdown)
-        process.on("SIGTERM", shutdown)
-
         console.log(`[ws-gateway] Listening on port ${WS_PORT}`)
     })
 }
+
+const shutdown = async (): Promise<void> => {
+    await disconnectRedis()
+    process.exit(0)
+}
+
+process.once("SIGINT", shutdown)
+process.once("SIGTERM", shutdown)
 
 main().catch((err) => {
     console.error("[ws-gateway] Fatal:", err);
