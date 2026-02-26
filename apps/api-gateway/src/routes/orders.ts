@@ -8,34 +8,53 @@ import {
     CancelBodySchema,
 } from "../schemas.js";
 import type { CommandEnvelope } from "@arbitium/ts-shared/engine/types.js";
+import { requireAuth } from "../middleware/auth.js";
+import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
+import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
+import { prisma, lockBalanceForOrder, InsufficientBalanceError } from "@arbitium/db";
 
 export const ordersRouter = Router()
 
 const STREAM_PREFIX = "arbitium:cmd:"
 
-ordersRouter.post("/limit", async (req: Request, res: Response) => {
+ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const parsedResult = PlaceLimitBodySchema.safeParse(req.body)
 
     if (!parsedResult.success) {
-        res.status(400).json({
-            error: parsedResult.error.flatten()
-        })
+        res.status(400).json({ error: parsedResult.error.flatten() })
         return
     }
 
     const { market, orderId, side, price, qty } = parsedResult.data
     const commandId = crypto.randomUUID()
 
+    const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
+
+    try {
+        await lockBalanceForOrder({
+            prisma,
+            userId: arbitiumUserId,
+            orderId,
+            commandId,
+            market,
+            side,
+            price,
+            qty,
+        })
+    } catch (error) {
+        if (error instanceof InsufficientBalanceError) {
+            res.status(422).json({ error: "Insufficient trading balance" })
+            return
+        }
+        res.status(500).json({ error: "Balance lock failed" })
+        return
+    }
+
     const command: CommandEnvelope = {
         commandId,
         market,
         kind: "PLACE_LIMIT",
-        payload: {
-            orderId,
-            side,
-            price,
-            qty
-        }
+        payload: { orderId, side, price, qty }
     }
 
     try {
@@ -51,20 +70,16 @@ ordersRouter.post("/limit", async (req: Request, res: Response) => {
     }
 })
 
-ordersRouter.delete("/:id", async (req: Request, res: Response) => {
+ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const paramsResult = CancelParamsSchema.safeParse(req.params)
     const bodyResult = CancelBodySchema.safeParse(req.body)
 
     if (!paramsResult.success) {
-        res.status(400).json({
-            error: paramsResult.error.flatten()
-        })
+        res.status(400).json({ error: paramsResult.error.flatten() })
         return
     }
     if (!bodyResult.success) {
-        res.status(400).json({
-            error: bodyResult.error.flatten()
-        })
+        res.status(400).json({ error: bodyResult.error.flatten() })
         return
     }
 

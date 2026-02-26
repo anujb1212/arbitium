@@ -1,14 +1,21 @@
 {
   "name": "@arbitium/data-service",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "devDependencies": {},
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {
+    "@arbitium/db": "workspace:*",
+    "@arbitium/ts-shared": "workspace:*",
+    "@arbitium/ts-engine-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.15.7",
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
+  }
 }
