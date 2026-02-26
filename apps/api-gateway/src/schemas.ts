@@ -23,6 +23,12 @@ export const CancelBodySchema = z.object({
     market: boundedString
 })
 
+export const TransferBodySchema = z.object({
+    amountInPaise: decimalBigintString,
+    idempotencyKey: boundedString,
+})
+
 export type PlaceLimitBody = z.infer<typeof PlaceLimitBodySchema>
 export type CancelParams = z.infer<typeof CancelParamsSchema>
 export type CancelBody = z.infer<typeof CancelBodySchema>
+export type TransferBody = z.infer<typeof TransferBodySchema>

@@ -1,4 +1,4 @@
-export const API_URL = process.env.API_URL ?? "http://localhost:3001";
+export const API_URL = process.env.API_URL ?? "http://localhost:3002";
 export const MARKET = process.env.MARKET ?? "TATA-INR";
 
 const DEFAULT_MID_PRICE_BY_MARKET: Record<string, string> = {

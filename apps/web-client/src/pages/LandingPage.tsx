@@ -1,15 +1,32 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MARKETS } from '../types/market'
+import { clearToken, isLoggedIn, redirectToVaultlyLogin } from '../lib/auth'
 
 export default function LandingPage(): React.JSX.Element {
     const navigate = useNavigate()
+    const loggedIn = isLoggedIn()
 
     return (
         <div className="min-h-screen bg-base text-hi font-sans selection:bg-accent/30">
             <header className="absolute top-0 w-full z-50 h-16 flex items-center justify-between px-8">
                 <span className="text-[17px] font-bold tracking-tight text-hi">Arbitium</span>
                 <nav className="flex items-center gap-6">
+                    {loggedIn ? (
+                        <button
+                            onClick={() => { clearToken(); window.location.reload() }}
+                            className="text-[13px] font-medium text-mid hover:text-hi transition-colors"
+                        >
+                            Sign out
+                        </button>
+                    ) : (
+                        <button
+                            onClick={redirectToVaultlyLogin}
+                            className="text-[13px] font-medium text-hi bg-raised hover:bg-line border border-line px-4 py-1.5 rounded-full transition-colors"
+                        >
+                            Sign in with Vaultly
+                        </button>
+                    )}
                     <button
                         onClick={() => navigate(`/trade/${MARKETS[0].market}`)}
                         className="text-[13px] font-medium text-hi bg-raised hover:bg-line border border-line px-4 py-1.5 rounded-full transition-colors"

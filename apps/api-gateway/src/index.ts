@@ -2,14 +2,16 @@ import express from "express";
 import { ordersRouter } from "./routes/orders";
 import { connectRedis, disconnectRedis } from "./redis";
 import cors from "cors"
+import { transfersRouter } from "./routes/transfers";
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? 3002);
 
 const app = express();
 app.use(express.json());
 app.use(cors())
 
 app.use("/orders", ordersRouter);
+app.use("/transfers", transfersRouter);
 
 async function shutdown(server: ReturnType<typeof app.listen>): Promise<void> {
     server.close();
