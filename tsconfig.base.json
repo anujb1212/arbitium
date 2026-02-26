@@ -26,6 +26,12 @@
             ],
             "@arbitium/api-gateway/*": [
                 "./apps/api-gateway/src/*"
+            ],
+            "@arbitium/db": [
+                "./libs/db/src"
+            ],
+            "@arbitium/db/*": [
+                "./libs/db/src/*"
             ]
         }
     }

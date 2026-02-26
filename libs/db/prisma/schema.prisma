@@ -1,0 +1,125 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum OrderSide {
+    BUY
+    SELL
+}
+
+enum OrderStatus {
+    OPEN
+    FILLED
+    PARTIALLY_FILLED
+    CANCELLED
+    REJECTED
+}
+
+enum TransferDirection {
+    DEPOSIT
+    WITHDRAW
+}
+
+enum TransferStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+model User {
+    id            String   @id @default(cuid())
+    vaultlyUserId String   @unique
+    email         String?
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    tradingBalance TradingBalance?
+    orders         Order[]
+    transfers      BalanceTransfer[]
+
+    @@index([vaultlyUserId])
+}
+
+model TradingBalance {
+    id     String @id @default(cuid())
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    available BigInt @default(0)
+    locked    BigInt @default(0)
+
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+model Order {
+    id     String @id
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    market    String
+    side      OrderSide
+    price     BigInt
+    qty       BigInt
+    filledQty BigInt    @default(0)
+
+    status OrderStatus @default(OPEN)
+
+    lockedAmount BigInt
+    commandId    String @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    trades      Trade[] @relation("MakerTrades")
+    takerTrades Trade[] @relation("TakerTrades")
+
+    @@index([userId, status])
+    @@index([market, status])
+    @@index([commandId])
+}
+
+model Trade {
+    id     String @id @default(cuid())
+    market String
+
+    makerOrderId String
+    takerOrderId String
+    makerOrder   Order  @relation("MakerTrades", fields: [makerOrderId], references: [id])
+    takerOrder   Order  @relation("TakerTrades", fields: [takerOrderId], references: [id])
+
+    price BigInt
+    qty   BigInt
+
+    executedAt DateTime @default(now())
+
+    @@index([market, executedAt])
+    @@index([makerOrderId])
+    @@index([takerOrderId])
+}
+
+model BalanceTransfer {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    direction     TransferDirection
+    amountInPaise BigInt
+    status        TransferStatus    @default(PENDING)
+
+    idempotencyKey String  @unique
+    vaultlyRef     String?
+
+    createdAt  DateTime  @default(now())
+    resolvedAt DateTime?
+
+    @@index([userId, direction])
+    @@index([idempotencyKey])
+}
