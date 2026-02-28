@@ -9,6 +9,28 @@ import { callVaultlyBridge } from "../vautlyClient.js";
 
 export const transfersRouter = Router();
 
+transfersRouter.get(
+    "/balance",
+    requireAuth,
+    resolveArbitiumUser,
+    async (req: Request, res: Response) => {
+        const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
+
+        const balance = await prisma.tradingBalance.findUnique({
+            where: { userId: arbitiumUserId },
+            select: { available: true, locked: true },
+        })
+
+        const bonusGranted = (req as ArbitriumUserRequest).welcomeBonusGranted ?? false
+
+        res.json({
+            available: (balance?.available ?? 0n).toString(),
+            locked: (balance?.locked ?? 0n).toString(),
+            welcomeBonusGranted: bonusGranted
+        })
+    }
+)
+
 transfersRouter.post(
     "/deposit",
     requireAuth,

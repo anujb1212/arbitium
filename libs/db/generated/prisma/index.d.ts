@@ -1377,6 +1377,7 @@ export namespace Prisma {
     email: string | null
     createdAt: Date | null
     updatedAt: Date | null
+    welcomeBonusCredited: boolean | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -1385,6 +1386,7 @@ export namespace Prisma {
     email: string | null
     createdAt: Date | null
     updatedAt: Date | null
+    welcomeBonusCredited: boolean | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -1393,6 +1395,7 @@ export namespace Prisma {
     email: number
     createdAt: number
     updatedAt: number
+    welcomeBonusCredited: number
     _all: number
   }
 
@@ -1403,6 +1406,7 @@ export namespace Prisma {
     email?: true
     createdAt?: true
     updatedAt?: true
+    welcomeBonusCredited?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -1411,6 +1415,7 @@ export namespace Prisma {
     email?: true
     createdAt?: true
     updatedAt?: true
+    welcomeBonusCredited?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -1419,6 +1424,7 @@ export namespace Prisma {
     email?: true
     createdAt?: true
     updatedAt?: true
+    welcomeBonusCredited?: true
     _all?: true
   }
 
@@ -1500,6 +1506,7 @@ export namespace Prisma {
     email: string | null
     createdAt: Date
     updatedAt: Date
+    welcomeBonusCredited: boolean
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
@@ -1525,6 +1532,7 @@ export namespace Prisma {
     email?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    welcomeBonusCredited?: boolean
     tradingBalance?: boolean | User$tradingBalanceArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     transfers?: boolean | User$transfersArgs<ExtArgs>
@@ -1537,6 +1545,7 @@ export namespace Prisma {
     email?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    welcomeBonusCredited?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1545,6 +1554,7 @@ export namespace Prisma {
     email?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    welcomeBonusCredited?: boolean
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectScalar = {
@@ -1553,9 +1563,10 @@ export namespace Prisma {
     email?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    welcomeBonusCredited?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vaultlyUserId" | "email" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vaultlyUserId" | "email" | "createdAt" | "updatedAt" | "welcomeBonusCredited", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tradingBalance?: boolean | User$tradingBalanceArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
@@ -1578,6 +1589,7 @@ export namespace Prisma {
       email: string | null
       createdAt: Date
       updatedAt: Date
+      welcomeBonusCredited: boolean
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -2009,6 +2021,7 @@ export namespace Prisma {
     readonly email: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
+    readonly welcomeBonusCredited: FieldRef<"User", 'Boolean'>
   }
     
 
@@ -7124,7 +7137,8 @@ export namespace Prisma {
     vaultlyUserId: 'vaultlyUserId',
     email: 'email',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    updatedAt: 'updatedAt',
+    welcomeBonusCredited: 'welcomeBonusCredited'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -7245,6 +7259,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'BigInt'
    */
   export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
@@ -7354,6 +7375,7 @@ export namespace Prisma {
     email?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    welcomeBonusCredited?: BoolFilter<"User"> | boolean
     tradingBalance?: XOR<TradingBalanceNullableScalarRelationFilter, TradingBalanceWhereInput> | null
     orders?: OrderListRelationFilter
     transfers?: BalanceTransferListRelationFilter
@@ -7365,6 +7387,7 @@ export namespace Prisma {
     email?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    welcomeBonusCredited?: SortOrder
     tradingBalance?: TradingBalanceOrderByWithRelationInput
     orders?: OrderOrderByRelationAggregateInput
     transfers?: BalanceTransferOrderByRelationAggregateInput
@@ -7379,6 +7402,7 @@ export namespace Prisma {
     email?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    welcomeBonusCredited?: BoolFilter<"User"> | boolean
     tradingBalance?: XOR<TradingBalanceNullableScalarRelationFilter, TradingBalanceWhereInput> | null
     orders?: OrderListRelationFilter
     transfers?: BalanceTransferListRelationFilter
@@ -7390,6 +7414,7 @@ export namespace Prisma {
     email?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    welcomeBonusCredited?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
@@ -7404,6 +7429,7 @@ export namespace Prisma {
     email?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+    welcomeBonusCredited?: BoolWithAggregatesFilter<"User"> | boolean
   }
 
   export type TradingBalanceWhereInput = {
@@ -7714,6 +7740,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
@@ -7725,6 +7752,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
@@ -7736,6 +7764,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
@@ -7747,6 +7776,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
@@ -7758,6 +7788,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
   }
 
   export type UserUpdateManyMutationInput = {
@@ -7766,6 +7797,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -7774,6 +7806,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TradingBalanceCreateInput = {
@@ -8135,6 +8168,11 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type TradingBalanceNullableScalarRelationFilter = {
     is?: TradingBalanceWhereInput | null
     isNot?: TradingBalanceWhereInput | null
@@ -8171,6 +8209,7 @@ export namespace Prisma {
     email?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    welcomeBonusCredited?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -8179,6 +8218,7 @@ export namespace Prisma {
     email?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    welcomeBonusCredited?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -8187,6 +8227,7 @@ export namespace Prisma {
     email?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    welcomeBonusCredited?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -8237,6 +8278,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type BigIntFilter<$PrismaModel = never> = {
@@ -8608,6 +8657,10 @@ export namespace Prisma {
     set?: Date | string
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type TradingBalanceUpdateOneWithoutUserNestedInput = {
     create?: XOR<TradingBalanceCreateWithoutUserInput, TradingBalanceUncheckedCreateWithoutUserInput>
     connectOrCreate?: TradingBalanceCreateOrConnectWithoutUserInput
@@ -8905,6 +8958,11 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -8973,6 +9031,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedBigIntFilter<$PrismaModel = never> = {
@@ -9295,6 +9361,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     orders?: OrderCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
   }
@@ -9305,6 +9372,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
   }
@@ -9331,6 +9399,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     orders?: OrderUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
   }
@@ -9341,6 +9410,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -9351,6 +9421,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
   }
@@ -9361,6 +9432,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
   }
@@ -9443,6 +9515,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
   }
@@ -9453,6 +9526,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -9668,6 +9742,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
   }
@@ -9678,6 +9753,7 @@ export namespace Prisma {
     email?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
   }
@@ -9704,6 +9780,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
   }
@@ -9714,6 +9791,7 @@ export namespace Prisma {
     email?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
   }

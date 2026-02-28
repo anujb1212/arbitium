@@ -65,3 +65,14 @@ export async function withdrawFunds(params: {
     });
     return handleResponse<{ transferId: string; status: string }>(res);
 }
+
+export async function fetchTradingBalance(): Promise<{
+    available: string;
+    locked: string;
+    welcomeBonusGranted?: boolean
+}> {
+    const res = await fetch(`${API_URL}/transfers/balance`, {
+        headers: getAuthHeaders(),
+    });
+    return handleResponse<{ available: string; locked: string }>(res);
+}

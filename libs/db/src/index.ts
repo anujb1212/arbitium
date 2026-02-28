@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client/extension";
+import { PrismaClient } from "../generated/prisma";
 
 
 const prismaClientSingleton = () => {
@@ -10,7 +10,7 @@ const prismaClientSingleton = () => {
             {
                 get() {
                     throw new Error(
-                        "Missing ARBITIUM_DATABASE_URL — set it in your .env"
+                        "Missing DATABASE_URL — set it in your .env"
                     );
                 },
             }

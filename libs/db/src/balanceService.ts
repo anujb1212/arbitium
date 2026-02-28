@@ -1,5 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client/extension";
-import { OrderSide } from "../generated/prisma";
+import { OrderSide, Prisma, PrismaClient } from "../generated/prisma";
 
 
 export type LockBalanceArgs = {

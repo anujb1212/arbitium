@@ -126,7 +126,8 @@ exports.Prisma.UserScalarFieldEnum = {
   vaultlyUserId: 'vaultlyUserId',
   email: 'email',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  welcomeBonusCredited: 'welcomeBonusCredited'
 };
 
 exports.Prisma.TradingBalanceScalarFieldEnum = {

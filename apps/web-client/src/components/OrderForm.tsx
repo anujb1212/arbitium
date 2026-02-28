@@ -122,12 +122,12 @@ export function OrderForm({ config, onPlaceSubmitted, onPlaceAccepted, onPlaceFa
 
                 {placeStatus.tag === 'success' && (
                     <p className="text-[11px] font-mono text-bull">
-                        ✓ Accepted · {placeStatus.commandId.slice(0, 8)}…
+                        Accepted · {placeStatus.commandId.slice(0, 8)}…
                     </p>
                 )}
                 {placeStatus.tag === 'error' && (
                     <p className="text-[11px] font-mono text-bear break-all">
-                        ✗ {placeStatus.message}
+                        {placeStatus.message}
                     </p>
                 )}
             </form>

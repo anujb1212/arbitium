@@ -24,6 +24,9 @@ export function OpenOrdersPanel(props: Props): React.JSX.Element {
         setCancelingIds((prev) => new Set(prev).add(orderId));
         try {
             await cancelOrder({ orderId, market: config.market });
+        } catch (err) {
+            console.error("[cancel] failed:", err)
+            alert(`Cancel failed: ${(err as Error).message}`)
         } finally {
             setCancelingIds((prev) => {
                 const next = new Set(prev);

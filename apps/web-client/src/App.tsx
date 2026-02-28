@@ -2,13 +2,11 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import TradePage from './pages/TradePage'
-import { isLoggedIn, redirectToVaultlyLogin } from './lib/auth'
+import { isLoggedIn } from './lib/auth'
 
 function RequireAuth({ children }: { children: React.JSX.Element }): React.JSX.Element {
-    if (!isLoggedIn()) {
-        redirectToVaultlyLogin()
-        return <></>
-    }
+    if (!isLoggedIn()) return children
+
     return children
 }
 

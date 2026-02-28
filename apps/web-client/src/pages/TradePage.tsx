@@ -15,6 +15,8 @@ import { useOpenOrders } from '../hooks/useOpenOrders'
 import { MarketHeaderBar } from '../components/MarketHeaderBar'
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel'
 import { CommandRejectedToast } from '../components/CommandRejectedToast'
+import { BalancePanel } from '../components/BalancePanel'
+import { WalletButton } from '../components/WalletButton'
 
 export default function TradePage(): React.JSX.Element {
     const { market: marketParam } = useParams<{ market: string }>()
@@ -27,6 +29,7 @@ export default function TradePage(): React.JSX.Element {
     const [eventCount, setEventCount] = useState(0)
     const [rejectToast, setRejectToast] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<"BOOK" | "TRADES">("BOOK")
+    const [showBonusToast, setShowBonusToast] = useState(false)
 
     const { bids, asks, dispatchDelta, resetBook } = useOrderBook()
     const { trades, dispatchTrade, resetFeed } = useTradeFeed()
@@ -72,6 +75,10 @@ export default function TradePage(): React.JSX.Element {
     const bestBidPrice = bids.length > 0 ? bids[0]?.price ?? null : null
     const bestAskPrice = asks.length > 0 ? asks[0]?.price ?? null : null
 
+    const handleBonusGranted = useCallback(() => {
+        setShowBonusToast(true)
+    }, [])
+
     return (
         <div
             className="bg-base text-hi font-sans text-[13px] overflow-hidden"
@@ -99,9 +106,12 @@ export default function TradePage(): React.JSX.Element {
                     ))}
                 </nav>
                 <div className="ml-auto">
-                    <span className={`text-[11px] font-mono ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
-                        {eventCount > 0 ? `● Live · ${eventCount}` : '○ Connecting…'}
-                    </span>
+                    <div className="ml-auto flex items-center gap-4">
+                        <span className={`text-[11px] font-mono ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
+                            {eventCount > 0 ? `Live ${eventCount}` : 'Connecting…'}
+                        </span>
+                        <WalletButton onBonusGranted={handleBonusGranted} />
+                    </div>
                 </div>
             </header>
 
@@ -171,11 +181,25 @@ export default function TradePage(): React.JSX.Element {
                         />
                     </div>
 
+                    <BalancePanel />
+
                     {rejectToast !== null && (
                         <CommandRejectedToast message={rejectToast} onClose={() => setRejectToast(null)} />
                     )}
                 </div>
             </div>
+            {showBonusToast && (
+                <div className="fixed bottom-6 right-6 z-50 bg-panel border border-accent/30
+        rounded-xl px-5 py-3 shadow-lg flex items-center gap-3">
+                    <span className="text-accent text-lg">🎁</span>
+                    <div>
+                        <p className="text-[13px] font-semibold text-hi">₹500 bonus credited!</p>
+                        <p className="text-[11px] text-mid">Welcome to Arbitium</p>
+                    </div>
+                    <button onClick={() => setShowBonusToast(false)}
+                        className="text-lo hover:text-hi ml-2">X</button>
+                </div>
+            )}
         </div>
     )
 }

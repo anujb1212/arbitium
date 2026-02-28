@@ -1,5 +1,8 @@
+import "dotenv/config"
+
 export const API_URL = process.env.API_URL ?? "http://localhost:3002";
 export const MARKET = process.env.MARKET ?? "TATA-INR";
+export const MM_JWT_TOKEN = process.env.MM_JWT_TOKEN ?? "";
 
 const DEFAULT_MID_PRICE_BY_MARKET: Record<string, string> = {
     "TATA-INR": "75000",

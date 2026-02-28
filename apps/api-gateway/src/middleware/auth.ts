@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 export type AuthenticatedRequest = Request & {
     vaultlyUserId: string;
     userEmail: string | null;
@@ -13,6 +11,7 @@ export function requireAuth(
     res: Response,
     next: NextFunction
 ): void {
+    const JWT_SECRET = process.env.JWT_SECRET;
     if (!JWT_SECRET) {
         res.status(500).json({ error: "JWT_SECRET not configured" });
         return;

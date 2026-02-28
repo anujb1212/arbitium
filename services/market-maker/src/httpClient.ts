@@ -1,4 +1,4 @@
-import { API_URL } from "./config";
+import { API_URL, MM_JWT_TOKEN } from "./config";
 
 type PlaceLimitParams = {
     market: string;
@@ -12,7 +12,8 @@ export async function placeLimitOrder(params: PlaceLimitParams): Promise<void> {
     const response = await fetch(`${API_URL}/orders/limit`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${MM_JWT_TOKEN}`
         },
         body: JSON.stringify({
             market: params.market,
@@ -35,7 +36,8 @@ export async function cancelOrder(params: {
     const response = await fetch(`${API_URL}/orders/${params.orderId}`, {
         method: "DELETE",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${MM_JWT_TOKEN}`
         },
         body: JSON.stringify({
             market: params.market
