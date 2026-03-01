@@ -32,6 +32,14 @@ enum TransferStatus {
   FAILED
 }
 
+enum KlineInterval {
+  ONE_MINUTE
+  FIVE_MINUTES
+  FIFTEEN_MINUTES
+  ONE_HOUR
+  ONE_DAY
+}
+
 model User {
   id                   String   @id @default(cuid())
   vaultlyUserId        String   @unique
@@ -124,4 +132,27 @@ model BalanceTransfer {
 
   @@index([userId, direction])
   @@index([idempotencyKey])
+}
+
+model Kline {
+  id       String        @id @default(cuid())
+  market   String
+  interval KlineInterval
+
+  openTime  DateTime
+  closeTime DateTime
+
+  open   BigInt
+  high   BigInt
+  low    BigInt
+  close  BigInt
+  volume BigInt
+
+  tradeCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([market, interval, openTime])
+  @@index([market, interval, openTime])
 }

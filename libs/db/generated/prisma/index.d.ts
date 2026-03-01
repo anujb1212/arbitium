@@ -38,6 +38,11 @@ export type Trade = $Result.DefaultSelection<Prisma.$TradePayload>
  * 
  */
 export type BalanceTransfer = $Result.DefaultSelection<Prisma.$BalanceTransferPayload>
+/**
+ * Model Kline
+ * 
+ */
+export type Kline = $Result.DefaultSelection<Prisma.$KlinePayload>
 
 /**
  * Enums
@@ -78,6 +83,17 @@ export const TransferStatus: {
 
 export type TransferStatus = (typeof TransferStatus)[keyof typeof TransferStatus]
 
+
+export const KlineInterval: {
+  ONE_MINUTE: 'ONE_MINUTE',
+  FIVE_MINUTES: 'FIVE_MINUTES',
+  FIFTEEN_MINUTES: 'FIFTEEN_MINUTES',
+  ONE_HOUR: 'ONE_HOUR',
+  ONE_DAY: 'ONE_DAY'
+};
+
+export type KlineInterval = (typeof KlineInterval)[keyof typeof KlineInterval]
+
 }
 
 export type OrderSide = $Enums.OrderSide
@@ -95,6 +111,10 @@ export const TransferDirection: typeof $Enums.TransferDirection
 export type TransferStatus = $Enums.TransferStatus
 
 export const TransferStatus: typeof $Enums.TransferStatus
+
+export type KlineInterval = $Enums.KlineInterval
+
+export const KlineInterval: typeof $Enums.KlineInterval
 
 /**
  * ##  Prisma Client ʲˢ
@@ -263,6 +283,16 @@ export class PrismaClient<
     * ```
     */
   get balanceTransfer(): Prisma.BalanceTransferDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.kline`: Exposes CRUD operations for the **Kline** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Klines
+    * const klines = await prisma.kline.findMany()
+    * ```
+    */
+  get kline(): Prisma.KlineDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -708,7 +738,8 @@ export namespace Prisma {
     TradingBalance: 'TradingBalance',
     Order: 'Order',
     Trade: 'Trade',
-    BalanceTransfer: 'BalanceTransfer'
+    BalanceTransfer: 'BalanceTransfer',
+    Kline: 'Kline'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -727,7 +758,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "tradingBalance" | "order" | "trade" | "balanceTransfer"
+      modelProps: "user" | "tradingBalance" | "order" | "trade" | "balanceTransfer" | "kline"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1101,6 +1132,80 @@ export namespace Prisma {
           }
         }
       }
+      Kline: {
+        payload: Prisma.$KlinePayload<ExtArgs>
+        fields: Prisma.KlineFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.KlineFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.KlineFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          findFirst: {
+            args: Prisma.KlineFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.KlineFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          findMany: {
+            args: Prisma.KlineFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>[]
+          }
+          create: {
+            args: Prisma.KlineCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          createMany: {
+            args: Prisma.KlineCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.KlineCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>[]
+          }
+          delete: {
+            args: Prisma.KlineDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          update: {
+            args: Prisma.KlineUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          deleteMany: {
+            args: Prisma.KlineDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.KlineUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.KlineUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>[]
+          }
+          upsert: {
+            args: Prisma.KlineUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$KlinePayload>
+          }
+          aggregate: {
+            args: Prisma.KlineAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateKline>
+          }
+          groupBy: {
+            args: Prisma.KlineGroupByArgs<ExtArgs>
+            result: $Utils.Optional<KlineGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.KlineCountArgs<ExtArgs>
+            result: $Utils.Optional<KlineCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1202,6 +1307,7 @@ export namespace Prisma {
     order?: OrderOmit
     trade?: TradeOmit
     balanceTransfer?: BalanceTransferOmit
+    kline?: KlineOmit
   }
 
   /* Types for Logging */
@@ -7119,6 +7225,1159 @@ export namespace Prisma {
 
 
   /**
+   * Model Kline
+   */
+
+  export type AggregateKline = {
+    _count: KlineCountAggregateOutputType | null
+    _avg: KlineAvgAggregateOutputType | null
+    _sum: KlineSumAggregateOutputType | null
+    _min: KlineMinAggregateOutputType | null
+    _max: KlineMaxAggregateOutputType | null
+  }
+
+  export type KlineAvgAggregateOutputType = {
+    open: number | null
+    high: number | null
+    low: number | null
+    close: number | null
+    volume: number | null
+    tradeCount: number | null
+  }
+
+  export type KlineSumAggregateOutputType = {
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+  }
+
+  export type KlineMinAggregateOutputType = {
+    id: string | null
+    market: string | null
+    interval: $Enums.KlineInterval | null
+    openTime: Date | null
+    closeTime: Date | null
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type KlineMaxAggregateOutputType = {
+    id: string | null
+    market: string | null
+    interval: $Enums.KlineInterval | null
+    openTime: Date | null
+    closeTime: Date | null
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type KlineCountAggregateOutputType = {
+    id: number
+    market: number
+    interval: number
+    openTime: number
+    closeTime: number
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+    tradeCount: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type KlineAvgAggregateInputType = {
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type KlineSumAggregateInputType = {
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type KlineMinAggregateInputType = {
+    id?: true
+    market?: true
+    interval?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type KlineMaxAggregateInputType = {
+    id?: true
+    market?: true
+    interval?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type KlineCountAggregateInputType = {
+    id?: true
+    market?: true
+    interval?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type KlineAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Kline to aggregate.
+     */
+    where?: KlineWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Klines to fetch.
+     */
+    orderBy?: KlineOrderByWithRelationInput | KlineOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: KlineWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Klines from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Klines.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Klines
+    **/
+    _count?: true | KlineCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: KlineAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: KlineSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: KlineMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: KlineMaxAggregateInputType
+  }
+
+  export type GetKlineAggregateType<T extends KlineAggregateArgs> = {
+        [P in keyof T & keyof AggregateKline]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateKline[P]>
+      : GetScalarType<T[P], AggregateKline[P]>
+  }
+
+
+
+
+  export type KlineGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: KlineWhereInput
+    orderBy?: KlineOrderByWithAggregationInput | KlineOrderByWithAggregationInput[]
+    by: KlineScalarFieldEnum[] | KlineScalarFieldEnum
+    having?: KlineScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: KlineCountAggregateInputType | true
+    _avg?: KlineAvgAggregateInputType
+    _sum?: KlineSumAggregateInputType
+    _min?: KlineMinAggregateInputType
+    _max?: KlineMaxAggregateInputType
+  }
+
+  export type KlineGroupByOutputType = {
+    id: string
+    market: string
+    interval: $Enums.KlineInterval
+    openTime: Date
+    closeTime: Date
+    open: bigint
+    high: bigint
+    low: bigint
+    close: bigint
+    volume: bigint
+    tradeCount: number
+    createdAt: Date
+    updatedAt: Date
+    _count: KlineCountAggregateOutputType | null
+    _avg: KlineAvgAggregateOutputType | null
+    _sum: KlineSumAggregateOutputType | null
+    _min: KlineMinAggregateOutputType | null
+    _max: KlineMaxAggregateOutputType | null
+  }
+
+  type GetKlineGroupByPayload<T extends KlineGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<KlineGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof KlineGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], KlineGroupByOutputType[P]>
+            : GetScalarType<T[P], KlineGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type KlineSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    market?: boolean
+    interval?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["kline"]>
+
+  export type KlineSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    market?: boolean
+    interval?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["kline"]>
+
+  export type KlineSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    market?: boolean
+    interval?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["kline"]>
+
+  export type KlineSelectScalar = {
+    id?: boolean
+    market?: boolean
+    interval?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type KlineOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "market" | "interval" | "openTime" | "closeTime" | "open" | "high" | "low" | "close" | "volume" | "tradeCount" | "createdAt" | "updatedAt", ExtArgs["result"]["kline"]>
+
+  export type $KlinePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Kline"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      market: string
+      interval: $Enums.KlineInterval
+      openTime: Date
+      closeTime: Date
+      open: bigint
+      high: bigint
+      low: bigint
+      close: bigint
+      volume: bigint
+      tradeCount: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["kline"]>
+    composites: {}
+  }
+
+  type KlineGetPayload<S extends boolean | null | undefined | KlineDefaultArgs> = $Result.GetResult<Prisma.$KlinePayload, S>
+
+  type KlineCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<KlineFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: KlineCountAggregateInputType | true
+    }
+
+  export interface KlineDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Kline'], meta: { name: 'Kline' } }
+    /**
+     * Find zero or one Kline that matches the filter.
+     * @param {KlineFindUniqueArgs} args - Arguments to find a Kline
+     * @example
+     * // Get one Kline
+     * const kline = await prisma.kline.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends KlineFindUniqueArgs>(args: SelectSubset<T, KlineFindUniqueArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Kline that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {KlineFindUniqueOrThrowArgs} args - Arguments to find a Kline
+     * @example
+     * // Get one Kline
+     * const kline = await prisma.kline.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends KlineFindUniqueOrThrowArgs>(args: SelectSubset<T, KlineFindUniqueOrThrowArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Kline that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineFindFirstArgs} args - Arguments to find a Kline
+     * @example
+     * // Get one Kline
+     * const kline = await prisma.kline.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends KlineFindFirstArgs>(args?: SelectSubset<T, KlineFindFirstArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Kline that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineFindFirstOrThrowArgs} args - Arguments to find a Kline
+     * @example
+     * // Get one Kline
+     * const kline = await prisma.kline.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends KlineFindFirstOrThrowArgs>(args?: SelectSubset<T, KlineFindFirstOrThrowArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Klines that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Klines
+     * const klines = await prisma.kline.findMany()
+     * 
+     * // Get first 10 Klines
+     * const klines = await prisma.kline.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const klineWithIdOnly = await prisma.kline.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends KlineFindManyArgs>(args?: SelectSubset<T, KlineFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Kline.
+     * @param {KlineCreateArgs} args - Arguments to create a Kline.
+     * @example
+     * // Create one Kline
+     * const Kline = await prisma.kline.create({
+     *   data: {
+     *     // ... data to create a Kline
+     *   }
+     * })
+     * 
+     */
+    create<T extends KlineCreateArgs>(args: SelectSubset<T, KlineCreateArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Klines.
+     * @param {KlineCreateManyArgs} args - Arguments to create many Klines.
+     * @example
+     * // Create many Klines
+     * const kline = await prisma.kline.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends KlineCreateManyArgs>(args?: SelectSubset<T, KlineCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Klines and returns the data saved in the database.
+     * @param {KlineCreateManyAndReturnArgs} args - Arguments to create many Klines.
+     * @example
+     * // Create many Klines
+     * const kline = await prisma.kline.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Klines and only return the `id`
+     * const klineWithIdOnly = await prisma.kline.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends KlineCreateManyAndReturnArgs>(args?: SelectSubset<T, KlineCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Kline.
+     * @param {KlineDeleteArgs} args - Arguments to delete one Kline.
+     * @example
+     * // Delete one Kline
+     * const Kline = await prisma.kline.delete({
+     *   where: {
+     *     // ... filter to delete one Kline
+     *   }
+     * })
+     * 
+     */
+    delete<T extends KlineDeleteArgs>(args: SelectSubset<T, KlineDeleteArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Kline.
+     * @param {KlineUpdateArgs} args - Arguments to update one Kline.
+     * @example
+     * // Update one Kline
+     * const kline = await prisma.kline.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends KlineUpdateArgs>(args: SelectSubset<T, KlineUpdateArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Klines.
+     * @param {KlineDeleteManyArgs} args - Arguments to filter Klines to delete.
+     * @example
+     * // Delete a few Klines
+     * const { count } = await prisma.kline.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends KlineDeleteManyArgs>(args?: SelectSubset<T, KlineDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Klines.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Klines
+     * const kline = await prisma.kline.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends KlineUpdateManyArgs>(args: SelectSubset<T, KlineUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Klines and returns the data updated in the database.
+     * @param {KlineUpdateManyAndReturnArgs} args - Arguments to update many Klines.
+     * @example
+     * // Update many Klines
+     * const kline = await prisma.kline.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Klines and only return the `id`
+     * const klineWithIdOnly = await prisma.kline.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends KlineUpdateManyAndReturnArgs>(args: SelectSubset<T, KlineUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Kline.
+     * @param {KlineUpsertArgs} args - Arguments to update or create a Kline.
+     * @example
+     * // Update or create a Kline
+     * const kline = await prisma.kline.upsert({
+     *   create: {
+     *     // ... data to create a Kline
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Kline we want to update
+     *   }
+     * })
+     */
+    upsert<T extends KlineUpsertArgs>(args: SelectSubset<T, KlineUpsertArgs<ExtArgs>>): Prisma__KlineClient<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Klines.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineCountArgs} args - Arguments to filter Klines to count.
+     * @example
+     * // Count the number of Klines
+     * const count = await prisma.kline.count({
+     *   where: {
+     *     // ... the filter for the Klines we want to count
+     *   }
+     * })
+    **/
+    count<T extends KlineCountArgs>(
+      args?: Subset<T, KlineCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], KlineCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Kline.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends KlineAggregateArgs>(args: Subset<T, KlineAggregateArgs>): Prisma.PrismaPromise<GetKlineAggregateType<T>>
+
+    /**
+     * Group by Kline.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {KlineGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends KlineGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: KlineGroupByArgs['orderBy'] }
+        : { orderBy?: KlineGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, KlineGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetKlineGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Kline model
+   */
+  readonly fields: KlineFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Kline.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__KlineClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Kline model
+   */
+  interface KlineFieldRefs {
+    readonly id: FieldRef<"Kline", 'String'>
+    readonly market: FieldRef<"Kline", 'String'>
+    readonly interval: FieldRef<"Kline", 'KlineInterval'>
+    readonly openTime: FieldRef<"Kline", 'DateTime'>
+    readonly closeTime: FieldRef<"Kline", 'DateTime'>
+    readonly open: FieldRef<"Kline", 'BigInt'>
+    readonly high: FieldRef<"Kline", 'BigInt'>
+    readonly low: FieldRef<"Kline", 'BigInt'>
+    readonly close: FieldRef<"Kline", 'BigInt'>
+    readonly volume: FieldRef<"Kline", 'BigInt'>
+    readonly tradeCount: FieldRef<"Kline", 'Int'>
+    readonly createdAt: FieldRef<"Kline", 'DateTime'>
+    readonly updatedAt: FieldRef<"Kline", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Kline findUnique
+   */
+  export type KlineFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter, which Kline to fetch.
+     */
+    where: KlineWhereUniqueInput
+  }
+
+  /**
+   * Kline findUniqueOrThrow
+   */
+  export type KlineFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter, which Kline to fetch.
+     */
+    where: KlineWhereUniqueInput
+  }
+
+  /**
+   * Kline findFirst
+   */
+  export type KlineFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter, which Kline to fetch.
+     */
+    where?: KlineWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Klines to fetch.
+     */
+    orderBy?: KlineOrderByWithRelationInput | KlineOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Klines.
+     */
+    cursor?: KlineWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Klines from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Klines.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Klines.
+     */
+    distinct?: KlineScalarFieldEnum | KlineScalarFieldEnum[]
+  }
+
+  /**
+   * Kline findFirstOrThrow
+   */
+  export type KlineFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter, which Kline to fetch.
+     */
+    where?: KlineWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Klines to fetch.
+     */
+    orderBy?: KlineOrderByWithRelationInput | KlineOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Klines.
+     */
+    cursor?: KlineWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Klines from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Klines.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Klines.
+     */
+    distinct?: KlineScalarFieldEnum | KlineScalarFieldEnum[]
+  }
+
+  /**
+   * Kline findMany
+   */
+  export type KlineFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter, which Klines to fetch.
+     */
+    where?: KlineWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Klines to fetch.
+     */
+    orderBy?: KlineOrderByWithRelationInput | KlineOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Klines.
+     */
+    cursor?: KlineWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Klines from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Klines.
+     */
+    skip?: number
+    distinct?: KlineScalarFieldEnum | KlineScalarFieldEnum[]
+  }
+
+  /**
+   * Kline create
+   */
+  export type KlineCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * The data needed to create a Kline.
+     */
+    data: XOR<KlineCreateInput, KlineUncheckedCreateInput>
+  }
+
+  /**
+   * Kline createMany
+   */
+  export type KlineCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Klines.
+     */
+    data: KlineCreateManyInput | KlineCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Kline createManyAndReturn
+   */
+  export type KlineCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * The data used to create many Klines.
+     */
+    data: KlineCreateManyInput | KlineCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Kline update
+   */
+  export type KlineUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * The data needed to update a Kline.
+     */
+    data: XOR<KlineUpdateInput, KlineUncheckedUpdateInput>
+    /**
+     * Choose, which Kline to update.
+     */
+    where: KlineWhereUniqueInput
+  }
+
+  /**
+   * Kline updateMany
+   */
+  export type KlineUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Klines.
+     */
+    data: XOR<KlineUpdateManyMutationInput, KlineUncheckedUpdateManyInput>
+    /**
+     * Filter which Klines to update
+     */
+    where?: KlineWhereInput
+    /**
+     * Limit how many Klines to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Kline updateManyAndReturn
+   */
+  export type KlineUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * The data used to update Klines.
+     */
+    data: XOR<KlineUpdateManyMutationInput, KlineUncheckedUpdateManyInput>
+    /**
+     * Filter which Klines to update
+     */
+    where?: KlineWhereInput
+    /**
+     * Limit how many Klines to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Kline upsert
+   */
+  export type KlineUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * The filter to search for the Kline to update in case it exists.
+     */
+    where: KlineWhereUniqueInput
+    /**
+     * In case the Kline found by the `where` argument doesn't exist, create a new Kline with this data.
+     */
+    create: XOR<KlineCreateInput, KlineUncheckedCreateInput>
+    /**
+     * In case the Kline was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<KlineUpdateInput, KlineUncheckedUpdateInput>
+  }
+
+  /**
+   * Kline delete
+   */
+  export type KlineDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+    /**
+     * Filter which Kline to delete.
+     */
+    where: KlineWhereUniqueInput
+  }
+
+  /**
+   * Kline deleteMany
+   */
+  export type KlineDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Klines to delete
+     */
+    where?: KlineWhereInput
+    /**
+     * Limit how many Klines to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Kline without action
+   */
+  export type KlineDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Kline
+     */
+    select?: KlineSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Kline
+     */
+    omit?: KlineOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -7199,6 +8458,25 @@ export namespace Prisma {
   };
 
   export type BalanceTransferScalarFieldEnum = (typeof BalanceTransferScalarFieldEnum)[keyof typeof BalanceTransferScalarFieldEnum]
+
+
+  export const KlineScalarFieldEnum: {
+    id: 'id',
+    market: 'market',
+    interval: 'interval',
+    openTime: 'openTime',
+    closeTime: 'closeTime',
+    open: 'open',
+    high: 'high',
+    low: 'low',
+    close: 'close',
+    volume: 'volume',
+    tradeCount: 'tradeCount',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type KlineScalarFieldEnum = (typeof KlineScalarFieldEnum)[keyof typeof KlineScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -7332,6 +8610,20 @@ export namespace Prisma {
    * Reference to a field of type 'TransferStatus[]'
    */
   export type ListEnumTransferStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TransferStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'KlineInterval'
+   */
+  export type EnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval'>
+    
+
+
+  /**
+   * Reference to a field of type 'KlineInterval[]'
+   */
+  export type ListEnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval[]'>
     
 
 
@@ -7735,6 +9027,101 @@ export namespace Prisma {
     resolvedAt?: DateTimeNullableWithAggregatesFilter<"BalanceTransfer"> | Date | string | null
   }
 
+  export type KlineWhereInput = {
+    AND?: KlineWhereInput | KlineWhereInput[]
+    OR?: KlineWhereInput[]
+    NOT?: KlineWhereInput | KlineWhereInput[]
+    id?: StringFilter<"Kline"> | string
+    market?: StringFilter<"Kline"> | string
+    interval?: EnumKlineIntervalFilter<"Kline"> | $Enums.KlineInterval
+    openTime?: DateTimeFilter<"Kline"> | Date | string
+    closeTime?: DateTimeFilter<"Kline"> | Date | string
+    open?: BigIntFilter<"Kline"> | bigint | number
+    high?: BigIntFilter<"Kline"> | bigint | number
+    low?: BigIntFilter<"Kline"> | bigint | number
+    close?: BigIntFilter<"Kline"> | bigint | number
+    volume?: BigIntFilter<"Kline"> | bigint | number
+    tradeCount?: IntFilter<"Kline"> | number
+    createdAt?: DateTimeFilter<"Kline"> | Date | string
+    updatedAt?: DateTimeFilter<"Kline"> | Date | string
+  }
+
+  export type KlineOrderByWithRelationInput = {
+    id?: SortOrder
+    market?: SortOrder
+    interval?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type KlineWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    market_interval_openTime?: KlineMarketIntervalOpenTimeCompoundUniqueInput
+    AND?: KlineWhereInput | KlineWhereInput[]
+    OR?: KlineWhereInput[]
+    NOT?: KlineWhereInput | KlineWhereInput[]
+    market?: StringFilter<"Kline"> | string
+    interval?: EnumKlineIntervalFilter<"Kline"> | $Enums.KlineInterval
+    openTime?: DateTimeFilter<"Kline"> | Date | string
+    closeTime?: DateTimeFilter<"Kline"> | Date | string
+    open?: BigIntFilter<"Kline"> | bigint | number
+    high?: BigIntFilter<"Kline"> | bigint | number
+    low?: BigIntFilter<"Kline"> | bigint | number
+    close?: BigIntFilter<"Kline"> | bigint | number
+    volume?: BigIntFilter<"Kline"> | bigint | number
+    tradeCount?: IntFilter<"Kline"> | number
+    createdAt?: DateTimeFilter<"Kline"> | Date | string
+    updatedAt?: DateTimeFilter<"Kline"> | Date | string
+  }, "id" | "market_interval_openTime">
+
+  export type KlineOrderByWithAggregationInput = {
+    id?: SortOrder
+    market?: SortOrder
+    interval?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: KlineCountOrderByAggregateInput
+    _avg?: KlineAvgOrderByAggregateInput
+    _max?: KlineMaxOrderByAggregateInput
+    _min?: KlineMinOrderByAggregateInput
+    _sum?: KlineSumOrderByAggregateInput
+  }
+
+  export type KlineScalarWhereWithAggregatesInput = {
+    AND?: KlineScalarWhereWithAggregatesInput | KlineScalarWhereWithAggregatesInput[]
+    OR?: KlineScalarWhereWithAggregatesInput[]
+    NOT?: KlineScalarWhereWithAggregatesInput | KlineScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Kline"> | string
+    market?: StringWithAggregatesFilter<"Kline"> | string
+    interval?: EnumKlineIntervalWithAggregatesFilter<"Kline"> | $Enums.KlineInterval
+    openTime?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
+    closeTime?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
+    open?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
+    high?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
+    low?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
+    close?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
+    volume?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
+    tradeCount?: IntWithAggregatesFilter<"Kline"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     vaultlyUserId: string
@@ -8126,6 +9513,118 @@ export namespace Prisma {
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type KlineCreateInput = {
+    id?: string
+    market: string
+    interval: $Enums.KlineInterval
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume: bigint | number
+    tradeCount?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type KlineUncheckedCreateInput = {
+    id?: string
+    market: string
+    interval: $Enums.KlineInterval
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume: bigint | number
+    tradeCount?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type KlineUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type KlineUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type KlineCreateManyInput = {
+    id?: string
+    market: string
+    interval: $Enums.KlineInterval
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume: bigint | number
+    tradeCount?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type KlineUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type KlineUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -8611,6 +10110,122 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type EnumKlineIntervalFilter<$PrismaModel = never> = {
+    equals?: $Enums.KlineInterval | EnumKlineIntervalFieldRefInput<$PrismaModel>
+    in?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    notIn?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    not?: NestedEnumKlineIntervalFilter<$PrismaModel> | $Enums.KlineInterval
+  }
+
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type KlineMarketIntervalOpenTimeCompoundUniqueInput = {
+    market: string
+    interval: $Enums.KlineInterval
+    openTime: Date | string
+  }
+
+  export type KlineCountOrderByAggregateInput = {
+    id?: SortOrder
+    market?: SortOrder
+    interval?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type KlineAvgOrderByAggregateInput = {
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type KlineMaxOrderByAggregateInput = {
+    id?: SortOrder
+    market?: SortOrder
+    interval?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type KlineMinOrderByAggregateInput = {
+    id?: SortOrder
+    market?: SortOrder
+    interval?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type KlineSumOrderByAggregateInput = {
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type EnumKlineIntervalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.KlineInterval | EnumKlineIntervalFieldRefInput<$PrismaModel>
+    in?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    notIn?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    not?: NestedEnumKlineIntervalWithAggregatesFilter<$PrismaModel> | $Enums.KlineInterval
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumKlineIntervalFilter<$PrismaModel>
+    _max?: NestedEnumKlineIntervalFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
   export type TradingBalanceCreateNestedOneWithoutUserInput = {
     create?: XOR<TradingBalanceCreateWithoutUserInput, TradingBalanceUncheckedCreateWithoutUserInput>
     connectOrCreate?: TradingBalanceCreateOrConnectWithoutUserInput
@@ -8925,6 +10540,18 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutTransfersInput, UserUpdateWithoutTransfersInput>, UserUncheckedUpdateWithoutTransfersInput>
   }
 
+  export type EnumKlineIntervalFieldUpdateOperationsInput = {
+    set?: $Enums.KlineInterval
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -9176,6 +10803,39 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumKlineIntervalFilter<$PrismaModel = never> = {
+    equals?: $Enums.KlineInterval | EnumKlineIntervalFieldRefInput<$PrismaModel>
+    in?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    notIn?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    not?: NestedEnumKlineIntervalFilter<$PrismaModel> | $Enums.KlineInterval
+  }
+
+  export type NestedEnumKlineIntervalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.KlineInterval | EnumKlineIntervalFieldRefInput<$PrismaModel>
+    in?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    notIn?: $Enums.KlineInterval[] | ListEnumKlineIntervalFieldRefInput<$PrismaModel>
+    not?: NestedEnumKlineIntervalWithAggregatesFilter<$PrismaModel> | $Enums.KlineInterval
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumKlineIntervalFilter<$PrismaModel>
+    _max?: NestedEnumKlineIntervalFilter<$PrismaModel>
+  }
+
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type TradingBalanceCreateWithoutUserInput = {

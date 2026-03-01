@@ -1,5 +1,5 @@
 import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
-import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder } from "@arbitium/db";
+import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder, KlineInterval, getOpenTime, getCloseTime, upsertKline } from "@arbitium/db";
 
 function isPrismaUniqueViolation(error: unknown): boolean {
     return (
@@ -24,6 +24,14 @@ export async function handleEvent(event: EventEnvelope): Promise<void> {
     }
 }
 
+const ALL_INTERVALS = [
+    KlineInterval.ONE_MINUTE,
+    KlineInterval.FIVE_MINUTES,
+    KlineInterval.FIFTEEN_MINUTES,
+    KlineInterval.ONE_HOUR,
+    KlineInterval.ONE_DAY,
+] as const;
+
 async function handleTrade(
     event: Extract<EventEnvelope, { kind: "TRADE" }>
 ): Promise<void> {
@@ -31,6 +39,8 @@ async function handleTrade(
 
     const buyOrderId = takerSide === "BUY" ? takerOrderId : makerOrderId;
     const sellOrderId = takerSide === "SELL" ? takerOrderId : makerOrderId;
+
+    const tradeTime = new Date();
 
     try {
         await prisma.$transaction(async (tx) => {
@@ -41,6 +51,20 @@ async function handleTrade(
             await consumeLockOnFill({ tx, orderId: buyOrderId, filledQty: qty, fillPrice: price });
 
             await creditFillProceeds({ tx, orderId: sellOrderId, fillPrice: price, fillQty: qty });
+
+            for (const interval of ALL_INTERVALS) {
+                const openTime = getOpenTime(tradeTime, interval);
+                const closeTime = getCloseTime(openTime, interval);
+                await upsertKline({
+                    tx,
+                    market: event.market,
+                    interval,
+                    openTime,
+                    closeTime,
+                    tradePrice: price,
+                    tradeQty: qty
+                });
+            }
         });
     } catch (error: unknown) {
         if (isPrismaUniqueViolation(error)) return;

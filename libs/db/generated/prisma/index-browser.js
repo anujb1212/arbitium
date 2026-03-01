@@ -175,6 +175,22 @@ exports.Prisma.BalanceTransferScalarFieldEnum = {
   resolvedAt: 'resolvedAt'
 };
 
+exports.Prisma.KlineScalarFieldEnum = {
+  id: 'id',
+  market: 'market',
+  interval: 'interval',
+  openTime: 'openTime',
+  closeTime: 'closeTime',
+  open: 'open',
+  high: 'high',
+  low: 'low',
+  close: 'close',
+  volume: 'volume',
+  tradeCount: 'tradeCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -213,12 +229,21 @@ exports.TransferStatus = exports.$Enums.TransferStatus = {
   FAILED: 'FAILED'
 };
 
+exports.KlineInterval = exports.$Enums.KlineInterval = {
+  ONE_MINUTE: 'ONE_MINUTE',
+  FIVE_MINUTES: 'FIVE_MINUTES',
+  FIFTEEN_MINUTES: 'FIFTEEN_MINUTES',
+  ONE_HOUR: 'ONE_HOUR',
+  ONE_DAY: 'ONE_DAY'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   TradingBalance: 'TradingBalance',
   Order: 'Order',
   Trade: 'Trade',
-  BalanceTransfer: 'BalanceTransfer'
+  BalanceTransfer: 'BalanceTransfer',
+  Kline: 'Kline'
 };
 
 /**
