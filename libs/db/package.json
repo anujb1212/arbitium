@@ -6,7 +6,9 @@
     "scripts": {
         "db:generate": "prisma generate --schema=./prisma/schema.prisma",
         "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
-        "db:push": "prisma db push --schema=./prisma/schema.prisma"
+        "db:push": "prisma db push --schema=./prisma/schema.prisma",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "@prisma/client": "^6.17.1",
@@ -16,7 +18,8 @@
         "@types/node": "^25.3.1",
         "prisma": "^6.17.1",
         "ts-node": "^10.9.2",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "vitest": "^2.1.9"
     },
     "exports": {
         "./client": "./index.ts",
