@@ -122,3 +122,63 @@ describe("commandHandling", () => {
         }
     });
 });
+
+describe("CANCEL flow", () => {
+    it("CANCEL on non-existent orderId => emits COMMAND_REJECTED, bookSeq unchanged", () => {
+        const orderBook = new OrderBook("TATA-INR")
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "cmd-cancel-ghost",
+                market: "TATA-INR",
+                kind: "CANCEL",
+                payload: { orderId: "ghost-order" }
+            },
+            bookSeq: 5n
+        })
+
+        expect(nextBookSeq).toBe(5n)
+        expect(events[0]!.kind).toBe("COMMAND_REJECTED")
+    })
+
+    it("CANCEL after partial fill => emits BOOK_DELTA CANCEL with correct orderId", () => {
+        const orderBook = new OrderBook("TATA-INR")
+
+        applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "buy-1", side: "BUY", price: 100n, qty: 10n }
+            },
+            bookSeq: 0n
+        })
+
+        applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c2", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 3n }
+            },
+            bookSeq: 1n
+        })
+
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c3", market: "TATA-INR", kind: "CANCEL",
+                payload: { orderId: "buy-1" }
+            },
+            bookSeq: 2n
+        })
+
+        expect(nextBookSeq).toBe(3n)
+        expect(events[0]!.kind).toBe("BOOK_DELTA")
+        if (events[0]!.kind === "BOOK_DELTA") {
+            expect(events[0]!.payload.type).toBe("CANCEL")
+            if (events[0]!.payload.type === "CANCEL") {
+                expect(events[0]!.payload.orderId).toBe("buy-1")
+            }
+        }
+    })
+})
+

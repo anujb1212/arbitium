@@ -152,7 +152,8 @@ export class OrderBook {
         const restingOrder = this.ordersById.get(input.orderId);
         if (!restingOrder) {
             return {
-                accepted: true,
+                accepted: false,
+                rejectReason: "UNKNOWN_ORDER_ID" as const,
                 cancelled: false,
                 deltas: []
             };

@@ -6,6 +6,10 @@ type IncomingMessage =
     | { type: "subscribe"; market: string }
     | { type: "unsubscribe"; market: string }
 
+const KNOWN_MARKETS = new Set(
+    (process.env.MARKETS ?? "TATA-INR, RELIANCE-INR, INFY-INR").split(",")
+)
+
 function parsedMessage(raw: string): IncomingMessage | null {
     let parsed: unknown
     try {
@@ -39,6 +43,11 @@ export async function handleMessage(
     }
 
     if (message.type === "subscribe") {
+        if (!KNOWN_MARKETS.has(message.market)) {
+            session.sendError("UNKNOWN_MARKET")
+            return
+        }
+
         if (session.isSubscribed(message.market)) return
 
         if (!session.canSubscribe()) {

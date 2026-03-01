@@ -110,4 +110,67 @@ describe("MarketFeed", () => {
             expect.objectContaining({ eventId: streamId })
         );
     });
+
+    describe("concurrent readAndFanOut — in-flight guard", () => {
+        it("should not fan out duplicate events when two pings fire simultaneously", async () => {
+            let resolveFirstRead!: () => void
+            const firstReadGate = new Promise<void>((resolve) => { resolveFirstRead = resolve })
+
+            vi.mocked(readStreamSince)
+                .mockImplementationOnce(async () => {
+                    await firstReadGate
+                    return [{ id: "1700-1", fields: {} }]
+                })
+                .mockResolvedValue([])
+
+            vi.mocked(decodeEventFromStreamFields).mockReturnValue({
+                accepted: true,
+                value: { kind: "TRADE" } as any
+            })
+
+            const feed = new MarketFeed("TATA-INR", makeMockRedisClient() as any)
+            const listener = vi.fn()
+            feed.addListener(listener)
+
+            const callA = feed.readAndFanOut()
+            const callB = feed.readAndFanOut()
+
+            resolveFirstRead()
+            await Promise.all([callA, callB])
+
+
+            expect(listener).toHaveBeenCalledTimes(1)
+            expect(readStreamSince).toHaveBeenCalledTimes(2)
+        })
+
+        it("should re-read after first read completes when a ping arrived during read", async () => {
+            let resolveFirstRead!: () => void
+            const firstReadGate = new Promise<void>((resolve) => { resolveFirstRead = resolve })
+
+            vi.mocked(readStreamSince)
+                .mockImplementationOnce(async () => {
+                    await firstReadGate
+                    return [{ id: "1700-1", fields: {} }]
+                })
+                .mockResolvedValueOnce([{ id: "1700-2", fields: {} }])
+                .mockResolvedValue([])
+
+            vi.mocked(decodeEventFromStreamFields).mockReturnValue({
+                accepted: true,
+                value: { kind: "TRADE" } as any
+            })
+
+            const feed = new MarketFeed("TATA-INR", makeMockRedisClient() as any)
+            const listener = vi.fn()
+            feed.addListener(listener)
+
+            const callA = feed.readAndFanOut()
+            feed.readAndFanOut()
+
+            resolveFirstRead()
+            await callA
+
+            expect(listener).toHaveBeenCalledTimes(2)
+        })
+    })
 });

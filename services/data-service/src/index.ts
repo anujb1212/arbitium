@@ -4,13 +4,64 @@ import { readFromConsumerGroup } from "@arbitium/ts-engine-client/streams/readFr
 import { acknowledgeMessage } from "@arbitium/ts-engine-client/streams/acknowledgeMessage";
 import { decodeEventFromStreamFields } from "@arbitium/ts-shared/engine/wire/eventCodec";
 import { handleEvent } from "./eventHandler";
+import { reclaimPendingMessages } from "@arbitium/ts-engine-client/streams/reclaimPendingMessages";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 const MARKETS = (process.env.MARKETS ?? "TATA-INR,RELIANCE-INR,INFY-INR").split(",");
 const CONSUMER_GROUP = "db";
 const CONSUMER_NAME = `data-service-${process.pid}`;
 const STREAM_PREFIX = "arbitium:evt:";
-const BLOCK_MS = 5000;
+const POLL_BLOCK_MS = 200;
+const PEL_IDLE_MS = 30_000;
+const PEL_BATCH_SIZE = 50;
+
+async function drainPendingMessages(
+    client: ReturnType<InstanceType<typeof RedisManager>["getClient"]>,
+    streamKey: string
+): Promise<void> {
+    let startId = "0-0";
+
+    while (true) {
+        const { nextStartId, messages } = await reclaimPendingMessages({
+            client,
+            streamKey,
+            groupName: CONSUMER_GROUP,
+            consumerName: CONSUMER_NAME,
+            minIdleMs: PEL_IDLE_MS,
+            count: PEL_BATCH_SIZE,
+            startId,
+        });
+
+        await processMessages(client, streamKey, messages);
+
+        if (nextStartId === "0-0") break;
+        startId = nextStartId;
+    }
+}
+
+
+async function processMessages(
+    client: ReturnType<InstanceType<typeof RedisManager>["getClient"]>,
+    streamKey: string,
+    messages: Awaited<ReturnType<typeof readFromConsumerGroup>>
+): Promise<void> {
+    for (const message of messages) {
+        const decoded = decodeEventFromStreamFields(message.fields);
+
+        if (!decoded.accepted) {
+            console.error(`Malformed event ${message.id}: ${decoded.rejectReason}`);
+            await acknowledgeMessage({ client, streamKey, groupName: CONSUMER_GROUP, messageId: message.id });
+            continue;
+        }
+
+        try {
+            await handleEvent(decoded.value);
+            await acknowledgeMessage({ client, streamKey, groupName: CONSUMER_GROUP, messageId: message.id });
+        } catch (error) {
+            console.error(`Failed to handle event ${message.id}:`, error);
+        }
+    }
+}
 
 async function main(): Promise<void> {
     const redisManager = new RedisManager(REDIS_URL);
@@ -18,13 +69,12 @@ async function main(): Promise<void> {
     const client = redisManager.getClient();
 
     for (const market of MARKETS) {
-        await ensureConsumerGroup({
-            client,
-            streamKey: `${STREAM_PREFIX}${market}`,
-            groupName: CONSUMER_GROUP,
-            startId: "$",  // only new events from now
-        });
+        const streamKey = `${STREAM_PREFIX}${market}`;
+        await ensureConsumerGroup({ client, streamKey, groupName: CONSUMER_GROUP, startId: "0-0" })
         console.log(`Consumer group ensured for market: ${market}`);
+
+        await drainPendingMessages(client, streamKey);
+        console.log(`PEL drained for market: ${market}`);
     }
 
     console.log("data-service started — consuming event streams");
@@ -43,37 +93,10 @@ async function main(): Promise<void> {
                 groupName: CONSUMER_GROUP,
                 consumerName: CONSUMER_NAME,
                 count: 50,
-                blockMs: BLOCK_MS,
+                blockMs: POLL_BLOCK_MS,
             });
 
-            for (const message of messages) {
-                const decoded = decodeEventFromStreamFields(message.fields);
-
-                if (!decoded.accepted) {
-                    // Malformed event — ACK karo taaki PEL block na kare
-                    console.error(`Malformed event ${message.id}: ${decoded.rejectReason}`);
-                    await acknowledgeMessage({
-                        client,
-                        streamKey,
-                        groupName: CONSUMER_GROUP,
-                        messageId: message.id,
-                    });
-                    continue;
-                }
-
-                try {
-                    await handleEvent(decoded.value);
-                    await acknowledgeMessage({
-                        client,
-                        streamKey,
-                        groupName: CONSUMER_GROUP,
-                        messageId: message.id,
-                    });
-                } catch (error) {
-                    // Do NOT ACK — message stays in PEL for retry
-                    console.error(`Failed to handle event ${message.id}:`, error);
-                }
-            }
+            await processMessages(client, streamKey, messages);
         }
     }
 

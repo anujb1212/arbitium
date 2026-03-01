@@ -7616,6 +7616,7 @@ export namespace Prisma {
 
   export type TradeWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    makerOrderId_takerOrderId?: TradeMakerOrderIdTakerOrderIdCompoundUniqueInput
     AND?: TradeWhereInput | TradeWhereInput[]
     OR?: TradeWhereInput[]
     NOT?: TradeWhereInput | TradeWhereInput[]
@@ -7627,7 +7628,7 @@ export namespace Prisma {
     executedAt?: DateTimeFilter<"Trade"> | Date | string
     makerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
     takerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
-  }, "id">
+  }, "id" | "makerOrderId_takerOrderId">
 
   export type TradeOrderByWithAggregationInput = {
     id?: SortOrder
@@ -8460,6 +8461,11 @@ export namespace Prisma {
   export type OrderScalarRelationFilter = {
     is?: OrderWhereInput
     isNot?: OrderWhereInput
+  }
+
+  export type TradeMakerOrderIdTakerOrderIdCompoundUniqueInput = {
+    makerOrderId: string
+    takerOrderId: string
   }
 
   export type TradeCountOrderByAggregateInput = {

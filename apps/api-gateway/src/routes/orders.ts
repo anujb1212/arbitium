@@ -85,6 +85,28 @@ ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Reques
 
     const { id: orderId } = paramsResult.data
     const { market } = bodyResult.data
+    const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
+
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { userId: true, status: true, market: true },
+    })
+
+    if (!order || order.userId !== arbitiumUserId) {
+        res.status(404).json({ error: "Order not found" })
+        return
+    }
+
+    if (order.market !== market) {
+        res.status(400).json({ error: "Market mismatch" })
+        return
+    }
+
+    if (order.status !== "OPEN" && order.status !== "PARTIALLY_FILLED") {
+        res.status(409).json({ error: "Order is not cancellable" })
+        return
+    }
+
     const commandId = crypto.randomUUID()
 
     const command: CommandEnvelope = {

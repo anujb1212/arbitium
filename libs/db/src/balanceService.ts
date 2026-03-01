@@ -29,15 +29,22 @@ export type DebitBalanceArgs = {
     amountInPaise: bigint;
 };
 
-export type PartialConsumeArgs = {
-    prisma: PrismaClient;
+export type ConsumeOnFillArgs = {
+    tx: Prisma.TransactionClient;
     orderId: string;
     filledQty: bigint;
     fillPrice: bigint;
 };
 
+export type CreditFillProceedsArgs = {
+    tx: Prisma.TransactionClient;
+    orderId: string;
+    fillPrice: bigint;
+    fillQty: bigint;
+};
+
 function computeLockedAmount(side: OrderSide, price: bigint, qty: bigint): bigint {
-    return price * qty;
+    return side === "BUY" ? price * qty : 0n;
 }
 
 export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> {
@@ -100,6 +107,8 @@ export async function releaseLockForOrder(args: ReleaseOrConsumeArgs): Promise<v
         const order = await tx.order.findUnique({ where: { id: orderId } });
         if (!order) return;
 
+        if (order.status === "CANCELLED" || order.status === "FILLED" || order.status === "REJECTED") return
+
         const remainingLocked = order.lockedAmount - (order.price * order.filledQty);
 
         if (remainingLocked > 0n) {
@@ -119,31 +128,41 @@ export async function releaseLockForOrder(args: ReleaseOrConsumeArgs): Promise<v
     });
 }
 
-export async function consumeLockOnFill(args: PartialConsumeArgs): Promise<void> {
-    const { prisma, orderId, filledQty, fillPrice } = args;
+export async function consumeLockOnFill(args: ConsumeOnFillArgs): Promise<void> {
+    const { tx, orderId, filledQty, fillPrice } = args;
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const order = await tx.order.findUnique({ where: { id: orderId } });
-        if (!order) return;
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) return;
 
-        const fillCost = fillPrice * filledQty;
-        const newFilledQty = order.filledQty + filledQty;
-        const isFullyFilled = newFilledQty >= order.qty;
+    const fillCost = fillPrice * filledQty;
+    const newFilledQty = order.filledQty + filledQty;
+    const isFullyFilled = newFilledQty >= order.qty;
 
-        await tx.tradingBalance.update({
-            where: { userId: order.userId },
-            data: {
-                locked: { decrement: fillCost },
-            },
-        });
+    await tx.tradingBalance.update({
+        where: { userId: order.userId },
+        data: { locked: { decrement: fillCost } },
+    });
 
-        await tx.order.update({
-            where: { id: orderId },
-            data: {
-                filledQty: newFilledQty,
-                status: isFullyFilled ? "FILLED" : "PARTIALLY_FILLED",
-            },
-        });
+    await tx.order.update({
+        where: { id: orderId },
+        data: {
+            filledQty: newFilledQty,
+            status: isFullyFilled ? "FILLED" : "PARTIALLY_FILLED",
+        },
+    });
+}
+
+export async function creditFillProceeds(args: CreditFillProceedsArgs): Promise<void> {
+    const { tx, orderId, fillPrice, fillQty } = args;
+
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) return;
+
+    const proceeds = fillPrice * fillQty;
+
+    await tx.tradingBalance.update({
+        where: { userId: order.userId },
+        data: { available: { increment: proceeds } },
     });
 }
 

@@ -22,34 +22,40 @@ export function parseStreamReadReply(reply: unknown): StreamMessage[] {
         if (!Array.isArray(streamPart) || streamPart.length !== 2) throw new TypeError("REDIS_REPLY_INVALID")
 
         const entries = streamPart[1]
-        if (!Array.isArray(entries)) throw new TypeError("REDIS_REPLY_INVALID")
-
-        for (const entry of entries) {
-            if (!Array.isArray(entry) || entry.length !== 2) throw new TypeError("REDIS_REPLY_INVALID")
-
-            const messageId = entry[0]
-            const rawFields = entry[1]
-
-            if (typeof messageId !== "string" || messageId.length === 0) throw new TypeError("REDIS_REPLY_INVALID")
-            if (!Array.isArray(rawFields) || rawFields.length % 2 !== 0) throw new TypeError("REDIS_REPLY_INVALID")
-
-            const fields: Record<string, string> = {}
-            for (let i = 0; i < rawFields.length; i += 2) {
-                const fieldKey = rawFields[i]
-                const fieldValue = rawFields[i + 1]
-
-                if (typeof fieldKey !== "string" || fieldKey.length === 0) throw new TypeError("REDIS_REPLY_INVALID")
-                if (typeof fieldValue !== "string") throw new TypeError("REDIS_REPLY_INVALID")
-
-                fields[fieldKey] = fieldValue
-            }
-
-            messages.push({
-                id: messageId,
-                fields
-            })
-        }
+        messages.push(...parseRawStreamEntries(entries));
     }
 
     return messages
+}
+
+export function parseRawStreamEntries(entries: unknown): StreamMessage[] {
+    if (entries === null || entries === undefined) return [];
+    if (!Array.isArray(entries)) throw new TypeError("REDIS_REPLY_INVALID");
+
+    const messages: StreamMessage[] = [];
+
+    for (const entry of entries) {
+        if (!Array.isArray(entry) || entry.length !== 2) throw new TypeError("REDIS_REPLY_INVALID");
+
+        const messageId = entry[0];
+        const rawFields = entry[1];
+
+        if (typeof messageId !== "string" || messageId.length === 0) throw new TypeError("REDIS_REPLY_INVALID");
+        if (!Array.isArray(rawFields) || rawFields.length % 2 !== 0) throw new TypeError("REDIS_REPLY_INVALID");
+
+        const fields: Record<string, string> = {};
+        for (let i = 0; i < rawFields.length; i += 2) {
+            const fieldKey = rawFields[i];
+            const fieldValue = rawFields[i + 1];
+
+            if (typeof fieldKey !== "string" || fieldKey.length === 0) throw new TypeError("REDIS_REPLY_INVALID");
+            if (typeof fieldValue !== "string") throw new TypeError("REDIS_REPLY_INVALID");
+
+            fields[fieldKey] = fieldValue;
+        }
+
+        messages.push({ id: messageId, fields });
+    }
+
+    return messages;
 }

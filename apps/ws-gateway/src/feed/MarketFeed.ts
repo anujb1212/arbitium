@@ -6,16 +6,24 @@ import { STREAM_READ_COUNT, STREAM_READ_BLOCK_MS } from "../config";
 
 export type EventListener = (envelope: EventEnvelope) => void
 
+function getCurrentStreamId(): string {
+    return `${Date.now()}-0`
+}
+
+
 export class MarketFeed {
-    private lastSeenEventId: string = "0-0"
+    private lastSeenEventId: string
     private readonly listeners: Set<EventListener> = new Set()
     private readonly streamKey: string
+    private isReading: boolean = false
+    private readPending: boolean = false
 
     public constructor(
         private readonly market: string,
         private readonly client: RedisClient
     ) {
         this.streamKey = `arbitium:evt:${market}`
+        this.lastSeenEventId = getCurrentStreamId()
     }
 
     public addListener(listener: EventListener): void {
@@ -31,6 +39,24 @@ export class MarketFeed {
     }
 
     public async readAndFanOut(): Promise<void> {
+        if (this.isReading) {
+            this.readPending = true
+            return
+        }
+
+        this.isReading = true
+        try {
+            await this.doRead()
+        } finally {
+            this.isReading = false
+        }
+
+        if (this.readPending) {
+            this.readPending = false
+            await this.readAndFanOut()
+        }
+    }
+    private async doRead(): Promise<void> {
         const messages = await readStreamSince({
             client: this.client,
             streamKey: this.streamKey,

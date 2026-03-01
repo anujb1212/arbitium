@@ -101,6 +101,7 @@ model Trade {
 
     executedAt DateTime @default(now())
 
+    @@unique([makerOrderId, takerOrderId])
     @@index([market, executedAt])
     @@index([makerOrderId])
     @@index([takerOrderId])

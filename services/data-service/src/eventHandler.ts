@@ -1,5 +1,14 @@
 import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
-import { prisma, consumeLockOnFill, releaseLockForOrder } from "@arbitium/db";
+import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder } from "@arbitium/db";
+
+function isPrismaUniqueViolation(error: unknown): boolean {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002"
+    )
+}
 
 export async function handleEvent(event: EventEnvelope): Promise<void> {
     switch (event.kind) {
@@ -18,33 +27,25 @@ export async function handleEvent(event: EventEnvelope): Promise<void> {
 async function handleTrade(
     event: Extract<EventEnvelope, { kind: "TRADE" }>
 ): Promise<void> {
-    const { makerOrderId, takerOrderId, price, qty } = event.payload;
+    const { makerOrderId, takerOrderId, price, qty, takerSide } = event.payload;
 
-    const existing = await prisma.trade.findFirst({
-        where: { makerOrderId, takerOrderId, price, qty },
-        select: { id: true },
-    });
-    if (existing) return;
+    const buyOrderId = takerSide === "BUY" ? takerOrderId : makerOrderId;
+    const sellOrderId = takerSide === "SELL" ? takerOrderId : makerOrderId;
 
-    await prisma.$transaction(async (tx: typeof prisma) => {
-        await tx.trade.create({
-            data: { market: event.market, makerOrderId, takerOrderId, price, qty },
+    try {
+        await prisma.$transaction(async (tx) => {
+            await tx.trade.create({
+                data: { market: event.market, makerOrderId, takerOrderId, price, qty },
+            });
+
+            await consumeLockOnFill({ tx, orderId: buyOrderId, filledQty: qty, fillPrice: price });
+
+            await creditFillProceeds({ tx, orderId: sellOrderId, fillPrice: price, fillQty: qty });
         });
-
-        await consumeLockOnFill({
-            prisma: tx,
-            orderId: makerOrderId,
-            filledQty: qty,
-            fillPrice: price,
-        });
-
-        await consumeLockOnFill({
-            prisma: tx,
-            orderId: takerOrderId,
-            filledQty: qty,
-            fillPrice: price,
-        });
-    });
+    } catch (error: unknown) {
+        if (isPrismaUniqueViolation(error)) return;
+        throw error;
+    }
 }
 
 async function handleBookDelta(
