@@ -17,19 +17,23 @@ let commandManager: RedisManager | null = null
 let pubSubClient: ReturnType<typeof createClient> | null = null
 
 export async function connectRedis(redisUrl: string): Promise<void> {
-    try {
-        commandManager = new RedisManager(redisUrl);
-        await commandManager.connect();
+    const manager = new RedisManager(redisUrl);
+    await manager.connect();
 
-        pubSubClient = createClient({ url: redisUrl });
-        pubSubClient.on("error", (err) => console.error("[Redis:pubsub] error:", err))
-        await pubSubClient.connect()
+    const pubSub = createClient({ url: redisUrl });
+    pubSub.on("error", (err) => console.error("[Redis:pubsub] error:", err))
+
+    try {
+        await pubSub.connect()
     } catch (err) {
-        commandManager = null
-        pubSubClient = null
-        throw new Error(`Redis connection failed (${redisUrl}): ${err}`)
+        await manager.close()
+        throw new Error(`Redis pubsub connection failed (${redisUrl}): ${err}`)
     }
+
+    commandManager = manager
+    pubSubClient = pubSub
 }
+
 
 export function getCommandClient(): RedisClient {
     if (!commandManager) throw new Error("Redis command client not connected");

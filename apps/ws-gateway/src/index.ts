@@ -11,6 +11,14 @@ async function main(): Promise<void> {
     const feedManager = new MarketFeedManager(getCommandClient(), getPubSubClient())
     const wss = new WebSocketServer({ port: WS_PORT })
 
+    wss.on("listening", () => {
+        console.log(`[ws-gateway] Listening on port ${WS_PORT}`)
+    })
+
+    wss.on("error", (err) => {
+        console.error("[ws-gateway] Server error:", err)
+    })
+
     wss.on("connection", (socket: WebSocket) => {
         const session = new ClientSession(socket)
 
@@ -20,29 +28,31 @@ async function main(): Promise<void> {
             })
         })
 
-        socket.on("close", () => {
-            for (const market of Array.from(session.getSubscriptions())) {
+        Promise.all(
+            Array.from(session.getSubscriptions()).map((market) =>
                 feedManager.unsubscribeMarket(market, session.onEvent).catch((err) => {
-                    console.error(`[WS] unsubscribe cleanup error for ${market} :`, err)
+                    console.error(`[WS] unsubscribe cleanup error for ${market}:`, err)
                 })
-            }
-        })
-
-        socket.on("error", (err) => {
-            console.error("[ws] socket error: ", err)
-        })
-
-        console.log(`[ws-gateway] Listening on port ${WS_PORT}`)
+            )
+        ).catch(() => { })
     })
-}
 
-const shutdown = async (): Promise<void> => {
-    await disconnectRedis()
-    process.exit(0)
-}
+    const shutdown = async (): Promise<void> => {
+        console.log("[ws-gateway] Shutting down...")
 
-process.once("SIGINT", shutdown)
-process.once("SIGTERM", shutdown)
+        wss.close()
+
+        for (const socket of wss.clients) {
+            socket.terminate()
+        }
+
+        await disconnectRedis()
+        process.exit(0)
+    }
+
+    process.once("SIGINT", () => { shutdown().catch(console.error) })
+    process.once("SIGTERM", () => { shutdown().catch(console.error) })
+}
 
 main().catch((err) => {
     console.error("[ws-gateway] Fatal:", err);
