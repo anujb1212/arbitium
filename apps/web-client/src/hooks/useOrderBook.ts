@@ -8,10 +8,11 @@ type OrderBookState = {
     bids: Map<string, bigint>;
     asks: Map<string, bigint>;
     orderMap: Map<string, OrderEntry>;
+    seenEventIds: Set<string>;
 };
 
 type Action =
-    | { type: "DELTA"; payload: WireBookDeltaPayload }
+    | { type: "DELTA"; payload: WireBookDeltaPayload; eventId?: string }
     | { type: "SEED"; bids: Map<string, bigint>; asks: Map<string, bigint> }
     | { type: "RESET" };
 
@@ -23,7 +24,12 @@ export type DisplayLevel = {
 };
 
 function createInitialState(): OrderBookState {
-    return { bids: new Map(), asks: new Map(), orderMap: new Map() };
+    return {
+        bids: new Map(),
+        asks: new Map(),
+        orderMap: new Map(),
+        seenEventIds: new Set()
+    };
 }
 
 function decrementLevelQty(
@@ -50,11 +56,11 @@ function applyDelta(state: OrderBookState, payload: WireBookDeltaPayload): Order
     }
 
     if (payload.type === "FILL") {
-        const { makerOrderId, price, qty } = payload;
+        const { makerOrderId, qty } = payload;
         const qtyBig = BigInt(qty);
         const entry = orderMap.get(makerOrderId);
 
-        if (!entry) return { bids, asks, orderMap }
+        if (!entry) return { bids, asks, orderMap, seenEventIds: state.seenEventIds };
 
         const levels = entry.side === "BUY" ? bids : asks;
         const newRemaining = entry.remainingQty - qtyBig;
@@ -68,26 +74,41 @@ function applyDelta(state: OrderBookState, payload: WireBookDeltaPayload): Order
     if (payload.type === "CANCEL") {
         const levels = payload.side === "BUY" ? bids : asks;
         const qtyBig = BigInt(payload.qty);
-
         decrementLevelQty(levels, payload.price, qtyBig);
         orderMap.delete(payload.orderId);
-        return { bids, asks, orderMap };
     }
 
-    return { bids, asks, orderMap };
+    return { bids, asks, orderMap, seenEventIds: state.seenEventIds };
 }
+
+const MAX_SEEN_EVENT_IDS = 2000;
 
 function reducer(state: OrderBookState, action: Action): OrderBookState {
     if (action.type === "SEED") {
         return {
             bids: action.bids,
             asks: action.asks,
-            orderMap: new Map()
-        }
+            orderMap: new Map(),
+            seenEventIds: new Set()
+        };
     }
 
     if (action.type === "RESET") return createInitialState();
-    return applyDelta(state, action.payload);
+
+    // DELTA
+    if (action.eventId && state.seenEventIds.has(action.eventId)) return state;
+
+    const next = applyDelta(state, action.payload);
+
+    if (!action.eventId) return next;
+
+    const seenEventIds = new Set(state.seenEventIds);
+    seenEventIds.add(action.eventId);
+    if (seenEventIds.size > MAX_SEEN_EVENT_IDS) {
+        seenEventIds.delete(seenEventIds.values().next().value!);
+    }
+
+    return { ...next, seenEventIds };
 }
 
 const DISPLAY_LEVELS = 15;
@@ -104,7 +125,7 @@ function toDisplayLevels(
 
     const levels = side === "BUY"
         ? descSorted.slice(0, limit)
-        : descSorted.reverse().slice(0, limit);  // ascending for asks
+        : descSorted.reverse().slice(0, limit);
 
     let running = 0n;
     const withTotals = levels.map(([price, qty]) => {
@@ -122,9 +143,9 @@ function toDisplayLevels(
 export type UseOrderBookResult = {
     bids: DisplayLevel[];
     asks: DisplayLevel[];
-    dispatchDelta: (payload: WireBookDeltaPayload) => void;
+    dispatchDelta: (payload: WireBookDeltaPayload, eventId?: string) => void;
     resetBook: () => void;
-    seedBook: (snapshot: DepthSnapshot) => void
+    seedBook: (snapshot: DepthSnapshot) => void;
 };
 
 export function useOrderBook(): UseOrderBookResult {
@@ -136,10 +157,10 @@ export function useOrderBook(): UseOrderBookResult {
         for (const { price, qty } of snapshot.bids) bids.set(price, BigInt(qty));
         for (const { price, qty } of snapshot.asks) asks.set(price, BigInt(qty));
         dispatch({ type: "SEED", bids, asks });
-    }, [])
+    }, []);
 
-    const dispatchDelta = useCallback((payload: WireBookDeltaPayload): void => {
-        dispatch({ type: "DELTA", payload });
+    const dispatchDelta = useCallback((payload: WireBookDeltaPayload, eventId?: string): void => {
+        dispatch({ type: "DELTA", payload, eventId });
     }, []);
 
     const resetBook = useCallback((): void => {

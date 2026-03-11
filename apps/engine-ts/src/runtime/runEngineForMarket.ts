@@ -12,6 +12,7 @@ import { prisma } from "@arbitium/db";
 
 const READ_COUNT = 10;
 const BLOCK_MS = 2000;
+const DEPTH_SNAPSHOT_LEVELS = 20;
 
 async function processMessage(params: {
     client: EngineContext["client"]
@@ -24,7 +25,6 @@ async function processMessage(params: {
     const { client, config, orderBook, getBookSeq, setBookSeq, message } = params
 
     const decoded = decodeCommandFromStreamFields(message.fields)
-
     if (!decoded.accepted) {
         await acknowledgeMessage({
             client,
@@ -36,6 +36,8 @@ async function processMessage(params: {
     }
 
     try {
+        const engineStartMs = performance.now()
+
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
             command: decoded.value,
@@ -43,37 +45,48 @@ async function processMessage(params: {
         })
 
         let lastEventId: string | null = null
-        for (const event of events) {
-            lastEventId = await appendToStream({
-                client,
-                streamKey: config.eventStreamKey,
-                fields: encodeEventToStreamFields(event)
-            })
-        }
-
-        if (lastEventId !== null) {
-            await client.sendCommand(["PUBLISH", `evtPing:${config.market}`, lastEventId])
+        if (events.length > 0) {
+            const eventIds = await Promise.all(
+                events.map((event) =>
+                    appendToStream({
+                        client,
+                        streamKey: config.eventStreamKey,
+                        fields: encodeEventToStreamFields(event)
+                    })
+                )
+            )
+            lastEventId = eventIds[eventIds.length - 1] ?? null
         }
 
         setBookSeq(nextBookSeq)
 
-        const DEPTH_SNAPSHOT_LEVELS = 20;
+        const depthJson = JSON.stringify(
+            orderBook.getDepth(DEPTH_SNAPSHOT_LEVELS),
+            (_k, v) => (typeof v === "bigint" ? v.toString() : v)
+        )
 
-        const depthSnapshot = orderBook.getDepth(DEPTH_SNAPSHOT_LEVELS);
-        await client.sendCommand([
-            "SET",
-            `arbitium:depth:${config.market}`,
-            JSON.stringify(depthSnapshot, (_k, v) =>
-                typeof v === "bigint" ? v.toString() : v
-            )
+        await Promise.all([
+            lastEventId !== null
+                ? client.sendCommand(["PUBLISH", `evtPing:${config.market}`, lastEventId])
+                : Promise.resolve(),
+            client.sendCommand(["SET", `arbitium:depth:${config.market}`, depthJson]),
+            acknowledgeMessage({
+                client,
+                streamKey: config.commandStreamKey,
+                groupName: config.consumerGroupName,
+                messageId: message.id
+            })
         ])
 
-        await acknowledgeMessage({
-            client,
-            streamKey: config.commandStreamKey,
-            groupName: config.consumerGroupName,
-            messageId: message.id
-        })
+        const cmdWriteTs = parseInt(message.id.split("-")[0]!, 10)
+        const cmdToEngineMs = Date.now() - cmdWriteTs
+        const engineInternalMs = performance.now() - engineStartMs
+        console.log(
+            `[latency] market=${config.market}` +
+            ` events=${events.length}` +
+            ` cmd→engine=${cmdToEngineMs}ms` +
+            ` engine_internal=${engineInternalMs.toFixed(1)}ms`
+        )
 
     } catch (error) {
         console.error(`[engine] processMessage failed for ${message.id} in ${config.market}:`, error)
@@ -103,7 +116,6 @@ async function clearPendingCommandMessages(params: {
         if (pendingReply.length === 0) break;
 
         const messageIds = pendingReply.map((entry) => entry[0]);
-
         await client.sendCommand([
             "XACK",
             config.commandStreamKey,
@@ -158,17 +170,13 @@ async function rehydrateOrderBook(params: {
         });
     }
 
-    const DEPTH_SNAPSHOT_LEVELS = 20;
-    const depthSnapshot = orderBook.getDepth(DEPTH_SNAPSHOT_LEVELS);
-    await client.sendCommand([
-        "SET",
-        `arbitium:depth:${config.market}`,
-        JSON.stringify(depthSnapshot, (_k, v) =>
-            typeof v === "bigint" ? v.toString() : v
-        )
-    ]);
+    const depthJson = JSON.stringify(
+        orderBook.getDepth(DEPTH_SNAPSHOT_LEVELS),
+        (_k, v) => (typeof v === "bigint" ? v.toString() : v)
+    )
+    await client.sendCommand(["SET", `arbitium:depth:${config.market}`, depthJson])
 
-    console.log(`[engine rehydrate] market=${config.market} orders=${openOrders.length} bookSeq=${bookSeq}`);
+    console.log(`[engine rehydrate] market=${config.market} orders=${openOrders.length} bookSeq=${bookSeq}`)
     return bookSeq;
 }
 

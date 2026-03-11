@@ -2,6 +2,8 @@ import { MarketFeed, EventListener } from "./MarketFeed";
 import type { RedisClient } from "@arbitium/ts-engine-client/redis/types";
 import type { PubSubClient } from "../redis";
 
+const MAX_REPLAY_LOOKBACK_MS = 5 * 60 * 1000
+
 export class MarketFeedManager {
     private readonly feeds: Map<string, MarketFeed> = new Map()
 
@@ -10,7 +12,7 @@ export class MarketFeedManager {
         private readonly pubSubClient: PubSubClient
     ) { }
 
-    public async subscribeMarket(market: string, listener: EventListener): Promise<void> {
+    public async subscribeMarket(market: string, listener: EventListener, fromEventId?: string): Promise<void> {
         let feed = this.feeds.get(market)
 
         if (!feed) {
@@ -31,6 +33,16 @@ export class MarketFeedManager {
         }
 
         feed.addListener(listener)
+
+        if (fromEventId) {
+            const eventTimestampMs = parseInt(fromEventId.split("-")[0], 10)
+            const isRecentEnough = !isNaN(eventTimestampMs) &&
+                (Date.now() - eventTimestampMs) < MAX_REPLAY_LOOKBACK_MS
+            if (isRecentEnough) {
+                await feed.replayTo(listener, fromEventId)
+            }
+        }
+
         await feed.readAndFanOut()
     }
 

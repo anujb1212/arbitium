@@ -4,6 +4,8 @@ import type { RedisClient } from "@arbitium/ts-engine-client/redis/types";
 import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
 import { STREAM_READ_COUNT, STREAM_READ_BLOCK_MS } from "../config";
 
+const MAX_LISTENERS_PER_FEED = 500
+
 export type EventListener = (envelope: EventEnvelope) => void
 
 export class MarketFeed {
@@ -27,6 +29,9 @@ export class MarketFeed {
     }
 
     public addListener(listener: EventListener): void {
+        if (this.listeners.size >= MAX_LISTENERS_PER_FEED) {
+            throw new Error(`MarketFeed:${this.market} listener cap reached`)
+        }
         this.listeners.add(listener)
     }
 
@@ -54,6 +59,29 @@ export class MarketFeed {
             this.isReading = false
         }
     }
+
+    public async replayTo(listener: EventListener, fromEventId: string): Promise<void> {
+        let cursorId = fromEventId
+        while (true) {
+            const messages = await readStreamSince({
+                client: this.client,
+                streamKey: this.streamKey,
+                fromId: cursorId,
+                count: STREAM_READ_COUNT,
+                blockMs: 0
+            })
+            if (messages.length === 0) break
+            for (const message of messages) {
+                const result = decodeEventFromStreamFields({ ...message.fields, eventId: message.id })
+                if (!result.accepted) continue
+                try { listener(result.value) }
+                catch (err) { console.error(`MarketFeed:${this.market} replayTo listener threw`, err) }
+                cursorId = message.id
+            }
+            if (messages.length < STREAM_READ_COUNT) break
+        }
+    }
+
     private async doRead(): Promise<void> {
         const messages = await readStreamSince({
             client: this.client,
@@ -80,7 +108,13 @@ export class MarketFeed {
                 continue
             }
 
-            for (const listener of this.listeners) listener(result.value)
+            for (const listener of this.listeners) {
+                try {
+                    listener(result.value)
+                } catch (err) {
+                    console.error(`MarketFeed:${this.market} listener threw`, err)
+                }
+            }
         }
     }
 }

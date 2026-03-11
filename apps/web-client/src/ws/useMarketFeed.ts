@@ -9,6 +9,7 @@ export type FeedCallback = (event: WireEventEnvelope) => void
 
 export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromEventId?: string): void {
     const wsRef = useRef<WebSocket | null>(null)
+    const lastSeenEventIdRef = useRef<string | null>(null)
     const reconnectDelayRef = useRef(BASE_DELAY_MS)
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const onEventRef = useRef(onEvent)
@@ -29,7 +30,7 @@ export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromE
             ws.send(JSON.stringify({
                 type: "subscribe",
                 market,
-                fromEventId: resumeFromEventId ?? null
+                fromEventId: lastSeenEventIdRef.current
             }))
         }
 
@@ -42,6 +43,7 @@ export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromE
             }
 
             if (msg.type === "event") {
+                if (msg.data.eventId) lastSeenEventIdRef.current = msg.data.eventId
                 onEventRef.current(msg.data)
             }
         }

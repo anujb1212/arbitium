@@ -13,10 +13,8 @@ function truncateId(orderId: string): string {
     return `${orderId.slice(0, 8)}…`;
 }
 
-export function OpenOrdersPanel(props: Props): React.JSX.Element {
-    const { config, openOrders } = props;
+export function OpenOrdersPanel({ config, openOrders }: Props): React.JSX.Element {
     const [cancelingIds, setCancelingIds] = useState<Set<string>>(() => new Set());
-
     const rows = useMemo(() => openOrders, [openOrders]);
 
     async function handleCancel(orderId: string): Promise<void> {
@@ -37,66 +35,79 @@ export function OpenOrdersPanel(props: Props): React.JSX.Element {
     }
 
     return (
-        <div className="bg-panel border-t border-line">
-            <div className="px-5 py-2 flex items-center justify-between">
-                <div className="text-[11px] font-semibold text-lo uppercase tracking-wider">
+        <div className="flex flex-col h-full bg-panel overflow-hidden">
+            <div className="flex items-center border-b border-line flex-shrink-0 px-2">
+                <div className="flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-medium border-b-2 border-accent text-hi">
                     Open Orders
+                    {rows.length > 0 && (
+                        <span className="bg-accent/20 text-accent text-[10px] font-mono px-1.5 py-0.5 rounded-full">
+                            {rows.length}
+                        </span>
+                    )}
                 </div>
-                <div className="text-[11px] font-mono text-mid">{rows.length}</div>
             </div>
 
-            {rows.length === 0 ? (
-                <div className="px-5 pb-3 text-[12px] text-mid">No open orders</div>
-            ) : (
-                <div className="px-3 pb-3">
-                    <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[11px] text-lo min-w-[720px]">
-                        <div className="col-span-3">Order</div>
-                        <div className="col-span-2">Side</div>
-                        <div className="col-span-3">Price</div>
-                        <div className="col-span-2">Rem</div>
-                        <div className="col-span-2 text-right">Action</div>
+            <div className="flex-1 overflow-auto min-h-0">
+                {rows.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-[12px] text-lo">
+                        No open orders
                     </div>
-
-                    <div className="max-h-[180px] overflow-auto min-h-0">
-                        {rows.map((order) => {
-                            const sideColor = order.side === "BUY" ? "text-bull" : "text-bear";
-                            const canceling = cancelingIds.has(order.orderId);
-                            const canCancel = order.status === "OPEN" && !canceling;
-                            const statusText = order.status === "SUBMITTING" ? "Submitting" : "Open";
-
-                            return (
-                                <div
-                                    key={order.orderId}
-                                    className="grid grid-cols-12 gap-2 items-center px-2 py-1.5 border-t border-line/60 min-w-[720px]">
-                                    <div className="col-span-3 font-mono text-[12px] text-hi">
-                                        {truncateId(order.orderId)}
-                                        <span className="ml-2 text-[10px] text-lo/70">{statusText}</span>
-                                    </div>
-                                    <div className={`col-span-2 font-semibold ${sideColor}`}>
-                                        {order.side}
-                                    </div>
-                                    <div className="col-span-3 font-mono text-[12px] text-hi">
-                                        {formatPrice(order.price, config.priceScale)}
-                                    </div>
-                                    <div className="col-span-2 font-mono text-[12px] text-hi">
-                                        {formatQty(order.remainingQty, config.qtyScale)}
-                                    </div>
-                                    <div className="col-span-2 flex justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCancel(order.orderId)}
-                                            disabled={!canCancel}
-                                            className="px-2.5 py-1 rounded border border-line bg-raised text-[11px] font-semibold text-bear hover:bg-bear/10 disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            {canceling ? "Canceling…" : order.status === "OPEN" ? "Cancel" : "Pending"}
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+                ) : (
+                    <table className="w-full min-w-[640px] text-[12px]">
+                        <thead className="sticky top-0 bg-panel border-b border-line">
+                            <tr>
+                                <th className="text-left px-4 py-2 text-[11px] font-medium text-lo">Order ID</th>
+                                <th className="text-left px-4 py-2 text-[11px] font-medium text-lo">Side</th>
+                                <th className="text-right px-4 py-2 text-[11px] font-medium text-lo">Price</th>
+                                <th className="text-right px-4 py-2 text-[11px] font-medium text-lo">Remaining</th>
+                                <th className="text-right px-4 py-2 text-[11px] font-medium text-lo">Status</th>
+                                <th className="text-right px-4 py-2 text-[11px] font-medium text-lo">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((order) => {
+                                const canceling = cancelingIds.has(order.orderId);
+                                const canCancel = order.status === "OPEN" && !canceling;
+                                return (
+                                    <tr key={order.orderId} className="border-b border-line/40 hover:bg-raised/50">
+                                        <td className="px-4 py-2 font-mono text-mid">
+                                            {truncateId(order.orderId)}
+                                        </td>
+                                        <td className={`px-4 py-2 font-semibold
+                                            ${order.side === "BUY" ? "text-bull" : "text-bear"}`}>
+                                            {order.side}
+                                        </td>
+                                        <td className="px-4 py-2 font-mono text-hi text-right">
+                                            {formatPrice(order.price, config.priceScale)}
+                                        </td>
+                                        <td className="px-4 py-2 font-mono text-hi text-right">
+                                            {formatQty(order.remainingQty, config.qtyScale)}
+                                        </td>
+                                        <td className="px-4 py-2 text-right">
+                                            <span className={`text-[11px] font-medium
+                                                ${order.status === "OPEN" ? "text-bull" : "text-mid"}`}>
+                                                {order.status === "OPEN" ? "Open" : "Submitting"}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2 text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCancel(order.orderId)}
+                                                disabled={!canCancel}
+                                                className="px-2.5 py-1 rounded border border-bear/40 text-bear
+                                                    text-[11px] font-medium hover:bg-bear/10 disabled:opacity-30
+                                                    disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                {canceling ? "Canceling…" : canCancel ? "Cancel" : "—"}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                )}
+            </div>
         </div>
-    );
+    )
 }
