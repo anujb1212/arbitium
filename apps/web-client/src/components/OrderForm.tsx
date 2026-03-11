@@ -1,9 +1,6 @@
 import React, { useState, useId } from 'react'
 import type { MarketConfig } from '../types/market'
-import { formatPrice } from '../lib/format';
 import { placeLimitOrder } from '../lib/apiClient';
-
-
 
 type Side = 'BUY' | 'SELL'
 type Status =
@@ -35,15 +32,25 @@ export function OrderForm({ config, onPlaceSubmitted, onPlaceAccepted, onPlaceFa
 
 
     const placing = placeStatus.tag === 'submitting'
-    const pricePreviewText = price ? `≈ ${formatPrice(price, config.priceScale)}` : '—'
+    const pricePreviewText = price
+        ? `= ${config.currency} ${parseFloat(price).toFixed(config.priceScale)}`
+        : '--'
     const pricePreviewColor = price ? 'text-mid' : 'text-lo/70'
+
+    function toFixedPoint(humanPrice: string, scale: number): string {
+        const [intPart = "0", fracPart = ""] = humanPrice.split(".")
+        const paddedFrac = fracPart.slice(0, scale).padEnd(scale, "0")
+        const combined = `${intPart}${paddedFrac}`
+        return String(BigInt(combined))
+    }
 
     async function handlePlace(e: React.FormEvent): Promise<void> {
         e.preventDefault()
         if (!price || !qty) return
 
+        const priceInFixed = toFixedPoint(price, config.priceScale)
         const orderId = crypto.randomUUID()
-        onPlaceSubmitted?.({ orderId, side, price, qty })
+        onPlaceSubmitted?.({ orderId, side, price: priceInFixed, qty })
 
         setPlaceStatus({ tag: 'submitting' })
         try {
@@ -51,7 +58,7 @@ export function OrderForm({ config, onPlaceSubmitted, onPlaceAccepted, onPlaceFa
                 market: config.market,
                 orderId,
                 side,
-                price,
+                price: priceInFixed,
                 qty,
             })
             setPlaceStatus({ tag: 'success', commandId: res.commandId })
@@ -60,13 +67,11 @@ export function OrderForm({ config, onPlaceSubmitted, onPlaceAccepted, onPlaceFa
             setQty('')
             setTimeout(() => setPlaceStatus({ tag: 'idle' }), 3000)
         } catch (err) {
-            setPlaceStatus({ tag: 'error', message: (err as Error).message })
             const message = (err as Error).message
             setPlaceStatus({ tag: 'error', message })
             onPlaceFailed?.({ orderId, message })
         }
     }
-
 
     return (
         <div className="px-5 py-3.5 bg-panel">
@@ -86,13 +91,16 @@ export function OrderForm({ config, onPlaceSubmitted, onPlaceAccepted, onPlaceFa
                 <div className="flex gap-2">
                     <div className="flex flex-col gap-1 flex-1">
                         <label htmlFor={priceId} className="text-[11px] text-lo">
-                            Price <span className="text-lo/60">(paise)</span>
+                            Price <span className="text-lo/60">({config.currency})</span>
                         </label>
                         <input id={priceId} className={inputCls}
-                            type="text" inputMode="numeric"
-                            placeholder="e.g. 70000 = ₹700.00"
+                            type="text" inputMode="decimal"
+                            placeholder="e.g. 100.00"
                             value={price} disabled={placing} autoComplete="off"
-                            onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))} />
+                            onChange={(e) => {
+                                const val = e.target.value
+                                if (/^\d*\.?\d*$/.test(val)) setPrice(val)
+                            }} />
                     </div>
                     <div className="flex flex-col gap-1 flex-1">
                         <label htmlFor={qtyId} className="text-[11px] text-lo">

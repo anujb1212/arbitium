@@ -58,6 +58,7 @@ export type OrderSide = (typeof OrderSide)[keyof typeof OrderSide]
 
 export const OrderStatus: {
   OPEN: 'OPEN',
+  PENDING: 'PENDING',
   FILLED: 'FILLED',
   PARTIALLY_FILLED: 'PARTIALLY_FILLED',
   CANCELLED: 'CANCELLED',
@@ -4979,6 +4980,7 @@ export namespace Prisma {
     takerOrderId: string | null
     price: bigint | null
     qty: bigint | null
+    takerSide: $Enums.OrderSide | null
     executedAt: Date | null
   }
 
@@ -4989,6 +4991,7 @@ export namespace Prisma {
     takerOrderId: string | null
     price: bigint | null
     qty: bigint | null
+    takerSide: $Enums.OrderSide | null
     executedAt: Date | null
   }
 
@@ -4999,6 +5002,7 @@ export namespace Prisma {
     takerOrderId: number
     price: number
     qty: number
+    takerSide: number
     executedAt: number
     _all: number
   }
@@ -5021,6 +5025,7 @@ export namespace Prisma {
     takerOrderId?: true
     price?: true
     qty?: true
+    takerSide?: true
     executedAt?: true
   }
 
@@ -5031,6 +5036,7 @@ export namespace Prisma {
     takerOrderId?: true
     price?: true
     qty?: true
+    takerSide?: true
     executedAt?: true
   }
 
@@ -5041,6 +5047,7 @@ export namespace Prisma {
     takerOrderId?: true
     price?: true
     qty?: true
+    takerSide?: true
     executedAt?: true
     _all?: true
   }
@@ -5138,6 +5145,7 @@ export namespace Prisma {
     takerOrderId: string
     price: bigint
     qty: bigint
+    takerSide: $Enums.OrderSide
     executedAt: Date
     _count: TradeCountAggregateOutputType | null
     _avg: TradeAvgAggregateOutputType | null
@@ -5167,6 +5175,7 @@ export namespace Prisma {
     takerOrderId?: boolean
     price?: boolean
     qty?: boolean
+    takerSide?: boolean
     executedAt?: boolean
     makerOrder?: boolean | OrderDefaultArgs<ExtArgs>
     takerOrder?: boolean | OrderDefaultArgs<ExtArgs>
@@ -5179,6 +5188,7 @@ export namespace Prisma {
     takerOrderId?: boolean
     price?: boolean
     qty?: boolean
+    takerSide?: boolean
     executedAt?: boolean
     makerOrder?: boolean | OrderDefaultArgs<ExtArgs>
     takerOrder?: boolean | OrderDefaultArgs<ExtArgs>
@@ -5191,6 +5201,7 @@ export namespace Prisma {
     takerOrderId?: boolean
     price?: boolean
     qty?: boolean
+    takerSide?: boolean
     executedAt?: boolean
     makerOrder?: boolean | OrderDefaultArgs<ExtArgs>
     takerOrder?: boolean | OrderDefaultArgs<ExtArgs>
@@ -5203,10 +5214,11 @@ export namespace Prisma {
     takerOrderId?: boolean
     price?: boolean
     qty?: boolean
+    takerSide?: boolean
     executedAt?: boolean
   }
 
-  export type TradeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "market" | "makerOrderId" | "takerOrderId" | "price" | "qty" | "executedAt", ExtArgs["result"]["trade"]>
+  export type TradeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "market" | "makerOrderId" | "takerOrderId" | "price" | "qty" | "takerSide" | "executedAt", ExtArgs["result"]["trade"]>
   export type TradeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     makerOrder?: boolean | OrderDefaultArgs<ExtArgs>
     takerOrder?: boolean | OrderDefaultArgs<ExtArgs>
@@ -5233,6 +5245,7 @@ export namespace Prisma {
       takerOrderId: string
       price: bigint
       qty: bigint
+      takerSide: $Enums.OrderSide
       executedAt: Date
     }, ExtArgs["result"]["trade"]>
     composites: {}
@@ -5665,6 +5678,7 @@ export namespace Prisma {
     readonly takerOrderId: FieldRef<"Trade", 'String'>
     readonly price: FieldRef<"Trade", 'BigInt'>
     readonly qty: FieldRef<"Trade", 'BigInt'>
+    readonly takerSide: FieldRef<"Trade", 'OrderSide'>
     readonly executedAt: FieldRef<"Trade", 'DateTime'>
   }
     
@@ -8439,6 +8453,7 @@ export namespace Prisma {
     takerOrderId: 'takerOrderId',
     price: 'price',
     qty: 'qty',
+    takerSide: 'takerSide',
     executedAt: 'executedAt'
   };
 
@@ -8889,6 +8904,7 @@ export namespace Prisma {
     takerOrderId?: StringFilter<"Trade"> | string
     price?: BigIntFilter<"Trade"> | bigint | number
     qty?: BigIntFilter<"Trade"> | bigint | number
+    takerSide?: EnumOrderSideFilter<"Trade"> | $Enums.OrderSide
     executedAt?: DateTimeFilter<"Trade"> | Date | string
     makerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
     takerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
@@ -8901,6 +8917,7 @@ export namespace Prisma {
     takerOrderId?: SortOrder
     price?: SortOrder
     qty?: SortOrder
+    takerSide?: SortOrder
     executedAt?: SortOrder
     makerOrder?: OrderOrderByWithRelationInput
     takerOrder?: OrderOrderByWithRelationInput
@@ -8917,6 +8934,7 @@ export namespace Prisma {
     takerOrderId?: StringFilter<"Trade"> | string
     price?: BigIntFilter<"Trade"> | bigint | number
     qty?: BigIntFilter<"Trade"> | bigint | number
+    takerSide?: EnumOrderSideFilter<"Trade"> | $Enums.OrderSide
     executedAt?: DateTimeFilter<"Trade"> | Date | string
     makerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
     takerOrder?: XOR<OrderScalarRelationFilter, OrderWhereInput>
@@ -8929,6 +8947,7 @@ export namespace Prisma {
     takerOrderId?: SortOrder
     price?: SortOrder
     qty?: SortOrder
+    takerSide?: SortOrder
     executedAt?: SortOrder
     _count?: TradeCountOrderByAggregateInput
     _avg?: TradeAvgOrderByAggregateInput
@@ -8947,6 +8966,7 @@ export namespace Prisma {
     takerOrderId?: StringWithAggregatesFilter<"Trade"> | string
     price?: BigIntWithAggregatesFilter<"Trade"> | bigint | number
     qty?: BigIntWithAggregatesFilter<"Trade"> | bigint | number
+    takerSide?: EnumOrderSideWithAggregatesFilter<"Trade"> | $Enums.OrderSide
     executedAt?: DateTimeWithAggregatesFilter<"Trade"> | Date | string
   }
 
@@ -9369,6 +9389,7 @@ export namespace Prisma {
     market: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
     makerOrder: OrderCreateNestedOneWithoutTradesInput
     takerOrder: OrderCreateNestedOneWithoutTakerTradesInput
@@ -9381,6 +9402,7 @@ export namespace Prisma {
     takerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -9389,6 +9411,7 @@ export namespace Prisma {
     market?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     makerOrder?: OrderUpdateOneRequiredWithoutTradesNestedInput
     takerOrder?: OrderUpdateOneRequiredWithoutTakerTradesNestedInput
@@ -9401,6 +9424,7 @@ export namespace Prisma {
     takerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -9411,6 +9435,7 @@ export namespace Prisma {
     takerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -9419,6 +9444,7 @@ export namespace Prisma {
     market?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -9429,6 +9455,7 @@ export namespace Prisma {
     takerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -9974,6 +10001,7 @@ export namespace Prisma {
     takerOrderId?: SortOrder
     price?: SortOrder
     qty?: SortOrder
+    takerSide?: SortOrder
     executedAt?: SortOrder
   }
 
@@ -9989,6 +10017,7 @@ export namespace Prisma {
     takerOrderId?: SortOrder
     price?: SortOrder
     qty?: SortOrder
+    takerSide?: SortOrder
     executedAt?: SortOrder
   }
 
@@ -9999,6 +10028,7 @@ export namespace Prisma {
     takerOrderId?: SortOrder
     price?: SortOrder
     qty?: SortOrder
+    takerSide?: SortOrder
     executedAt?: SortOrder
   }
 
@@ -11113,6 +11143,7 @@ export namespace Prisma {
     market: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
     takerOrder: OrderCreateNestedOneWithoutTakerTradesInput
   }
@@ -11123,6 +11154,7 @@ export namespace Prisma {
     takerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -11141,6 +11173,7 @@ export namespace Prisma {
     market: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
     makerOrder: OrderCreateNestedOneWithoutTradesInput
   }
@@ -11151,6 +11184,7 @@ export namespace Prisma {
     makerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -11223,6 +11257,7 @@ export namespace Prisma {
     takerOrderId?: StringFilter<"Trade"> | string
     price?: BigIntFilter<"Trade"> | bigint | number
     qty?: BigIntFilter<"Trade"> | bigint | number
+    takerSide?: EnumOrderSideFilter<"Trade"> | $Enums.OrderSide
     executedAt?: DateTimeFilter<"Trade"> | Date | string
   }
 
@@ -11572,6 +11607,7 @@ export namespace Prisma {
     takerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -11581,6 +11617,7 @@ export namespace Prisma {
     makerOrderId: string
     price: bigint | number
     qty: bigint | number
+    takerSide: $Enums.OrderSide
     executedAt?: Date | string
   }
 
@@ -11589,6 +11626,7 @@ export namespace Prisma {
     market?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     takerOrder?: OrderUpdateOneRequiredWithoutTakerTradesNestedInput
   }
@@ -11599,6 +11637,7 @@ export namespace Prisma {
     takerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11608,6 +11647,7 @@ export namespace Prisma {
     takerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11616,6 +11656,7 @@ export namespace Prisma {
     market?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     makerOrder?: OrderUpdateOneRequiredWithoutTradesNestedInput
   }
@@ -11626,6 +11667,7 @@ export namespace Prisma {
     makerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11635,6 +11677,7 @@ export namespace Prisma {
     makerOrderId?: StringFieldUpdateOperationsInput | string
     price?: BigIntFieldUpdateOperationsInput | bigint | number
     qty?: BigIntFieldUpdateOperationsInput | bigint | number
+    takerSide?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     executedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

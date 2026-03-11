@@ -160,6 +160,7 @@ exports.Prisma.TradeScalarFieldEnum = {
   takerOrderId: 'takerOrderId',
   price: 'price',
   qty: 'qty',
+  takerSide: 'takerSide',
   executedAt: 'executedAt'
 };
 
@@ -212,6 +213,7 @@ exports.OrderSide = exports.$Enums.OrderSide = {
 
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   OPEN: 'OPEN',
+  PENDING: 'PENDING',
   FILLED: 'FILLED',
   PARTIALLY_FILLED: 'PARTIALLY_FILLED',
   CANCELLED: 'CANCELLED',

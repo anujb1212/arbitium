@@ -15,6 +15,7 @@ enum OrderSide {
 
 enum OrderStatus {
   OPEN
+  PENDING
   FILLED
   PARTIALLY_FILLED
   CANCELLED
@@ -104,8 +105,9 @@ model Trade {
   makerOrder   Order  @relation("MakerTrades", fields: [makerOrderId], references: [id])
   takerOrder   Order  @relation("TakerTrades", fields: [takerOrderId], references: [id])
 
-  price BigInt
-  qty   BigInt
+  price     BigInt
+  qty       BigInt
+  takerSide OrderSide
 
   executedAt DateTime @default(now())
 

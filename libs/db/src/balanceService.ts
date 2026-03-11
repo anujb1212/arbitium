@@ -94,7 +94,7 @@ export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> 
                 qty,
                 filledQty: 0n,
                 lockedAmount,
-                status: "OPEN",
+                status: "PENDING",
             },
         });
     });
@@ -134,14 +134,21 @@ export async function consumeLockOnFill(args: ConsumeOnFillArgs): Promise<void> 
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) return;
 
-    const fillCost = fillPrice * filledQty;
     const newFilledQty = order.filledQty + filledQty;
-    const isFullyFilled = newFilledQty >= order.qty;
+    const isFullyFilled = newFilledQty >= order.qty
+    const reservedForFill = order.price * filledQty
+    const actualCost = fillPrice * filledQty
+    const refund = reservedForFill - actualCost
 
-    await tx.tradingBalance.update({
-        where: { userId: order.userId },
-        data: { locked: { decrement: fillCost } },
-    });
+    if (reservedForFill > 0n) {
+        await tx.tradingBalance.update({
+            where: { userId: order.userId },
+            data: {
+                locked: { decrement: reservedForFill },
+                ...(refund > 0n ? { available: { increment: refund } } : {}),
+            },
+        });
+    }
 
     await tx.order.update({
         where: { id: orderId },
@@ -159,13 +166,36 @@ export async function creditFillProceeds(args: CreditFillProceedsArgs): Promise<
     if (!order) return;
 
     const proceeds = fillPrice * fillQty;
+    const newFilledQty = order.filledQty + fillQty;
+    const isFullyFilled = newFilledQty >= order.qty;
 
     await tx.tradingBalance.update({
         where: { userId: order.userId },
         data: { available: { increment: proceeds } },
     });
+
+    await tx.order.update({
+        where: { id: orderId },
+        data: {
+            filledQty: newFilledQty,
+            status: isFullyFilled ? "FILLED" : "PARTIALLY_FILLED",
+        },
+    });
 }
 
+export async function markOrderOpen(args: ReleaseOrConsumeArgs): Promise<void> {
+    const { prisma, orderId } = args;
+
+    await prisma.order.updateMany({
+        where: {
+            id: orderId,
+            status: "PENDING",
+        },
+        data: {
+            status: "OPEN",
+        },
+    });
+}
 //Credit (deposit from Vaultly)
 export async function creditTradingBalance(args: CreditBalanceArgs): Promise<void> {
     const { prisma, userId, amountInPaise } = args;

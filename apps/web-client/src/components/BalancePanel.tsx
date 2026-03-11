@@ -61,7 +61,7 @@ export function BalancePanel(): React.JSX.Element {
         : '—'
 
     return (
-        <div className="px-5 py-3.5 bg-panel border-t border-line">
+        <div className="px-5 py-3.5 bg-panel border-t border-line sticky bottom-0">
             <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] text-lo uppercase tracking-widest">Trading Balance</span>
                 <span className="text-[13px] font-mono text-hi">{formattedBalance}</span>

@@ -1,3 +1,4 @@
+import { KlineInterval } from "@arbitium/db";
 import z from "zod";
 
 const decimalBigintString = z.string().refine(
@@ -27,6 +28,22 @@ export const TransferBodySchema = z.object({
     amountInPaise: decimalBigintString,
     idempotencyKey: boundedString,
 })
+
+export const MarketQuerySchema = z.object({
+    market: z.string().min(1),
+});
+
+export const KlineQuerySchema = z.object({
+    market: z.string().min(1),
+    interval: z.nativeEnum(KlineInterval),
+    from: z.coerce.number().int().positive(),
+    to: z.coerce.number().int().positive(),
+});
+
+export const TradesQuerySchema = z.object({
+    market: z.string().min(1),
+    limit: z.coerce.number().int().min(1).max(200).optional(),
+});
 
 export type PlaceLimitBody = z.infer<typeof PlaceLimitBodySchema>
 export type CancelParams = z.infer<typeof CancelParamsSchema>

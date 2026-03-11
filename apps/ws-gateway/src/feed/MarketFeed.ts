@@ -6,11 +6,6 @@ import { STREAM_READ_COUNT, STREAM_READ_BLOCK_MS } from "../config";
 
 export type EventListener = (envelope: EventEnvelope) => void
 
-function getCurrentStreamId(): string {
-    return `${Date.now()}-0`
-}
-
-
 export class MarketFeed {
     private lastSeenEventId: string
     private readonly listeners: Set<EventListener> = new Set()
@@ -23,7 +18,12 @@ export class MarketFeed {
         private readonly client: RedisClient
     ) {
         this.streamKey = `arbitium:evt:${market}`
-        this.lastSeenEventId = getCurrentStreamId()
+        this.lastSeenEventId = "0-0"
+    }
+
+    public initializeCursorWithLookback(lookbackMs: number): void {
+        const fromTimestamp = Date.now() - lookbackMs;
+        this.lastSeenEventId = `${fromTimestamp}-0`;
     }
 
     public addListener(listener: EventListener): void {
@@ -46,14 +46,12 @@ export class MarketFeed {
 
         this.isReading = true
         try {
-            await this.doRead()
+            do {
+                this.readPending = false
+                await this.doRead()
+            } while (this.readPending)
         } finally {
             this.isReading = false
-        }
-
-        if (this.readPending) {
-            this.readPending = false
-            await this.readAndFanOut()
         }
     }
     private async doRead(): Promise<void> {
@@ -64,6 +62,10 @@ export class MarketFeed {
             count: STREAM_READ_COUNT,
             blockMs: STREAM_READ_BLOCK_MS
         })
+
+        if (messages.length === STREAM_READ_COUNT) {
+            this.readPending = true
+        }
 
         for (const message of messages) {
             this.lastSeenEventId = message.id

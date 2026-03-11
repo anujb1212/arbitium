@@ -64,6 +64,9 @@ export function encodeEventToStreamFields(event: EventEnvelope): ReadonlyArray<[
         ...base,
         ["deltaType", "CANCEL"],
         ["orderId", event.payload.orderId],
+        ["side", event.payload.side],
+        ["price", event.payload.price.toString(10)],
+        ["qty", event.payload.qty.toString(10)]
     ];
 }
 
@@ -288,6 +291,30 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
             rejectReason: "MISSING_ORDER_ID"
         }
 
+    const side = readField(fields, "side");
+    if (side !== "BUY" && side !== "SELL") {
+        return {
+            accepted: false,
+            rejectReason: "INVALID_SIDE"
+        };
+    }
+
+    const priceParsed = parseDecimalBigint(readField(fields, "price"));
+    if (!priceParsed.ok) {
+        return {
+            accepted: false,
+            rejectReason: "INVALID_PRICE"
+        };
+    }
+
+    const qtyParsed = parseDecimalBigint(readField(fields, "qty"));
+    if (!qtyParsed.ok) {
+        return {
+            accepted: false,
+            rejectReason: "INVALID_QTY"
+        };
+    }
+
     return {
         accepted: true,
         value: {
@@ -296,7 +323,10 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
             bookSeq,
             payload: {
                 type: "CANCEL",
-                orderId
+                orderId,
+                side,
+                price: priceParsed.value,
+                qty: qtyParsed.value
             },
             commandId,
             eventId

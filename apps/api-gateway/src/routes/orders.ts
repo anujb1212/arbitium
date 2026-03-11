@@ -17,6 +17,48 @@ export const ordersRouter = Router()
 
 const STREAM_PREFIX = "arbitium:cmd:"
 
+ordersRouter.get("/", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+    const market = req.query["market"]
+    if (typeof market !== "string" || market.length === 0) {
+        res.status(400).json({ error: "market query param required" })
+        return
+    }
+
+    const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
+
+    const orders = await prisma.order.findMany({
+        where: {
+            userId: arbitiumUserId,
+            market,
+            status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
+        },
+        orderBy: { createdAt: "asc" },
+        select: {
+            id: true,
+            commandId: true,
+            side: true,
+            price: true,
+            qty: true,
+            filledQty: true,
+            status: true,
+            createdAt: true,
+        },
+    })
+
+    res.json({
+        orders: orders.map((o) => ({
+            orderId: o.id,
+            commandId: o.commandId,
+            side: o.side,
+            price: o.price.toString(),
+            qty: o.qty.toString(),
+            filledQty: o.filledQty.toString(),
+            status: o.status,
+            createdAtMs: o.createdAt.getTime(),
+        })),
+    })
+})
+
 ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const parsedResult = PlaceLimitBodySchema.safeParse(req.body)
 
@@ -99,6 +141,11 @@ ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Reques
 
     if (order.market !== market) {
         res.status(400).json({ error: "Market mismatch" })
+        return
+    }
+
+    if (order.status === "PENDING") {
+        res.status(409).json({ error: "Order is not open yet" })
         return
     }
 

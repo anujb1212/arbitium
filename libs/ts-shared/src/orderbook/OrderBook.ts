@@ -1,4 +1,4 @@
-import { CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, Price, Qty, RejectReason, RestingOrder, Seq } from "./types";
+import { CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, Price, Qty, RejectReason, RestingOrder, Seq, Side } from "./types";
 import { insertPriceIntoLadder } from "./priceLadder";
 import { PriceLevel, prunePriceLevel, removeOrderFromPriceLevel } from "./priceLevelQueue";
 import { matchIncomingBuyOrder, matchIncomingSellOrder, createCancelDelta } from "./matching";
@@ -12,8 +12,6 @@ export class OrderBook {
 
     private ordersById = new Map<OrderId, RestingOrder>();
     private seenOrderIds = new Set<OrderId>();
-
-    private lastSeq: Seq = 0n;
 
     constructor(readonly market: MarketId) { }
 
@@ -29,18 +27,6 @@ export class OrderBook {
                 remainingQty: input.qty
             };
         }
-
-        const seqReject = this.bumpSeq(input.seq);
-        if (seqReject) {
-            return {
-                accepted: false,
-                rejectReason: seqReject,
-                trades: [],
-                deltas: [],
-                remainingQty: input.qty
-            };
-        }
-
 
         const limitReject = this.validateLimit(input.price, input.qty);
         if (limitReject) {
@@ -129,21 +115,17 @@ export class OrderBook {
     }
 
     cancel(input: CancelInput): CancelResult {
+
+        console.log("[orderbook cancel]", {
+            orderId: input.orderId,
+            hasOrder: this.ordersById.has(input.orderId),
+        });
+
         const marketReject = this.validateMarket(input.market);
         if (marketReject) {
             return {
                 accepted: false,
                 rejectReason: marketReject,
-                cancelled: false,
-                deltas: []
-            };
-        }
-
-        const seqReject = this.bumpSeq(input.seq);
-        if (seqReject) {
-            return {
-                accepted: false,
-                rejectReason: seqReject,
                 cancelled: false,
                 deltas: []
             };
@@ -190,6 +172,9 @@ export class OrderBook {
             deltas: [createCancelDelta({
                 market: input.market,
                 orderId: input.orderId,
+                side: restingOrder.side,
+                price: restingOrder.price,
+                qty: restingOrder.qtyRemaining,
                 seq: input.seq
             })]
         };
@@ -208,15 +193,37 @@ export class OrderBook {
         return this.ordersById.get(orderId) ?? null
     }
 
+    getDepth(levels: number): {
+        bids: Array<{ price: bigint; qty: bigint }>;
+        asks: Array<{ price: bigint; qty: bigint }>;
+    } {
+        const aggregate = (
+            pricesOrdered: Price[],
+            levelMap: Map<Price, PriceLevel>
+        ): Array<{ price: bigint; qty: bigint }> => {
+            const result: Array<{ price: bigint; qty: bigint }> = [];
+            const limit = Math.min(levels, pricesOrdered.length);
+            for (let i = 0; i < limit; i++) {
+                const price = pricesOrdered[i]!;
+                const level = levelMap.get(price);
+                if (!level) continue;
+                let totalQty = 0n;
+                for (let j = level.headIndex; j < level.queue.length; j++) {
+                    totalQty += level.queue[j]!.qtyRemaining;
+                }
+                if (totalQty > 0n) result.push({ price, qty: totalQty });
+            }
+            return result;
+        };
+        return {
+            bids: aggregate(this.bidPricesDesc, this.bids),
+            asks: aggregate(this.askPricesAsc, this.asks),
+        };
+    }
+
     //infra helpers
     private validateMarket(market: MarketId): RejectReason | null {
         if (market !== this.market) return "MARKET_MISMATCH";
-        return null;
-    }
-
-    private bumpSeq(nextSeq: Seq): RejectReason | null {
-        if (nextSeq <= this.lastSeq) return "SEQ_OUT_OF_ORDER";
-        this.lastSeq = nextSeq;
         return null;
     }
 
@@ -237,5 +244,36 @@ export class OrderBook {
         };
         map.set(price, newLevel);
         return newLevel;
+    }
+
+    public seedRestingOrder(order: {
+        orderId: OrderId;
+        side: Side;
+        price: Price;
+        qtyRemaining: Qty;
+        seq: Seq;
+    }): void {
+        if (this.seenOrderIds.has(order.orderId)) return;
+        this.seenOrderIds.add(order.orderId);
+
+        const restingOrder: RestingOrder = {
+            orderId: order.orderId,
+            side: order.side,
+            price: order.price,
+            qtyRemaining: order.qtyRemaining,
+            seq: order.seq
+        };
+
+        this.ordersById.set(order.orderId, restingOrder);
+
+        if (order.side === "BUY") {
+            const level = this.getOrCreateLevel(this.bids, order.price);
+            level.queue.push(restingOrder);
+            insertPriceIntoLadder(this.bidPricesDesc, order.price, "DESC");
+        } else {
+            const level = this.getOrCreateLevel(this.asks, order.price);
+            level.queue.push(restingOrder);
+            insertPriceIntoLadder(this.askPricesAsc, order.price, "ASC");
+        }
     }
 }

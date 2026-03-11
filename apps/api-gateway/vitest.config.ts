@@ -6,6 +6,7 @@ export default defineConfig({
         alias: {
             "@arbitium/ts-shared": path.resolve(__dirname, "../../libs/ts-shared/src"),
             "@arbitium/ts-engine-client": path.resolve(__dirname, "../../libs/ts-engine-client/src"),
+            "@arbitium/db": path.resolve(__dirname, "../../libs/db/src"),
         },
     },
     test: { environment: "node" },

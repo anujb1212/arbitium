@@ -25,7 +25,10 @@ export type WireBookDeltaPayload =
     }
     | {
         type: "CANCEL";
-        orderId: string
+        orderId: string;
+        side: Side;
+        price: string;
+        qty: string
     };
 
 export type WireCommandRejectedPayload = {

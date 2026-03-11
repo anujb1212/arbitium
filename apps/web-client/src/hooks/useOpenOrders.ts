@@ -1,6 +1,7 @@
 import { useCallback, useReducer } from "react";
 import type { Side, WireBookDeltaPayload } from "../types/wire";
 import { clampMinBigInt, parseBigIntDecimal } from "../lib/bigint";
+import { OpenOrderDTO } from "../lib/apiClient";
 
 
 export type OpenOrderStatus = "SUBMITTING" | "OPEN";
@@ -18,6 +19,7 @@ export type OpenOrder = {
 
 type State = {
     orders: OpenOrder[];
+    seenEventIds: Set<string>
 };
 
 type Action =
@@ -29,9 +31,13 @@ type Action =
     | { type: "ACK_ACCEPTED"; orderId: string; commandId: string }
     | { type: "REMOVE_BY_ORDER_ID"; orderId: string }
     | { type: "REMOVE_BY_COMMAND_ID"; commandId: string }
-    | { type: "APPLY_DELTA"; delta: WireBookDeltaPayload };
+    | { type: "APPLY_DELTA"; delta: WireBookDeltaPayload; eventId?: string }
+    | { type: "SEED"; orders: OpenOrder[] }
 
-const initialState: State = { orders: [] };
+const initialState: State = {
+    orders: [],
+    seenEventIds: new Set()
+};
 
 function applyFillToOrder(order: OpenOrder, fillQty: string): OpenOrder | null {
     const remaining = parseBigIntDecimal(order.remainingQty);
@@ -44,6 +50,10 @@ function applyFillToOrder(order: OpenOrder, fillQty: string): OpenOrder | null {
 
 function reducer(state: State, action: Action): State {
     if (action.type === "RESET") return initialState;
+
+    if (action.type === "SEED") {
+        return { ...initialState, orders: action.orders }
+    }
 
     if (action.type === "ADD_OPTIMISTIC") {
         const next: OpenOrder = {
@@ -64,7 +74,7 @@ function reducer(state: State, action: Action): State {
             ...state,
             orders: state.orders.map((order) => {
                 if (order.orderId !== action.orderId) return order;
-                return { ...order, commandId: action.commandId, status: "OPEN" };
+                return { ...order, commandId: action.commandId };
             }),
         };
     }
@@ -83,9 +93,32 @@ function reducer(state: State, action: Action): State {
     if (action.type === "APPLY_DELTA") {
         const delta = action.delta;
 
+        if (action.eventId && state.seenEventIds.has(action.eventId)) return state;
+
+        const seenEventIds = new Set(state.seenEventIds);
+        if (action.eventId) seenEventIds.add(action.eventId);
+
+        if (delta.type === "ADD") {
+            return {
+                ...state,
+                seenEventIds,
+                orders: state.orders.map((order) => {
+                    if (order.orderId !== delta.orderId) return order;
+                    return {
+                        ...order,
+                        side: delta.side,
+                        price: delta.price,
+                        remainingQty: delta.qty,
+                        status: "OPEN",
+                    };
+                }),
+            };
+        }
+
         if (delta.type === "CANCEL") {
             return {
                 ...state,
+                seenEventIds,
                 orders: state.orders.filter((order) => order.orderId !== delta.orderId),
             };
         }
@@ -102,7 +135,11 @@ function reducer(state: State, action: Action): State {
                 }
                 nextOrders.push(order);
             }
-            return { ...state, orders: nextOrders };
+            return {
+                ...state,
+                seenEventIds,
+                orders: nextOrders
+            };
         }
 
         return state;
@@ -111,14 +148,29 @@ function reducer(state: State, action: Action): State {
     return state;
 }
 
+export function dbOrderToOpenOrder(dto: OpenOrderDTO): OpenOrder {
+    const remainingQty = (BigInt(dto.qty) - BigInt(dto.filledQty)).toString()
+    return {
+        orderId: dto.orderId,
+        commandId: dto.commandId,
+        side: dto.side,
+        price: dto.price,
+        originalQty: dto.qty,
+        remainingQty,
+        status: dto.status === "PENDING" ? "SUBMITTING" : "OPEN",
+        createdAtMs: dto.createdAtMs,
+    }
+}
+
 export type UseOpenOrdersResult = {
     openOrders: OpenOrder[];
     addOptimistic: (params: { orderId: string; side: Side; price: string; qty: string }) => void;
     ackAccepted: (params: { orderId: string; commandId: string }) => void;
     removeByOrderId: (orderId: string) => void;
     removeByCommandId: (commandId: string) => void;
-    applyDelta: (delta: WireBookDeltaPayload) => void;
+    applyDelta: (delta: WireBookDeltaPayload, eventId?: string) => void;
     reset: () => void;
+    seedFromDB: (dtos: OpenOrderDTO[]) => void
 };
 
 export function useOpenOrders(): UseOpenOrdersResult {
@@ -146,13 +198,17 @@ export function useOpenOrders(): UseOpenOrdersResult {
         dispatch({ type: "REMOVE_BY_COMMAND_ID", commandId });
     }, []);
 
-    const applyDelta = useCallback((delta: WireBookDeltaPayload): void => {
-        dispatch({ type: "APPLY_DELTA", delta });
+    const applyDelta = useCallback((delta: WireBookDeltaPayload, eventId?: string): void => {
+        dispatch({ type: "APPLY_DELTA", delta, eventId });
     }, []);
 
     const reset = useCallback((): void => {
         dispatch({ type: "RESET" });
     }, []);
+
+    const seedFromDB = useCallback((dtos: OpenOrderDTO[]): void => {
+        dispatch({ type: "SEED", orders: dtos.map(dbOrderToOpenOrder) })
+    }, [])
 
     return {
         openOrders: state.orders,
@@ -161,6 +217,7 @@ export function useOpenOrders(): UseOpenOrdersResult {
         removeByOrderId,
         removeByCommandId,
         applyDelta,
+        seedFromDB,
         reset,
     };
 }

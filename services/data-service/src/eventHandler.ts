@@ -1,5 +1,5 @@
 import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
-import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder, KlineInterval, getOpenTime, getCloseTime, upsertKline } from "@arbitium/db";
+import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder, KlineInterval, getOpenTime, getCloseTime, upsertKline, markOrderOpen } from "@arbitium/db";
 
 function isPrismaUniqueViolation(error: unknown): boolean {
     return (
@@ -45,7 +45,15 @@ async function handleTrade(
     try {
         await prisma.$transaction(async (tx) => {
             await tx.trade.create({
-                data: { market: event.market, makerOrderId, takerOrderId, price, qty },
+                data: {
+                    market: event.market,
+                    makerOrderId: makerOrderId,
+                    takerOrderId: takerOrderId,
+                    price: BigInt(price),
+                    qty: BigInt(qty),
+                    takerSide: takerSide,
+                    executedAt: new Date(),
+                }
             });
 
             await consumeLockOnFill({ tx, orderId: buyOrderId, filledQty: qty, fillPrice: price });
@@ -75,6 +83,14 @@ async function handleTrade(
 async function handleBookDelta(
     event: Extract<EventEnvelope, { kind: "BOOK_DELTA" }>
 ): Promise<void> {
+    if (event.payload.type === "ADD") {
+        await markOrderOpen({
+            prisma,
+            orderId: event.payload.orderId,
+        });
+        return;
+    }
+
     if (event.payload.type === "CANCEL") {
         await releaseLockForOrder({
             prisma,

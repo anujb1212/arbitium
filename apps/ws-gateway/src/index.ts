@@ -28,13 +28,15 @@ async function main(): Promise<void> {
             })
         })
 
-        Promise.all(
-            Array.from(session.getSubscriptions()).map((market) =>
-                feedManager.unsubscribeMarket(market, session.onEvent).catch((err) => {
-                    console.error(`[WS] unsubscribe cleanup error for ${market}:`, err)
-                })
-            )
-        ).catch(() => { })
+        socket.on("close", () => {
+            Promise.all(
+                Array.from(session.getSubscriptions()).map((market) =>
+                    feedManager.unsubscribeMarket(market, session.onEvent).catch((err) => {
+                        console.error(`[WS] unsubscribe cleanup error for ${market}:`, err)
+                    })
+                )
+            ).catch(() => { })
+        })
     })
 
     const shutdown = async (): Promise<void> => {

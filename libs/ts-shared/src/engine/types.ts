@@ -55,6 +55,9 @@ export type BookDeltaPayload =
     | {
         type: "CANCEL";
         orderId: OrderId;
+        side: Side;
+        price: Price;
+        qty: Qty
     };
 
 export type CommandRejectedPayload = {

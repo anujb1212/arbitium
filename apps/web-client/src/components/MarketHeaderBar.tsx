@@ -13,8 +13,8 @@ type Props = {
 };
 
 function getDirectionGlyph(direction: MarketStats["direction"]): string {
-    if (direction === "UP") return "▲";
-    if (direction === "DOWN") return "▼";
+    if (direction === "UP") return "+";
+    if (direction === "DOWN") return "-";
     return "";
 }
 

@@ -172,5 +172,34 @@ describe("MarketFeed", () => {
 
             expect(listener).toHaveBeenCalledTimes(2)
         })
+
+        describe("initializeCursorWithLookback", () => {
+            it("sets cursor behind now so events written before subscription are not skipped", () => {
+                const feed = new MarketFeed("TATA-INR", makeMockRedisClient() as any);
+                const before = Date.now();
+                feed.initializeCursorWithLookback(120_000);
+                const cursorTs = parseInt(feed["lastSeenEventId"].split("-")[0]!, 10);
+                expect(cursorTs).toBeLessThan(before);
+                expect(cursorTs).toBeGreaterThanOrEqual(before - 130_000);
+            });
+
+            it("readAndFanOut after lookback delivers event decoded from stream", async () => {
+                const mockEnvelope = { market: "TATA-INR", kind: "BOOK_DELTA", bookSeq: 1n } as any;
+                vi.mocked(readStreamSince).mockResolvedValue([{ id: "1700000060000-0", fields: {} }]);
+                vi.mocked(decodeEventFromStreamFields).mockReturnValue({ accepted: true, value: mockEnvelope });
+
+                const feed = new MarketFeed("TATA-INR", makeMockRedisClient() as any);
+                feed.initializeCursorWithLookback(120_000);
+                const listener = vi.fn();
+                feed.addListener(listener);
+
+                await feed.readAndFanOut();
+
+                expect(listener).toHaveBeenCalledWith(mockEnvelope);
+                expect(readStreamSince).toHaveBeenCalledWith(
+                    expect.objectContaining({ fromId: expect.stringMatching(/^\d+-0$/) })
+                );
+            });
+        });
     })
 });

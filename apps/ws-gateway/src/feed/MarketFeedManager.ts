@@ -14,9 +14,20 @@ export class MarketFeedManager {
         let feed = this.feeds.get(market)
 
         if (!feed) {
-            feed = new MarketFeed(market, this.commandClient)
-            this.feeds.set(market, feed)
-            this.pubSubClient.subscribe(`evtPing:${market}`, () => { this.onPing(market) })
+            const nextFeed = new MarketFeed(market, this.commandClient)
+            this.feeds.set(market, nextFeed)
+            nextFeed.initializeCursorWithLookback(120000)
+
+            try {
+                await this.pubSubClient.subscribe(`evtPing:${market}`, () => {
+                    this.onPing(market)
+                })
+            } catch (error) {
+                this.feeds.delete(market)
+                throw error
+            }
+
+            feed = nextFeed
         }
 
         feed.addListener(listener)

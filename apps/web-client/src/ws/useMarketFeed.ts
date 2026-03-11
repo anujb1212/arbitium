@@ -7,7 +7,7 @@ const MAX_DELAY_MS = 30_000
 
 export type FeedCallback = (event: WireEventEnvelope) => void
 
-export function useMarketFeed(market: string, onEvent: FeedCallback): void {
+export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromEventId?: string): void {
     const wsRef = useRef<WebSocket | null>(null)
     const reconnectDelayRef = useRef(BASE_DELAY_MS)
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -28,7 +28,8 @@ export function useMarketFeed(market: string, onEvent: FeedCallback): void {
             reconnectDelayRef.current = BASE_DELAY_MS
             ws.send(JSON.stringify({
                 type: "subscribe",
-                market
+                market,
+                fromEventId: resumeFromEventId ?? null
             }))
         }
 

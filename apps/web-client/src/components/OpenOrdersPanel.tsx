@@ -49,7 +49,7 @@ export function OpenOrdersPanel(props: Props): React.JSX.Element {
                 <div className="px-5 pb-3 text-[12px] text-mid">No open orders</div>
             ) : (
                 <div className="px-3 pb-3">
-                    <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[11px] text-lo">
+                    <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[11px] text-lo min-w-[720px]">
                         <div className="col-span-3">Order</div>
                         <div className="col-span-2">Side</div>
                         <div className="col-span-3">Price</div>
@@ -57,17 +57,17 @@ export function OpenOrdersPanel(props: Props): React.JSX.Element {
                         <div className="col-span-2 text-right">Action</div>
                     </div>
 
-                    <div className="max-h-[140px] overflow-auto min-h-0">
+                    <div className="max-h-[180px] overflow-auto min-h-0">
                         {rows.map((order) => {
                             const sideColor = order.side === "BUY" ? "text-bull" : "text-bear";
                             const canceling = cancelingIds.has(order.orderId);
+                            const canCancel = order.status === "OPEN" && !canceling;
                             const statusText = order.status === "SUBMITTING" ? "Submitting" : "Open";
 
                             return (
                                 <div
                                     key={order.orderId}
-                                    className="grid grid-cols-12 gap-2 items-center px-2 py-1.5 border-t border-line/60"
-                                >
+                                    className="grid grid-cols-12 gap-2 items-center px-2 py-1.5 border-t border-line/60 min-w-[720px]">
                                     <div className="col-span-3 font-mono text-[12px] text-hi">
                                         {truncateId(order.orderId)}
                                         <span className="ml-2 text-[10px] text-lo/70">{statusText}</span>
@@ -85,10 +85,10 @@ export function OpenOrdersPanel(props: Props): React.JSX.Element {
                                         <button
                                             type="button"
                                             onClick={() => handleCancel(order.orderId)}
-                                            disabled={canceling}
+                                            disabled={!canCancel}
                                             className="px-2.5 py-1 rounded border border-line bg-raised text-[11px] font-semibold text-bear hover:bg-bear/10 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
-                                            {canceling ? "Canceling…" : "Cancel"}
+                                            {canceling ? "Canceling…" : order.status === "OPEN" ? "Cancel" : "Pending"}
                                         </button>
                                     </div>
                                 </div>

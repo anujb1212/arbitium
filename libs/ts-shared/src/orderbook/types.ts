@@ -56,6 +56,9 @@ export type BookDelta =
         type: "CANCEL";
         market: MarketId;
         orderId: OrderId;
+        side: Side;
+        price: Price;
+        qty: Qty;
         seq: Seq
     };
 

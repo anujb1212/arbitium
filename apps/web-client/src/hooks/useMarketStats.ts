@@ -1,7 +1,7 @@
 import { useCallback, useReducer } from "react";
 import type { WireTradePayload } from "../types/wire";
 import { parseBigIntDecimal } from "../lib/bigint";
-
+import { TickerSnapshot } from "../lib/apiClient";
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_SAMPLES_IN_WINDOW = 20_000;
@@ -21,11 +21,13 @@ type State = {
     samples: TradeSample[];
     startIndex: number;
     windowQtySum: bigint;
+    seededOpenPrice: string | null
 };
 
 type Action =
     | { type: "RESET" }
-    | { type: "ADD_TRADE"; payload: WireTradePayload; nowMs: number };
+    | { type: "ADD_TRADE"; payload: WireTradePayload; nowMs: number }
+    | { type: "SEED"; lastPrice: string; openPrice: string; volume: string }
 
 const initialState: State = {
     lastPrice: null,
@@ -33,6 +35,7 @@ const initialState: State = {
     samples: [],
     startIndex: 0,
     windowQtySum: 0n,
+    seededOpenPrice: null
 };
 
 function pruneWindow(state: State, nowMs: number): State {
@@ -60,6 +63,15 @@ function pruneWindow(state: State, nowMs: number): State {
 }
 
 function reducer(state: State, action: Action): State {
+    if (action.type === "SEED") {
+        return {
+            ...initialState,
+            lastPrice: action.lastPrice,
+            seededOpenPrice: action.openPrice,
+            windowQtySum: parseBigIntDecimal(action.volume),
+        };
+    }
+
     if (action.type === "RESET") return initialState;
 
     const prevPrice = state.lastPrice;
@@ -92,6 +104,7 @@ export type MarketStats = {
 export type UseMarketStatsResult = {
     stats: MarketStats;
     onTrade: (payload: WireTradePayload) => void;
+    seedStats: (ticker: TickerSnapshot) => void;
     reset: () => void;
 };
 
@@ -117,6 +130,15 @@ function computeChangeBps(lastPrice: string | null, openPrice: string | null): b
 export function useMarketStats(): UseMarketStatsResult {
     const [state, dispatch] = useReducer(reducer, initialState);
 
+    const seedStats = useCallback((ticker: TickerSnapshot): void => {
+        dispatch({
+            type: "SEED",
+            lastPrice: ticker.lastPrice,
+            openPrice: ticker.open24h,
+            volume: ticker.volume24h,
+        });
+    }, [])
+
     const onTrade = useCallback((payload: WireTradePayload): void => {
         dispatch({ type: "ADD_TRADE", payload, nowMs: Date.now() });
     }, []);
@@ -126,7 +148,9 @@ export function useMarketStats(): UseMarketStatsResult {
     }, []);
 
     const windowOpenPrice =
-        state.samples.length > state.startIndex ? state.samples[state.startIndex].price : null;
+        state.samples.length > state.startIndex
+            ? state.samples[state.startIndex].price
+            : state.seededOpenPrice;
 
     const stats: MarketStats = {
         lastPrice: state.lastPrice,
@@ -136,5 +160,10 @@ export function useMarketStats(): UseMarketStatsResult {
         windowQtySum: state.windowQtySum.toString(),
     };
 
-    return { stats, onTrade, reset };
+    return {
+        stats,
+        onTrade,
+        seedStats,
+        reset
+    };
 }

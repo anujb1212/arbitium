@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MARKETS, getMarketConfig } from '../types/market'
 import type { WireEventEnvelope } from '../types/wire'
 import { useMarketFeed } from '../ws/useMarketFeed'
+import { fetchDepth, fetchOpenOrders, fetchRecentTrades, fetchTicker } from '../lib/apiClient'
 
 import { Chart } from '../components/Chart'
 import { useOrderBook } from '../hooks/useOrderBook'
@@ -18,6 +19,7 @@ import { CommandRejectedToast } from '../components/CommandRejectedToast'
 import { BalancePanel } from '../components/BalancePanel'
 import { WalletButton } from '../components/WalletButton'
 
+
 export default function TradePage(): React.JSX.Element {
     const { market: marketParam } = useParams<{ market: string }>()
     const navigate = useNavigate()
@@ -30,18 +32,66 @@ export default function TradePage(): React.JSX.Element {
     const [rejectToast, setRejectToast] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<"BOOK" | "TRADES">("BOOK")
     const [showBonusToast, setShowBonusToast] = useState(false)
+    const depthReconcileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-    const { bids, asks, dispatchDelta, resetBook } = useOrderBook()
-    const { trades, dispatchTrade, resetFeed } = useTradeFeed()
-    const { stats, onTrade, reset: resetStats } = useMarketStats()
+    const { bids, asks, dispatchDelta, resetBook, seedBook } = useOrderBook()
+    const { trades, dispatchTrade, resetFeed, seedFeed } = useTradeFeed()
+    const { stats, onTrade, seedStats, reset: resetStats } = useMarketStats()
     const openOrders = useOpenOrders()
+
+    const scheduleDepthReconcile = useCallback((market: string): void => {
+        if (depthReconcileTimerRef.current !== null) {
+            clearTimeout(depthReconcileTimerRef.current)
+        }
+
+        depthReconcileTimerRef.current = setTimeout(() => {
+            fetchDepth(market)
+                .then((snapshot) => {
+                    seedBook(snapshot)
+                })
+                .catch(() => { })
+        }, 120)
+    }, [seedBook])
+
+    useEffect(() => {
+        let cancelled = false
+
+        fetchDepth(selectedMarket)
+            .then((snapshot) => {
+                if (!cancelled) seedBook(snapshot)
+            })
+            .catch(() => { })
+
+        fetchRecentTrades(selectedMarket)
+            .then((rawTrades) => { if (!cancelled) seedFeed(rawTrades) })
+            .catch(() => { })
+
+        fetchTicker(selectedMarket)
+            .then((ticker) => { if (!cancelled) seedStats(ticker) })
+            .catch(() => { })
+
+        fetchOpenOrders(selectedMarket)
+            .then((orders) => { if (!cancelled) openOrders.seedFromDB(orders) })
+            .catch(() => { })
+
+        return () => {
+            cancelled = true
+            if (depthReconcileTimerRef.current !== null) {
+                clearTimeout(depthReconcileTimerRef.current)
+                depthReconcileTimerRef.current = null
+            }
+        }
+    }, [selectedMarket, seedBook, seedFeed, seedStats])
 
     const handleEvent = useCallback(
         (event: WireEventEnvelope): void => {
             setEventCount((n) => n + 1)
             if (event.kind === 'BOOK_DELTA') {
                 dispatchDelta(event.payload)
-                openOrders.applyDelta(event.payload)
+                openOrders.applyDelta(event.payload, event.eventId)
+                if (event.payload.type === 'ADD') {
+                    scheduleDepthReconcile(selectedMarket)
+                }
             }
             if (event.kind === 'TRADE') {
                 dispatchTrade(event.payload)
@@ -54,7 +104,7 @@ export default function TradePage(): React.JSX.Element {
                 setRejectToast(event.payload.rejectReason)
             }
         },
-        [dispatchDelta, dispatchTrade, onTrade, openOrders],
+        [dispatchDelta, dispatchTrade, onTrade, openOrders, scheduleDepthReconcile, selectedMarket]
     )
 
     function handleMarketChange(market: string): void {
@@ -65,6 +115,12 @@ export default function TradePage(): React.JSX.Element {
         resetFeed()
         resetStats()
         openOrders.reset()
+
+        if (depthReconcileTimerRef.current !== null) {
+            clearTimeout(depthReconcileTimerRef.current)
+            depthReconcileTimerRef.current = null
+        }
+
         navigate(`/trade/${market}`, { replace: true })
     }
 
@@ -81,10 +137,10 @@ export default function TradePage(): React.JSX.Element {
 
     return (
         <div
-            className="bg-base text-hi font-sans text-[13px] overflow-hidden"
-            style={{ display: 'grid', gridTemplateRows: '56px 1fr', height: '100vh' }}
+            className="bg-base text-hi font-sans text-[13px] min-h-screen"
+            style={{ display: 'grid', gridTemplateRows: '56px 1fr', height: '100dvh' }}
         >
-            <header className="flex items-center gap-8 px-6 border-b border-line bg-panel">
+            <header className="flex flex-wrap items-center gap-4 px-4 md:px-6 border-b border-line bg-panel">
                 <button
                     onClick={() => navigate('/')}
                     className="text-[17px] font-bold tracking-tight hover:text-mid transition-colors"
@@ -97,7 +153,7 @@ export default function TradePage(): React.JSX.Element {
                             key={m.market}
                             onClick={() => handleMarketChange(m.market)}
                             className={`px-3 py-1.5 rounded text-[13px] font-medium transition-colors
-                ${selectedMarket === m.market
+                                ${selectedMarket === m.market
                                     ? 'bg-accent/15 text-accent'
                                     : 'text-mid hover:bg-raised hover:text-hi'}`}
                         >
@@ -105,25 +161,22 @@ export default function TradePage(): React.JSX.Element {
                         </button>
                     ))}
                 </nav>
-                <div className="ml-auto">
-                    <div className="ml-auto flex items-center gap-4">
-                        <span className={`text-[11px] font-mono ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
-                            {eventCount > 0 ? `Live ${eventCount}` : 'Connecting…'}
-                        </span>
-                        <WalletButton onBonusGranted={handleBonusGranted} />
-                    </div>
+                <div className="ml-auto flex items-center gap-4">
+                    <span className={`text-[11px] font-mono ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
+                        {eventCount > 0 ? `Live ${eventCount}` : 'Connecting...'}
+                    </span>
+                    <WalletButton onBonusGranted={handleBonusGranted} />
                 </div>
             </header>
 
-            <div className="flex overflow-hidden w-full">
-                <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="flex flex-col xl:flex-row overflow-auto w-full min-h-0">
+                <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
                     <MarketHeaderBar
                         config={config}
                         stats={stats}
                         bestBidPrice={bestBidPrice}
                         bestAskPrice={bestAskPrice}
                     />
-
                     <div className="flex-1 min-h-0 relative w-full">
                         <Chart
                             trades={trades}
@@ -131,30 +184,28 @@ export default function TradePage(): React.JSX.Element {
                             config={config}
                         />
                     </div>
-
-                    <div className="h-[240px] flex-shrink-0 min-h-0 border-t border-line overflow-hidden flex flex-col w-full">
+                    <div className="max-h-[240px] xl:h-[240px] flex-shrink-0 min-h-0 border-t border-line overflow-auto flex flex-col w-full">
                         <OpenOrdersPanel config={config} openOrders={openOrders.openOrders} />
                     </div>
                 </div>
 
-                <div className="w-[300px] border-l border-r border-line flex flex-col bg-panel flex-shrink-0 overflow-hidden">
+                <div className="w-full xl:w-[300px] border-t xl:border-t-0 xl:border-l xl:border-r border-line flex flex-col bg-panel flex-shrink-0 overflow-hidden min-h-[320px]">
                     <div className="flex items-center gap-2 px-4 py-2 border-b border-line/60 flex-shrink-0">
                         <button
                             onClick={() => setActiveTab("BOOK")}
-                            className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors ${activeTab === "BOOK" ? "bg-raised text-hi" : "text-lo hover:text-mid"
-                                }`}
+                            className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors
+                                ${activeTab === "BOOK" ? "bg-raised text-hi" : "text-lo hover:text-mid"}`}
                         >
                             Book
                         </button>
                         <button
                             onClick={() => setActiveTab("TRADES")}
-                            className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors ${activeTab === "TRADES" ? "bg-raised text-hi" : "text-lo hover:text-mid"
-                                }`}
+                            className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors
+                                ${activeTab === "TRADES" ? "bg-raised text-hi" : "text-lo hover:text-mid"}`}
                         >
                             Trades
                         </button>
                     </div>
-
                     <div className="flex-1 overflow-hidden min-h-0 relative">
                         <div className={`absolute inset-0 ${activeTab === "BOOK" ? "block" : "hidden"}`}>
                             <OrderBook bids={bids} asks={asks} config={config} />
@@ -165,13 +216,11 @@ export default function TradePage(): React.JSX.Element {
                     </div>
                 </div>
 
-                <div className="w-[320px] flex flex-col bg-panel flex-shrink-0 overflow-y-auto overflow-x-hidden relative">
+                <div className="w-full xl:w-[320px] flex flex-col bg-panel flex-shrink-0 overflow-y-auto overflow-x-hidden relative border-t xl:border-t-0 xl:border-l border-line">
                     <div className="flex-1">
                         <OrderForm
                             config={config}
-                            onPlaceSubmitted={(draft) => {
-                                openOrders.addOptimistic(draft)
-                            }}
+                            onPlaceSubmitted={(draft) => { openOrders.addOptimistic(draft) }}
                             onPlaceAccepted={({ orderId, commandId }) => {
                                 openOrders.ackAccepted({ orderId, commandId })
                             }}
@@ -180,24 +229,29 @@ export default function TradePage(): React.JSX.Element {
                             }}
                         />
                     </div>
-
                     <BalancePanel />
-
                     {rejectToast !== null && (
-                        <CommandRejectedToast message={rejectToast} onClose={() => setRejectToast(null)} />
+                        <CommandRejectedToast
+                            message={rejectToast}
+                            onClose={() => setRejectToast(null)}
+                        />
                     )}
                 </div>
             </div>
+
             {showBonusToast && (
                 <div className="fixed bottom-6 right-6 z-50 bg-panel border border-accent/30
-        rounded-xl px-5 py-3 shadow-lg flex items-center gap-3">
-                    <span className="text-accent text-lg">🎁</span>
+                    rounded-xl px-5 py-3 shadow-lg flex items-center gap-3">
                     <div>
-                        <p className="text-[13px] font-semibold text-hi">₹500 bonus credited!</p>
+                        <p className="text-[13px] font-semibold text-hi">Rs.500 bonus credited!</p>  {/* -emoji */}
                         <p className="text-[11px] text-mid">Welcome to Arbitium</p>
                     </div>
-                    <button onClick={() => setShowBonusToast(false)}
-                        className="text-lo hover:text-hi ml-2">X</button>
+                    <button
+                        onClick={() => setShowBonusToast(false)}
+                        className="text-lo hover:text-hi ml-2"
+                    >
+                        x
+                    </button>
                 </div>
             )}
         </div>

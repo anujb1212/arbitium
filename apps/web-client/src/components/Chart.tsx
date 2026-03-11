@@ -1,41 +1,13 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import {
-    createChart,
-    ColorType,
-    CrosshairMode,
-    type IChartApi,
-    type ISeriesApi,
-    type CandlestickData,
-    type Time,
+    createChart, ColorType, CrosshairMode,
+    type IChartApi, type ISeriesApi,
+    type CandlestickData, type Time,
 } from 'lightweight-charts'
-
 import type { MarketConfig } from '../types/market'
 import { formatPrice } from '../lib/format'
-import { TradeEntry } from '../hooks/useTradeFeed'
-
-function buildCandles(trades: TradeEntry[], priceScale: number): CandlestickData[] {
-    if (trades.length === 0) return []
-
-    const bars = new Map<number, { open: number; high: number; low: number; close: number }>()
-
-    for (const trade of [...trades].reverse()) {
-        const price = Number(trade.price) / Math.pow(10, priceScale)
-        const minuteTs = Math.floor(trade.timestamp / 60_000) * 60
-
-        const bar = bars.get(minuteTs)
-        if (!bar) {
-            bars.set(minuteTs, { open: price, high: price, low: price, close: price })
-        } else {
-            bar.high = Math.max(bar.high, price)
-            bar.low = Math.min(bar.low, price)
-            bar.close = price
-        }
-    }
-
-    return Array.from(bars.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(([time, bar]) => ({ time: time as Time, ...bar }))
-}
+import type { TradeEntry } from '../hooks/useTradeFeed'
+import { fetchKlines, type KlineBar } from '../lib/apiClient'
 
 type Props = {
     trades: TradeEntry[]
@@ -43,10 +15,49 @@ type Props = {
     config: MarketConfig
 }
 
+function toScaledPrice(rawPrice: string, priceScale: number): number {
+    return Number(rawPrice) / Math.pow(10, priceScale)
+}
+
+function buildCandlesFromTrades(trades: TradeEntry[], priceScale: number): CandlestickData[] {
+    const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp)
+    const candles = new Map<number, CandlestickData>()
+
+    for (const trade of sorted) {
+        const minuteTs = Math.floor(trade.timestamp / 60_000) * 60 as Time
+        const price = toScaledPrice(trade.price, priceScale)
+        const existing = candles.get(Number(minuteTs))
+
+        if (!existing) {
+            candles.set(Number(minuteTs), {
+                time: minuteTs,
+                open: price,
+                high: price,
+                low: price,
+                close: price,
+            })
+            continue
+        }
+
+        candles.set(Number(minuteTs), {
+            ...existing,
+            high: Math.max(existing.high, price),
+            low: Math.min(existing.low, price),
+            close: price,
+        })
+    }
+
+    return Array.from(candles.values())
+}
+
 export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Element {
     const containerRef = useRef<HTMLDivElement>(null)
     const chartRef = useRef<IChartApi | null>(null)
     const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+    const hasSeededServerBarsRef = useRef(false)
+    const lastCandleRef = useRef<CandlestickData | null>(null)
+
+    const tradeCandles = useMemo(() => buildCandlesFromTrades(trades, config.priceScale), [trades, config.priceScale])
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -88,29 +99,101 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
             chart.remove()
             chartRef.current = null
             seriesRef.current = null
+            hasSeededServerBarsRef.current = false
+            lastCandleRef.current = null
         }
     }, [])
 
     useEffect(() => {
-        if (!seriesRef.current) return
-        const candles = buildCandles(trades, config.priceScale)
-        if (candles.length > 0) seriesRef.current.setData(candles)
-    }, [trades, config.priceScale])
+        const series = seriesRef.current
+        if (!series) return
 
-    const displayPrice = lastTradePrice
-        ? formatPrice(lastTradePrice, config.priceScale)
-        : null
+        let cancelled = false
+
+        hasSeededServerBarsRef.current = false
+        lastCandleRef.current = null
+        series.setData([])
+
+        const to = Date.now()
+        const from = to - 24 * 60 * 60 * 1000
+
+        fetchKlines({ market: config.market, interval: "ONE_MINUTE", from, to })
+            .then((bars: KlineBar[]) => {
+                if (cancelled) return
+
+                const s = seriesRef.current
+                if (!s) return
+
+                if (bars.length > 0) {
+                    const candleData: CandlestickData[] = bars.map((b) => ({
+                        time: Math.floor(b.openTime / 1000) as Time,
+                        open: Number(b.open) / Math.pow(10, config.priceScale),
+                        high: Number(b.high) / Math.pow(10, config.priceScale),
+                        low: Number(b.low) / Math.pow(10, config.priceScale),
+                        close: Number(b.close) / Math.pow(10, config.priceScale),
+                    }))
+                    s.setData(candleData)
+                    hasSeededServerBarsRef.current = true
+                    lastCandleRef.current = candleData.at(-1) ?? null
+                    return
+                }
+
+                hasSeededServerBarsRef.current = false
+                s.setData(tradeCandles)
+                lastCandleRef.current = tradeCandles.at(-1) ?? null
+            })
+            .catch(console.error)
+
+        return () => {
+            cancelled = true
+        }
+    }, [config.market, config.priceScale])
+
+    useEffect(() => {
+        if (!seriesRef.current) return
+        if (trades.length === 0) return
+        if (!hasSeededServerBarsRef.current) {
+            seriesRef.current.setData(tradeCandles)
+            lastCandleRef.current = tradeCandles.at(-1) ?? null
+            return
+        }
+
+        const latestTrade = trades[0]!
+        const minuteTs = Math.floor(latestTrade.timestamp / 60_000) * 60 as Time
+        const price = toScaledPrice(latestTrade.price, config.priceScale)
+        const previous = lastCandleRef.current
+
+        const nextCandle: CandlestickData =
+            previous === null || previous.time !== minuteTs
+                ? {
+                    time: minuteTs,
+                    open: price,
+                    high: price,
+                    low: price,
+                    close: price,
+                }
+                : {
+                    ...previous,
+                    high: Math.max(previous.high, price),
+                    low: Math.min(previous.low, price),
+                    close: price,
+                }
+
+        seriesRef.current.update(nextCandle)
+        lastCandleRef.current = nextCandle
+    }, [trades, config.priceScale, tradeCandles])
+
+    const displayPrice = lastTradePrice ? formatPrice(lastTradePrice, config.priceScale) : null
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-
             <div className="flex items-center gap-4 px-4 py-2 border-b border-line flex-shrink-0">
                 <span className="font-mono font-bold text-hi text-base">
-                    {displayPrice ?? '—'}
+                    {displayPrice ?? '--'}
                 </span>
                 <span className="font-mono text-xs text-lo">{config.market}</span>
                 {trades.length === 0 && (
-                    <span className="text-xs text-lo">Waiting for first trade…</span>
+                    <span className="text-xs text-lo">Waiting for first trade...</span>
                 )}
             </div>
             <div ref={containerRef} className="flex-1 w-full h-full min-h-0" />

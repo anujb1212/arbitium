@@ -6,9 +6,7 @@ type IncomingMessage =
     | { type: "subscribe"; market: string }
     | { type: "unsubscribe"; market: string }
 
-const KNOWN_MARKETS = new Set(
-    (process.env.MARKETS ?? "TATA-INR, RELIANCE-INR, INFY-INR").split(",")
-)
+const KNOWN_MARKETS = parseKnownMarkets(process.env.MARKETS)
 
 function parsedMessage(raw: string): IncomingMessage | null {
     let parsed: unknown
@@ -25,9 +23,11 @@ function parsedMessage(raw: string): IncomingMessage | null {
     const market = msg["market"]
 
     if (type !== "subscribe" && type !== "unsubscribe") return null
-    if (typeof market !== "string" || market.length === 0 || market.length > MAX_MARKET_ID_LENGTH) return null
+    if (typeof market !== "string") return null
 
-    return { type, market }
+    const normalizedMarket = market.trim()
+    if (normalizedMarket.length === 0 || normalizedMarket.length > MAX_MARKET_ID_LENGTH) return null
+    return { type, market: normalizedMarket }
 }
 
 export async function handleMessage(
@@ -65,4 +65,13 @@ export async function handleMessage(
 
     session.removeSubscription(message.market)
     await feedManager.unsubscribeMarket(message.market, session.onEvent)
+}
+
+export function parseKnownMarkets(rawMarkets: string | undefined): Set<string> {
+    return new Set(
+        (rawMarkets ?? "TATA-INR,RELIANCE-INR,INFY-INR")
+            .split(",")
+            .map((market) => market.trim())
+            .filter((market) => market.length > 0)
+    );
 }

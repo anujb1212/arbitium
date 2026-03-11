@@ -1,5 +1,5 @@
 import { peekFrontOrder, PriceLevel, prunePriceLevel } from "./priceLevelQueue";
-import { BookDelta, MarketId, OrderId, PlaceLimitInput, Price, Qty, Trade } from "./types";
+import { BookDelta, MarketId, OrderId, PlaceLimitInput, Price, Qty, Side, Trade } from "./types";
 
 export function matchIncomingBuyOrder(params: {
     input: PlaceLimitInput;
@@ -162,14 +162,20 @@ export function matchIncomingSellOrder(params: {
 export function createCancelDelta(params: {
     market: MarketId;
     orderId: OrderId;
+    side: Side;
+    price: Price;
+    qty: Qty;
     seq: bigint
 }): BookDelta {
-    const { market, orderId, seq } = params
+    const { market, orderId, side, price, qty, seq } = params
 
     return {
         type: "CANCEL",
         market: market,
         orderId: orderId,
+        side,
+        price,
+        qty,
         seq: seq
     }
 }

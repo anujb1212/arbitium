@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import WebSocket from "ws";
 import { ClientSession } from "../session/ClientSession";
-import { handleMessage } from "../session/messageHandler";
+import { handleMessage, parseKnownMarkets } from "../session/messageHandler";
 
 function makeMockSocket(): WebSocket {
     return {
@@ -23,6 +23,10 @@ describe("handleMessage", () => {
     let socket: WebSocket;
     let session: ClientSession;
     let feedManager: ReturnType<typeof makeMockFeedManager>;
+
+    afterEach(() => {
+        delete process.env.MARKETS
+    })
 
     beforeEach(() => {
         socket = makeMockSocket();
@@ -124,5 +128,27 @@ describe("handleMessage", () => {
             feedManager as any);
 
         expect(feedManager.unsubscribeMarket).not.toHaveBeenCalled()
+    });
+
+    it("trims incoming market before subscribe", async () => {
+        await handleMessage(
+            JSON.stringify({
+                type: "subscribe",
+                market: "  TATA-INR  "
+            }),
+            session,
+            feedManager as any
+        );
+
+        expect(feedManager.subscribeMarket).toHaveBeenCalledWith("TATA-INR", session.onEvent);
+        expect(session.isSubscribed("TATA-INR")).toBe(true);
+    });
+
+    it("parseKnownMarkets trims spaced env values", () => {
+        const knownMarkets = parseKnownMarkets("TATA-INR, RELIANCE-INR, INFY-INR");
+
+        expect(knownMarkets.has("TATA-INR")).toBe(true);
+        expect(knownMarkets.has("RELIANCE-INR")).toBe(true);
+        expect(knownMarkets.has("INFY-INR")).toBe(true);
     });
 });
