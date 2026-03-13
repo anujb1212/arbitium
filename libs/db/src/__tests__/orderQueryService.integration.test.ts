@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "../index";
 import {
     queryFillsByUserAndMarket,
+    queryHoldingsByUser,
     queryOrderHistoryByUserAndMarket,
 } from "../orderQueryService";
 
@@ -252,5 +253,92 @@ describe("queryOrderHistoryByUserAndMarket", () => {
         expect(history[0].qty).toBe("10");
         expect(history[0].filledQty).toBe("0");
         expect(typeof history[0].createdAtMs).toBe("number");
+    });
+});
+
+describe("queryHoldingsByUser", () => {
+    it("returns positive netQty when user has net BUY position", async () => {
+        const maker = await createUser("vaultly-h-maker-1");
+        const taker = await createUser("vaultly-h-taker-1");
+
+        await createOrder(maker.id, {
+            id: "h-sell-1",
+            commandId: "h-cmd-1",
+            side: "SELL"
+        });
+
+        await createOrder(taker.id, {
+            id: "h-buy-1",
+            commandId: "h-cmd-2",
+            side: "BUY"
+        });
+
+        await createTrade({
+            market: "TATA-INR",
+            makerOrderId: "h-sell-1",
+            takerOrderId: "h-buy-1",
+            takerSide: "BUY",
+            qty: 5n,
+            price: 100n
+        });
+
+        const holdings = await queryHoldingsByUser({ prisma, userId: taker.id });
+
+        expect(holdings).toHaveLength(1);
+        expect(holdings[0]!.asset).toBe("TATA");
+        expect(holdings[0]!.netQty).toBe("5");
+        expect(holdings[0]!.avgBuyPrice).toBe("100");
+    });
+
+    it("returns empty when user has fully sold their position", async () => {
+        const user = await createUser("vaultly-h-user-2");
+        const other1 = await createUser("vaultly-h-other-2a");
+        const other2 = await createUser("vaultly-h-other-2b");
+
+        await createOrder(other1.id, {
+            id: "h-sell-2",
+            commandId: "h-cmd-3",
+            side: "SELL"
+        });
+
+        await createOrder(user.id, {
+            id: "h-buy-2",
+            commandId: "h-cmd-4",
+            side: "BUY"
+        });
+
+        await createTrade({
+            market: "TATA-INR",
+            makerOrderId: "h-sell-2",
+            takerOrderId: "h-buy-2",
+            takerSide: "BUY",
+            qty: 5n,
+            price: 100n
+        });
+
+
+        await createOrder(user.id, {
+            id: "h-sell-3",
+            commandId: "h-cmd-5",
+            side: "SELL"
+        });
+
+        await createOrder(other2.id, {
+            id: "h-buy-3",
+            commandId: "h-cmd-6",
+            side: "BUY"
+        });
+
+        await createTrade({
+            market: "TATA-INR",
+            makerOrderId: "h-sell-3",
+            takerOrderId: "h-buy-3",
+            takerSide: "BUY",
+            qty: 5n,
+            price: 110n
+        });
+
+        const holdings = await queryHoldingsByUser({ prisma, userId: user.id });
+        expect(holdings).toHaveLength(0);
     });
 });

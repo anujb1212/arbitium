@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { depositFunds, fetchTradingBalance, withdrawFunds } from "../lib/apiClient"
+import { depositFunds, fetchHoldings, fetchTradingBalance, HoldingDTO, withdrawFunds } from "../lib/apiClient"
+import { getMarketConfig } from "../types/market"
 
 type TransferAction = "DEPOSIT" | "WITHDRAW"
 type TransferStatus = "idle" | "submitting" | "success" | "error"
@@ -16,6 +17,7 @@ export function Balances(): React.JSX.Element {
     const [amountRupees, setAmountRupees] = useState("")
     const [transferStatus, setTransferStatus] = useState<TransferStatus>("idle")
     const [errorMsg, setErrorMsg] = useState("")
+    const [holdings, setHoldings] = useState<HoldingDTO[]>([])
 
     const loadBalance = useCallback(async () => {
         try {
@@ -25,7 +27,14 @@ export function Balances(): React.JSX.Element {
         } catch { /* silent */ }
     }, [])
 
-    useEffect(() => { loadBalance() }, [loadBalance])
+    const loadHoldings = useCallback(async () => {
+        try {
+            const data = await fetchHoldings()
+            setHoldings(data)
+        } catch { /* silent */ }
+    }, [])
+
+    useEffect(() => { loadBalance(); loadHoldings() }, [loadBalance, loadHoldings])
 
     const total = available !== null && locked !== null ? available + locked : null
 
@@ -137,7 +146,42 @@ export function Balances(): React.JSX.Element {
                                 </div>
                             </td>
                         </tr>
-                        {/* Stock holding rows*/}
+                        {holdings.map((holding) => {
+                            const config = getMarketConfig(holding.market);
+                            const priceScale = config?.priceScale ?? 2;
+                            const qtyScale = config?.qtyScale ?? 0;
+                            const avgPriceHuman = (Number(holding.avgBuyPrice) / Math.pow(10, priceScale)).toFixed(priceScale);
+                            const netQtyHuman = (Number(holding.netQty) / Math.pow(10, qtyScale)).toFixed(qtyScale);
+
+                            return (
+                                <tr key={holding.market} className="border-b border-line/40 hover:bg-raised/30">
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-full bg-raised border border-line
+                        flex items-center justify-center text-[11px] font-bold text-mid">
+                                                {holding.asset.slice(0, 2)}
+                                            </div>
+                                            <div>
+                                                <div className="text-[13px] font-semibold text-hi">{holding.asset}</div>
+                                                <div className="text-[10px] font-mono text-lo">{holding.market}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono text-hi">
+                                        {netQtyHuman} shares
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono text-bull">
+                                        {netQtyHuman} shares
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono text-lo text-[11px]">
+                                        avg ₹{avgPriceHuman}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {/* Sell action */}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

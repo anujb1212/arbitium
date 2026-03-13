@@ -62,6 +62,13 @@ export type OrderHistoryDTO = {
     createdAtMs: number
 }
 
+export type HoldingDTO = {
+    asset: string;
+    market: string;
+    netQty: string;
+    avgBuyPrice: string;
+}
+
 export async function fetchOpenOrders(market: string): Promise<OpenOrderDTO[]> {
     const res = await fetch(`${API_URL}/orders?market=${encodeURIComponent(market)}`, {
         headers: getAuthHeaders(),
@@ -189,6 +196,14 @@ export async function fetchOrderHistory(market: string): Promise<OrderHistoryDTO
     })
     const data = await handleResponse<{ orders: OrderHistoryDTO[] }>(res)
     return data.orders
+}
+
+export async function fetchHoldings(): Promise<HoldingDTO[]> {
+    const res = await fetch(`${API_URL}/transfers/holdings`, {
+        headers: getAuthHeaders(),
+    });
+    const data = await handleResponse<{ holdings: HoldingDTO[] }>(res);
+    return data.holdings;
 }
 
 export async function placeMarketOrder(params: {

@@ -21,6 +21,71 @@ export interface OrderHistoryDTO {
     createdAtMs: number;
 }
 
+export interface HoldingDTO {
+    asset: string;
+    market: string;
+    netQty: string;
+    avgBuyPrice: string;
+}
+
+export async function queryHoldingsByUser({
+    prisma,
+    userId,
+}: {
+    prisma: PrismaClient;
+    userId: string;
+}): Promise<HoldingDTO[]> {
+    const trades = await prisma.trade.findMany({
+        where: {
+            OR: [
+                { makerOrder: { userId } },
+                { takerOrder: { userId } },
+            ],
+        },
+        include: {
+            makerOrder: { select: { userId: true } },
+            takerOrder: { select: { userId: true } },
+        },
+    });
+
+    type Accumulator = { netQty: bigint; totalBuyCost: bigint; totalBuyQty: bigint };
+    const byMarket = new Map<string, Accumulator>();
+
+    for (const trade of trades) {
+        const isTaker = trade.takerOrder.userId === userId;
+        const userSide = isTaker
+            ? trade.takerSide
+            : trade.takerSide === "BUY" ? "SELL" : "BUY";
+
+        const acc = byMarket.get(trade.market) ?? { netQty: 0n, totalBuyCost: 0n, totalBuyQty: 0n };
+
+        if (userSide === "BUY") {
+            acc.netQty += trade.qty;
+            acc.totalBuyCost += trade.price * trade.qty;
+            acc.totalBuyQty += trade.qty;
+        } else {
+            acc.netQty -= trade.qty;
+        }
+
+        byMarket.set(trade.market, acc);
+    }
+
+    const holdings: HoldingDTO[] = [];
+    for (const [market, acc] of byMarket.entries()) {
+        if (acc.netQty <= 0n) continue;
+        holdings.push({
+            asset: market.split("-")[0] ?? market,
+            market,
+            netQty: acc.netQty.toString(),
+            avgBuyPrice: acc.totalBuyQty > 0n
+                ? (acc.totalBuyCost / acc.totalBuyQty).toString()
+                : "0",
+        });
+    }
+
+    return holdings;
+}
+
 export async function queryFillsByUserAndMarket({
     prisma,
     userId,

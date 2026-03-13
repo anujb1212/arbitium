@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { prisma, creditTradingBalance, debitTradingBalance, InsufficientBalanceError } from "@arbitium/db";
+import { prisma, creditTradingBalance, debitTradingBalance, InsufficientBalanceError, queryHoldingsByUser } from "@arbitium/db";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
@@ -173,5 +173,16 @@ transfersRouter.post(
         });
 
         res.status(200).json({ transferId: transfer.id, status: "COMPLETED" });
+    }
+);
+
+transfersRouter.get(
+    "/holdings",
+    requireAuth,
+    resolveArbitiumUser,
+    async (req: Request, res: Response) => {
+        const userId = (req as ArbitriumUserRequest).arbitiumUserId;
+        const holdings = await queryHoldingsByUser({ prisma, userId });
+        res.json({ holdings });
     }
 );
