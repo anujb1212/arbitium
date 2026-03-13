@@ -186,12 +186,6 @@ export class OrderBook {
     }
 
     cancel(input: CancelInput): CancelResult {
-
-        console.log("[orderbook cancel]", {
-            orderId: input.orderId,
-            hasOrder: this.ordersById.has(input.orderId),
-        });
-
         const marketReject = this.validateMarket(input.market);
         if (marketReject) {
             return {

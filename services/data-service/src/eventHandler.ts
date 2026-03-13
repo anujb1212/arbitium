@@ -112,9 +112,11 @@ async function handleCommandRejected(
 
     const order = await prisma.order.findUnique({
         where: { commandId: event.commandId },
-        select: { id: true },
+        select: { id: true, status: true },
     });
     if (!order) return;
+
+    if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") return;
 
     await releaseLockForOrder({ prisma, orderId: order.id });
 

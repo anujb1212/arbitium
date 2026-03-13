@@ -10,7 +10,6 @@ export function applyCommandToOrderBook(params: {
     events: EventEnvelope[];
     nextBookSeq: bigint
 } {
-    console.log(`[engine command] kind=${params.command.kind} market=${params.command.market}`)
     const { orderBook, command, bookSeq } = params
     const nextBookSeq = bookSeq + 1n
     const events: EventEnvelope[] = []
@@ -109,28 +108,11 @@ export function applyCommandToOrderBook(params: {
     }
 
     if (command.kind === "CANCEL") {
-
-        console.log("[engine cancel] before", {
-            market: command.market,
-            commandId: command.commandId,
-            orderId: command.payload.orderId,
-            bookSeq: bookSeq.toString(),
-            nextBookSeq: nextBookSeq.toString(),
-        });
-
-
         const result = orderBook.cancel({
             market: command.market,
             orderId: command.payload.orderId,
             seq: nextBookSeq
         })
-
-        console.log("[engine cancel] after", {
-            orderId: command.payload.orderId,
-            accepted: result.accepted,
-            rejectReason: result.rejectReason ?? null,
-            deltas: result.deltas.length,
-        });
 
         if (!result.accepted) {
             events.push({

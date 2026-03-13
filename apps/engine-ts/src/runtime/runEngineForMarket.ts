@@ -99,33 +99,37 @@ async function processMessage(params: {
     }
 }
 
-async function clearPendingCommandMessages(params: {
+async function replayPendingCommandMessages(params: {
     client: EngineContext["client"];
     config: EngineContext["config"];
+    orderBook: OrderBook;
+    getBookSeq: () => bigint;
+    setBookSeq: (seq: bigint) => void;
 }): Promise<void> {
     const { client, config } = params;
+    let replayed = 0;
 
     while (true) {
-        const pendingReply = await client.sendCommand([
-            "XPENDING",
-            config.commandStreamKey,
-            config.consumerGroupName,
-            "-", "+", "100"
-        ]) as Array<[string, string, string, string]>;
+        const messages = await readFromConsumerGroup({
+            client,
+            streamKey: config.commandStreamKey,
+            groupName: config.consumerGroupName,
+            consumerName: config.consumerName,
+            count: READ_COUNT,
+            blockMs: 0,
+            lastId: "0"
+        });
 
-        if (pendingReply.length === 0) break;
+        if (messages.length === 0) break;
 
-        const messageIds = pendingReply.map((entry) => entry[0]);
-        await client.sendCommand([
-            "XACK",
-            config.commandStreamKey,
-            config.consumerGroupName,
-            ...messageIds
-        ]);
+        for (const message of messages) {
+            await processMessage({ ...params, message });
+            replayed++;
+        }
+    }
 
-        console.log(`[engine startup] ACKed ${messageIds.length} stale pending commands for ${config.market}`);
-
-        if (pendingReply.length < 100) break;
+    if (replayed > 0) {
+        console.log(`[engine startup] replayed ${replayed} pending commands for ${params.config.market}`);
     }
 }
 
@@ -196,14 +200,11 @@ export async function runEngineForMarket(
     const orderBook = new OrderBook(config.market);
     let bookSeq = await rehydrateOrderBook({ client, config, orderBook });
 
-    await clearPendingCommandMessages({ client, config });
-
-    await client.sendCommand([
-        "XGROUP", "SETID",
-        config.commandStreamKey,
-        config.consumerGroupName,
-        "$"
-    ]);
+    await replayPendingCommandMessages({
+        client, config, orderBook,
+        getBookSeq: () => bookSeq,
+        setBookSeq: (seq) => { bookSeq = seq }
+    });
 
     while (!signal.aborted) {
         const messages = await readFromConsumerGroup({

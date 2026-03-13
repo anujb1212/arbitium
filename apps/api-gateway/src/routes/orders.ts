@@ -14,11 +14,40 @@ import type { CommandEnvelope } from "@arbitium/ts-shared/engine/types.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
-import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder } from "@arbitium/db";
+import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, queryHoldingsByUser } from "@arbitium/db";
 
 export const ordersRouter = Router()
 
 const STREAM_PREFIX = "arbitium:cmd:"
+
+async function getAvailableSellQty(params: {
+    userId: string;
+    market: string;
+}): Promise<bigint> {
+    const { userId, market } = params;
+
+    const holdings = await queryHoldingsByUser({ prisma, userId });
+    const holding = holdings.find(h => h.market === market);
+    const netQty = BigInt(holding?.netQty ?? "0");
+
+    const openSellOrders = await prisma.order.findMany({
+        where: {
+            userId,
+            market,
+            side: "SELL",
+            status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
+        },
+        select: { qty: true, filledQty: true },
+    });
+
+    const lockedSellQty = openSellOrders.reduce(
+        (sum, o) => sum + (o.qty - o.filledQty),
+        0n
+    );
+
+    const available = netQty - lockedSellQty;
+    return available < 0n ? 0n : available;
+}
 
 ordersRouter.get("/", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const market = req.query["market"]
@@ -75,6 +104,14 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
 
     const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
 
+    if (side === "SELL") {
+        const availableQty = await getAvailableSellQty({ userId: arbitiumUserId, market });
+        if (BigInt(qty) > availableQty) {
+            res.status(422).json({ error: "Insufficient share holdings to sell" });
+            return;
+        }
+    }
+
     try {
         await lockBalanceForOrder({
             prisma,
@@ -125,6 +162,14 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Reque
     const { market, orderId, side, qty } = parsedResult.data;
     const commandId = crypto.randomUUID();
     const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId;
+
+    if (side === "SELL") {
+        const availableQty = await getAvailableSellQty({ userId: arbitiumUserId, market });
+        if (BigInt(qty) > availableQty) {
+            res.status(422).json({ error: "Insufficient share holdings to sell" });
+            return;
+        }
+    }
 
     try {
         await lockBalanceForMarketOrder({

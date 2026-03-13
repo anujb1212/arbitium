@@ -261,3 +261,56 @@ describe("CANCEL flow", () => {
     })
 })
 
+describe("PEL replay idempotency", () => {
+    it("replaying PLACE_LIMIT after seedRestingOrder emits COMMAND_REJECTED, not a second ADD", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        // Simulate rehydration from DB
+        orderBook.seedRestingOrder({
+            orderId: "seed-1", side: "SELL",
+            price: 100n, qtyRemaining: 5n, seq: 1n
+        });
+
+        // Simulate PEL replay of the same command
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "seed-1", side: "SELL", price: 100n, qty: 5n }
+            },
+            bookSeq: 1n,
+        });
+
+        expect(nextBookSeq).toBe(1n); // bookSeq unchanged on reject
+        expect(events).toHaveLength(1);
+        expect(events[0]!.kind).toBe("COMMAND_REJECTED");
+        // Order must still be in book — seedRestingOrder was the real placement
+        expect(orderBook.getOrder("seed-1")).not.toBeNull();
+    });
+
+    it("rehydrated book correctly matches against seeded resting order after PEL replay", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        orderBook.seedRestingOrder({
+            orderId: "seed-sell-1", side: "SELL",
+            price: 100n, qtyRemaining: 5n, seq: 1n
+        });
+
+        // New BUY market order hits the seeded SELL
+        const { events } = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET",
+                payload: { orderId: "mkt-buy-1", side: "BUY", qty: 3n }
+            },
+            bookSeq: 1n,
+        });
+
+        const trades = events.filter(e => e.kind === "TRADE");
+        expect(trades).toHaveLength(1);
+        if (trades[0]!.kind === "TRADE") {
+            expect(trades[0]!.payload.qty).toBe(3n);
+            expect(trades[0]!.payload.makerOrderId).toBe("seed-sell-1");
+        }
+    });
+});

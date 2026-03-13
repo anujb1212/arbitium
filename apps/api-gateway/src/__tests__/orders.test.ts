@@ -7,6 +7,8 @@ const {
     encodeCommandToStreamFieldsMock,
     getRedisClientMock,
     lockBalanceForOrderMock,
+    lockBalanceForMarketOrderMock,
+    queryHoldingsByUserMock,
     findUniqueMock,
     queryFillsByUserAndMarketMock,
     queryOrderHistoryByUserAndMarketMock
@@ -15,6 +17,8 @@ const {
     encodeCommandToStreamFieldsMock: vi.fn(() => [["kind", "PLACE_LIMIT"]]),
     getRedisClientMock: vi.fn(() => ({ sendCommand: vi.fn() })),
     lockBalanceForOrderMock: vi.fn().mockResolvedValue(undefined),
+    lockBalanceForMarketOrderMock: vi.fn().mockResolvedValue(undefined),
+    queryHoldingsByUserMock: vi.fn().mockResolvedValue([]),
     findUniqueMock: vi.fn(),
     queryFillsByUserAndMarketMock: vi.fn().mockResolvedValue([]),
     queryOrderHistoryByUserAndMarketMock: vi.fn().mockResolvedValue([])
@@ -49,10 +53,13 @@ vi.mock("@arbitium/db", async (importOriginal) => {
         prisma: {
             order: {
                 findUnique: findUniqueMock,
+                findMany: vi.fn().mockResolvedValue([]),
             },
         },
 
         lockBalanceForOrder: lockBalanceForOrderMock,
+        lockBalanceForMarketOrder: lockBalanceForMarketOrderMock,
+        queryHoldingsByUser: queryHoldingsByUserMock,
         InsufficientBalanceError: class InsufficientBalanceError extends Error { },
         queryFillsByUserAndMarket: queryFillsByUserAndMarketMock,
         queryOrderHistoryByUserAndMarket: queryOrderHistoryByUserAndMarketMock
@@ -71,6 +78,8 @@ beforeEach(() => {
     encodeCommandToStreamFieldsMock.mockClear();
     getRedisClientMock.mockClear();
     lockBalanceForOrderMock.mockClear();
+    lockBalanceForMarketOrderMock.mockClear();
+    queryHoldingsByUserMock.mockReset();
     findUniqueMock.mockReset();
     queryFillsByUserAndMarketMock.mockReset();
     queryOrderHistoryByUserAndMarketMock.mockReset();
@@ -79,6 +88,8 @@ beforeEach(() => {
     encodeCommandToStreamFieldsMock.mockReturnValue([["kind", "PLACE_LIMIT"]]);
     getRedisClientMock.mockReturnValue({ sendCommand: vi.fn() });
     lockBalanceForOrderMock.mockResolvedValue(undefined);
+    lockBalanceForMarketOrderMock.mockResolvedValue(undefined);
+    queryHoldingsByUserMock.mockResolvedValue([]);
     queryFillsByUserAndMarketMock.mockResolvedValue([]);
     queryOrderHistoryByUserAndMarketMock.mockResolvedValue([]);
 });
@@ -249,5 +260,77 @@ describe("GET /orders/history", () => {
         expect(res.status).toBe(400);
         expect(res.body.error).toBeDefined();
         expect(queryOrderHistoryByUserAndMarketMock).not.toHaveBeenCalled();
+    });
+});
+
+describe("SELL holdings validation", () => {
+    it("rejects SELL limit order when user has 0 holdings", async () => {
+        queryHoldingsByUserMock.mockResolvedValue([]);
+
+        const res = await request(app).post("/orders/limit").send({
+            market: "TATA-INR",
+            orderId: "ord-sell-1",
+            side: "SELL",
+            price: "10000000",
+            qty: "5",
+        });
+
+        expect(res.status).toBe(422);
+        expect(res.body.error).toMatch(/insufficient share holdings/i);
+        expect(lockBalanceForOrderMock).not.toHaveBeenCalled();
+    });
+
+    it("rejects SELL limit when qty > holdings minus open sell qty", async () => {
+        // Net 6 shares held
+        queryHoldingsByUserMock.mockResolvedValue([
+            { asset: "TATA", market: "TATA-INR", netQty: "6", avgBuyPrice: "10000000" }
+        ]);
+        // 4 shares already locked in open SELL orders
+        findUniqueMock.mockResolvedValue(null); // not used in this path
+        // Override prisma.order.findMany for open sell orders
+        // Note: findUniqueMock won't work here — see note below
+
+        const res = await request(app).post("/orders/limit").send({
+            market: "TATA-INR",
+            orderId: "ord-sell-2",
+            side: "SELL",
+            price: "10000000",
+            qty: "7",   // 7 > 6 available
+        });
+
+        expect(res.status).toBe(422);
+        expect(res.body.error).toMatch(/insufficient share holdings/i);
+    });
+
+    it("accepts SELL limit when qty <= available holdings", async () => {
+        queryHoldingsByUserMock.mockResolvedValue([
+            { asset: "TATA", market: "TATA-INR", netQty: "10", avgBuyPrice: "10000000" }
+        ]);
+
+        const res = await request(app).post("/orders/limit").send({
+            market: "TATA-INR",
+            orderId: "ord-sell-3",
+            side: "SELL",
+            price: "10000000",
+            qty: "5",
+        });
+
+        expect(res.status).toBe(202);
+        expect(lockBalanceForOrderMock).toHaveBeenCalledOnce();
+    });
+
+    it("rejects SELL market order when user has 0 holdings", async () => {
+        queryHoldingsByUserMock.mockResolvedValue([]);
+
+        const res = await request(app).post("/orders/market").send({
+            market: "TATA-INR",
+            orderId: "ord-mkt-sell-1",
+            side: "SELL",
+            qty: "3",
+        });
+
+        expect(res.status).toBe(422);
+        expect(res.body.error).toMatch(/insufficient share holdings/i);
+        expect(lockBalanceForMarketOrderMock).not.toHaveBeenCalled();
     });
 });
