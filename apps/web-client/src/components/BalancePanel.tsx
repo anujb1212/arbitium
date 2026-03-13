@@ -6,49 +6,51 @@ const inputCls =
     'outline-none focus:border-accent transition-colors placeholder:text-lo disabled:opacity-40'
 
 type Tab = 'DEPOSIT' | 'WITHDRAW'
-
 type Status =
     | { tag: 'idle' }
     | { tag: 'submitting' }
     | { tag: 'success'; message: string }
     | { tag: 'error'; message: string }
 
+function rupeesToPaise(rupees: string): number {
+    const val = parseFloat(rupees)
+    if (!isFinite(val) || val <= 0) return 0
+    return Math.round(val * 100)
+}
+
 export function BalancePanel(): React.JSX.Element {
     const [activeTab, setActiveTab] = useState<Tab>('DEPOSIT')
-    const [amount, setAmount] = useState('')
+    const [amountRupees, setAmountRupees] = useState('')
     const [status, setStatus] = useState<Status>({ tag: 'idle' })
     const [availableBalance, setAvailableBalance] = useState<bigint | null>(null)
-
     const submitting = status.tag === 'submitting'
 
     const loadBalance = useCallback(async () => {
         try {
             const data = await fetchTradingBalance()
             setAvailableBalance(BigInt(data.available))
-        } catch {
-            // silently fail
-        }
+        } catch { /* silent */ }
     }, [])
 
-    useEffect(() => {
-        loadBalance()
-    }, [loadBalance])
+    useEffect(() => { loadBalance() }, [loadBalance])
 
     async function handleSubmit(e: React.FormEvent): Promise<void> {
         e.preventDefault()
-        if (!amount) return
+        const amountInPaise = rupeesToPaise(amountRupees)
+        if (amountInPaise <= 0) return
 
         const idempotencyKey = crypto.randomUUID()
         setStatus({ tag: 'submitting' })
 
         try {
             if (activeTab === 'DEPOSIT') {
-                await depositFunds({ amountInPaise: amount, idempotencyKey })
+                await depositFunds({ amountInPaise: String(amountInPaise), idempotencyKey })
             } else {
-                await withdrawFunds({ amountInPaise: amount, idempotencyKey })
+                await withdrawFunds({ amountInPaise: String(amountInPaise), idempotencyKey })
             }
-            setStatus({ tag: 'success', message: `${activeTab === 'DEPOSIT' ? 'Deposited' : 'Withdrawn'} ₹${(Number(amount) / 100).toFixed(2)}` })
-            setAmount('')
+            const verb = activeTab === 'DEPOSIT' ? 'Deposited' : 'Withdrawn'
+            setStatus({ tag: 'success', message: `${verb} ₹${parseFloat(amountRupees).toFixed(2)}` })
+            setAmountRupees('')
             await loadBalance()
             setTimeout(() => setStatus({ tag: 'idle' }), 3000)
         } catch (err) {
@@ -60,11 +62,14 @@ export function BalancePanel(): React.JSX.Element {
         ? `₹${(Number(availableBalance) / 100).toFixed(2)}`
         : '—'
 
+    const presets = ['100', '500', '1000', '5000']
+
     return (
-        <div className="px-5 py-3.5 bg-panel border-t border-line sticky bottom-0">
+        <div className="px-4 py-3 bg-panel">
+
             <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] text-lo uppercase tracking-widest">Trading Balance</span>
-                <span className="text-[13px] font-mono text-hi">{formattedBalance}</span>
+                <span className="text-[14px] font-mono font-semibold text-hi">{formattedBalance}</span>
             </div>
 
             <div className="flex border border-line rounded-lg overflow-hidden mb-3">
@@ -73,7 +78,7 @@ export function BalancePanel(): React.JSX.Element {
                         key={tab}
                         type="button"
                         onClick={() => { setActiveTab(tab); setStatus({ tag: 'idle' }) }}
-                        className={`flex-1 py-1.5 text-[13px] font-semibold transition-colors
+                        className={`flex-1 py-1.5 text-[12px] font-semibold transition-colors
                             ${activeTab === tab
                                 ? 'bg-accent/15 text-accent'
                                 : 'bg-raised text-lo hover:text-mid'}`}
@@ -83,26 +88,43 @@ export function BalancePanel(): React.JSX.Element {
                 ))}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-                <div className="flex flex-col gap-1">
-                    <label className="text-[11px] text-lo">
-                        Amount <span className="text-lo/60">(paise — 10000 = ₹100)</span>
-                    </label>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+                <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-mid font-mono">₹</span>
                     <input
-                        className={inputCls}
+                        className={`${inputCls} pl-6`}
                         type="text"
-                        inputMode="numeric"
-                        placeholder="e.g. 10000 = ₹100.00"
-                        value={amount}
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={amountRupees}
                         disabled={submitting}
                         autoComplete="off"
-                        onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+                        onChange={(e) => {
+                            const v = e.target.value
+                            if (/^\d*\.?\d{0,2}$/.test(v)) setAmountRupees(v)
+                        }}
                     />
+                </div>
+
+                <div className="flex gap-1.5">
+                    {presets.map((p) => (
+                        <button
+                            key={p}
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => setAmountRupees(p)}
+                            className="flex-1 py-1 rounded text-[10px] font-mono text-lo
+                                bg-raised hover:bg-line hover:text-mid transition-colors
+                                disabled:opacity-40"
+                        >
+                            ₹{p}
+                        </button>
+                    ))}
                 </div>
 
                 <button
                     type="submit"
-                    disabled={submitting || !amount}
+                    disabled={submitting || rupeesToPaise(amountRupees) <= 0}
                     className="py-2 rounded-lg text-[13px] font-semibold transition-colors
                         disabled:opacity-40 disabled:cursor-not-allowed
                         bg-accent/15 text-accent hover:bg-accent/25"

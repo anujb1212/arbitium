@@ -41,6 +41,27 @@ export type OpenOrderDTO = {
     createdAtMs: number
 }
 
+export type FillDTO = {
+    id: string
+    market: string
+    side: "BUY" | "SELL"
+    price: string
+    qty: string
+    role: "MAKER" | "TAKER"
+    executedAt: number
+}
+
+export type OrderHistoryDTO = {
+    orderId: string
+    market: string
+    side: "BUY" | "SELL"
+    price: string
+    qty: string
+    filledQty: string
+    status: "OPEN" | "PARTIALLY_FILLED" | "FILLED" | "CANCELLED"
+    createdAt: number
+}
+
 export async function fetchOpenOrders(market: string): Promise<OpenOrderDTO[]> {
     const res = await fetch(`${API_URL}/orders?market=${encodeURIComponent(market)}`, {
         headers: getAuthHeaders(),
@@ -152,4 +173,32 @@ export async function fetchTradingBalance(): Promise<{
         headers: getAuthHeaders(),
     });
     return handleResponse<{ available: string; locked: string }>(res);
+}
+
+export async function fetchFillHistory(market: string): Promise<FillDTO[]> {
+    const res = await fetch(`${API_URL}/orders/fills?market=${encodeURIComponent(market)}`, {
+        headers: getAuthHeaders(),
+    })
+    return handleResponse<FillDTO[]>(res)
+}
+
+export async function fetchOrderHistory(market: string): Promise<OrderHistoryDTO[]> {
+    const res = await fetch(`${API_URL}/orders/history?market=${encodeURIComponent(market)}`, {
+        headers: getAuthHeaders(),
+    })
+    return handleResponse<OrderHistoryDTO[]>(res)
+}
+
+export async function placeMarketOrder(params: {
+    market: string
+    orderId: string
+    side: "BUY" | "SELL"
+    qty: string
+}): Promise<{ commandId: string }> {
+    const res = await fetch(`${API_URL}/orders/market`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(params),
+    })
+    return handleResponse<{ commandId: string }>(res)
 }

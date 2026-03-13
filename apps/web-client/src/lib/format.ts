@@ -27,3 +27,7 @@ export function formatQty(raw: string, scale: number = 0): string {
     const fracStr = padded.slice(-scale);
     return `${BigInt(wholeStr).toLocaleString("en-IN")}.${fracStr}`;
 }
+
+export function truncateId(id: string): string {
+    return `${id.slice(0, 8)}…`
+}
