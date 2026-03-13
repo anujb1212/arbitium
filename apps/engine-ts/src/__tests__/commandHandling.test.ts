@@ -123,6 +123,85 @@ describe("commandHandling", () => {
     });
 });
 
+describe("PLACE_MARKET flow", () => {
+    it("fills against resting limit, emits TRADE + BOOK_DELTA(MARKET_ORDER_SETTLED)", () => {
+        const orderBook = new OrderBook("TATA-INR");
+        applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT", payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 5n } },
+            bookSeq: 0n,
+        });
+
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-1", side: "BUY", qty: 5n } },
+            bookSeq: 1n,
+        });
+
+        expect(nextBookSeq).toBe(2n);
+        expect(events[0]!.kind).toBe("TRADE");
+        const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
+        expect(settled).toBeDefined();
+    });
+
+    it("PLACE_MARKET rejected (qty=0) => COMMAND_REJECTED, bookSeq unchanged", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c-bad", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-bad", side: "BUY", qty: 0n } },
+            bookSeq: 3n,
+        });
+
+        expect(nextBookSeq).toBe(3n);
+        expect(events).toHaveLength(1);
+        expect(events[0]!.kind).toBe("COMMAND_REJECTED");
+    });
+
+    it("empty book => no trades, still emits MARKET_ORDER_SETTLED, bookSeq advances", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const { events, nextBookSeq } = applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c3", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-2", side: "BUY", qty: 10n } },
+            bookSeq: 0n,
+        });
+
+        expect(nextBookSeq).toBe(1n);
+        expect(events.some(e => e.kind === "TRADE")).toBe(false);
+        const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
+        expect(settled).toBeDefined();
+        // market order must NOT rest in book
+        expect(orderBook.getOrder("mkt-2")).toBeNull();
+    });
+
+    it("partial fill => TRADE emitted for filled portion, MARKET_ORDER_SETTLED always follows", () => {
+        const orderBook = new OrderBook("TATA-INR");
+        // Only 3 available, market order wants 10
+        applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT", payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 3n } },
+            bookSeq: 0n,
+        });
+
+        const { events } = applyCommandToOrderBook({
+            orderBook,
+            command: { commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-3", side: "BUY", qty: 10n } },
+            bookSeq: 1n,
+        });
+
+        const trades = events.filter(e => e.kind === "TRADE");
+        expect(trades).toHaveLength(1);
+        if (trades[0]!.kind === "TRADE") {
+            expect(trades[0]!.payload.qty).toBe(3n);
+        }
+
+        const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
+        expect(settled).toBeDefined();
+        expect(orderBook.getOrder("mkt-3")).toBeNull(); // never rested
+    });
+});
+
 describe("CANCEL flow", () => {
     it("CANCEL on non-existent orderId => emits COMMAND_REJECTED, bookSeq unchanged", () => {
         const orderBook = new OrderBook("TATA-INR")

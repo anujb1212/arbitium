@@ -8,12 +8,16 @@ const {
     getRedisClientMock,
     lockBalanceForOrderMock,
     findUniqueMock,
+    queryFillsByUserAndMarketMock,
+    queryOrderHistoryByUserAndMarketMock
 } = vi.hoisted(() => ({
     appendToStreamMock: vi.fn().mockResolvedValue("1700000000000-0"),
     encodeCommandToStreamFieldsMock: vi.fn(() => [["kind", "PLACE_LIMIT"]]),
     getRedisClientMock: vi.fn(() => ({ sendCommand: vi.fn() })),
     lockBalanceForOrderMock: vi.fn().mockResolvedValue(undefined),
     findUniqueMock: vi.fn(),
+    queryFillsByUserAndMarketMock: vi.fn().mockResolvedValue([]),
+    queryOrderHistoryByUserAndMarketMock: vi.fn().mockResolvedValue([])
 }));
 
 vi.mock("../middleware/auth.js", () => ({
@@ -50,11 +54,13 @@ vi.mock("@arbitium/db", async (importOriginal) => {
 
         lockBalanceForOrder: lockBalanceForOrderMock,
         InsufficientBalanceError: class InsufficientBalanceError extends Error { },
+        queryFillsByUserAndMarket: queryFillsByUserAndMarketMock,
+        queryOrderHistoryByUserAndMarket: queryOrderHistoryByUserAndMarketMock
     };
 });
 
 import { ordersRouter } from "../routes/orders"
-import { beforeEach } from "node:test";
+import { beforeEach } from "vitest";
 
 const app = express();
 app.use(express.json());
@@ -66,11 +72,15 @@ beforeEach(() => {
     getRedisClientMock.mockClear();
     lockBalanceForOrderMock.mockClear();
     findUniqueMock.mockReset();
+    queryFillsByUserAndMarketMock.mockReset();
+    queryOrderHistoryByUserAndMarketMock.mockReset();
 
     appendToStreamMock.mockResolvedValue("1700000000000-0");
     encodeCommandToStreamFieldsMock.mockReturnValue([["kind", "PLACE_LIMIT"]]);
     getRedisClientMock.mockReturnValue({ sendCommand: vi.fn() });
     lockBalanceForOrderMock.mockResolvedValue(undefined);
+    queryFillsByUserAndMarketMock.mockResolvedValue([]);
+    queryOrderHistoryByUserAndMarketMock.mockResolvedValue([]);
 });
 
 describe("POST /orders/limit", () => {
@@ -165,5 +175,79 @@ describe("DELETE /orders/:id", () => {
 
         const res = await request(app).delete("/orders/ord-1").send({ market: "TATA_INR" });
         expect(res.status).toBe(404);
+    });
+});
+
+describe("GET /orders/fills", () => {
+    it("returns 200 + fills array for valid market query", async () => {
+        const fakeFill = {
+            id: "trade-1",
+            market: "TATA_INR",
+            side: "SELL",
+            price: "100",
+            qty: "5",
+            role: "MAKER",
+            executedAtMs: 1700000000000,
+        };
+        queryFillsByUserAndMarketMock.mockResolvedValue([fakeFill]);
+
+        const res = await request(app).get("/orders/fills?market=TATA_INR");
+
+        expect(res.status).toBe(200);
+        expect(res.body.fills).toHaveLength(1);
+        expect(res.body.fills[0].role).toBe("MAKER");
+        expect(queryFillsByUserAndMarketMock).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: "user-1", market: "TATA_INR" })
+        );
+    });
+
+    it("returns 200 + empty array when user has no fills", async () => {
+        queryFillsByUserAndMarketMock.mockResolvedValue([]);
+
+        const res = await request(app).get("/orders/fills?market=TATA_INR");
+
+        expect(res.status).toBe(200);
+        expect(res.body.fills).toEqual([]);
+    });
+
+    it("returns 400 when market query param is missing", async () => {
+        const res = await request(app).get("/orders/fills");
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBeDefined();
+        expect(queryFillsByUserAndMarketMock).not.toHaveBeenCalled();
+    });
+});
+
+describe("GET /orders/history", () => {
+    it("returns 200 + orders array for valid market query", async () => {
+        const fakeOrder = {
+            orderId: "ord-1",
+            market: "TATA_INR",
+            side: "BUY",
+            price: "100",
+            qty: "5",
+            filledQty: "5",
+            status: "FILLED",
+            createdAtMs: 1700000000000,
+        };
+        queryOrderHistoryByUserAndMarketMock.mockResolvedValue([fakeOrder]);
+
+        const res = await request(app).get("/orders/history?market=TATA_INR");
+
+        expect(res.status).toBe(200);
+        expect(res.body.orders).toHaveLength(1);
+        expect(res.body.orders[0].status).toBe("FILLED");
+        expect(queryOrderHistoryByUserAndMarketMock).toHaveBeenCalledWith(
+            expect.objectContaining({ userId: "user-1", market: "TATA_INR" })
+        );
+    });
+
+    it("returns 400 when market query param is missing", async () => {
+        const res = await request(app).get("/orders/history");
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBeDefined();
+        expect(queryOrderHistoryByUserAndMarketMock).not.toHaveBeenCalled();
     });
 });

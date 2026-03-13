@@ -6,12 +6,15 @@ import {
     PlaceLimitBodySchema,
     CancelParamsSchema,
     CancelBodySchema,
+    OrderHistoryQuerySchema,
+    FillsQuerySchema,
+    PlaceMarketBodySchema,
 } from "../schemas.js";
 import type { CommandEnvelope } from "@arbitium/ts-shared/engine/types.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
-import { prisma, lockBalanceForOrder, InsufficientBalanceError } from "@arbitium/db";
+import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder } from "@arbitium/db";
 
 export const ordersRouter = Router()
 
@@ -111,6 +114,75 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
         res.status(503).json({ error: "Command stream unavailable" })
     }
 })
+
+ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+    const parsedResult = PlaceMarketBodySchema.safeParse(req.body);
+    if (!parsedResult.success) {
+        res.status(400).json({ error: parsedResult.error.flatten() });
+        return;
+    }
+
+    const { market, orderId, side, qty } = parsedResult.data;
+    const commandId = crypto.randomUUID();
+    const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId;
+
+    try {
+        await lockBalanceForMarketOrder({
+            prisma,
+            userId: arbitiumUserId,
+            orderId,
+            commandId,
+            market,
+            side,
+            qty
+        });
+
+    } catch (error) {
+        if (error instanceof InsufficientBalanceError) {
+            res.status(422).json({ error: "Insufficient trading balance" });
+            return;
+        }
+        res.status(500).json({ error: "Balance lock failed" });
+        return;
+    }
+
+    const command: CommandEnvelope = {
+        commandId,
+        market,
+        kind: "PLACE_MARKET",
+        payload: { orderId, side, qty },
+    };
+
+    try {
+        const fields = encodeCommandToStreamFields(command);
+        await appendToStream({ client: getRedisClient(), streamKey: `${STREAM_PREFIX}${market}`, fields });
+        res.status(202).json({ commandId });
+    } catch {
+        res.status(503).json({ error: "Command stream unavailable" });
+    }
+});
+
+ordersRouter.get("/fills", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+    const parsed = FillsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+    }
+    const userId = (req as ArbitriumUserRequest).arbitiumUserId;
+    const fills = await queryFillsByUserAndMarket({ prisma, userId, market: parsed.data.market });
+    res.json({ fills });
+});
+
+ordersRouter.get("/history", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+    const parsed = OrderHistoryQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+    }
+    const userId = (req as ArbitriumUserRequest).arbitiumUserId;
+    const orders = await queryOrderHistoryByUserAndMarket({ prisma, userId, market: parsed.data.market });
+    res.json({ orders });
+});
 
 ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const paramsResult = CancelParamsSchema.safeParse(req.params)

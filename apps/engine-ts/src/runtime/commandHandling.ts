@@ -66,6 +66,48 @@ export function applyCommandToOrderBook(params: {
         }
     }
 
+    if (command.kind === "PLACE_MARKET") {
+        const result = orderBook.placeMarket({
+            market: command.market,
+            orderId: command.payload.orderId,
+            side: command.payload.side,
+            qty: command.payload.qty,
+            seq: nextBookSeq,
+        });
+
+        if (!result.accepted) {
+            events.push({
+                market: command.market,
+                kind: "COMMAND_REJECTED",
+                payload: {
+                    commandKind: command.kind,
+                    rejectReason: result.rejectReason!
+                },
+                commandId: command.commandId,
+            });
+            return {
+                events,
+                nextBookSeq: bookSeq
+            };
+        }
+
+        for (const trade of result.trades) {
+            events.push(tradeToEventEnvelope(
+                trade,
+                command.market,
+                nextBookSeq, command.commandId));
+        }
+        for (const delta of result.deltas) {
+            events.push(deltaToEventEnvelope(
+                delta,
+                command.market,
+                nextBookSeq,
+                command.commandId));
+        }
+
+        return { events, nextBookSeq };
+    }
+
     if (command.kind === "CANCEL") {
 
         console.log("[engine cancel] before", {

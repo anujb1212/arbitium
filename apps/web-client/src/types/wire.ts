@@ -24,6 +24,11 @@ export type WireBookDeltaPayload =
         qty: string
     }
     | {
+
+        type: "MARKET_ORDER_SETTLED";
+        orderId: string
+    }
+    | {
         type: "CANCEL";
         orderId: string;
         side: Side;
@@ -32,7 +37,7 @@ export type WireBookDeltaPayload =
     };
 
 export type WireCommandRejectedPayload = {
-    commandKind: "PLACE_LIMIT" | "CANCEL";
+    commandKind: "PLACE_LIMIT" | "PLACE_MARKET" | "CANCEL";
     rejectReason: string;
 };
 

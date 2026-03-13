@@ -60,8 +60,18 @@ function applyDelta(state: OrderBookState, payload: WireBookDeltaPayload): Order
         const qtyBig = BigInt(qty);
         const entry = orderMap.get(makerOrderId);
 
-        if (!entry) return { bids, asks, orderMap, seenEventIds: state.seenEventIds };
+        if (!entry) {
+            if (bids.has(payload.price)) decrementLevelQty(bids, payload.price, qtyBig);
 
+            else if (asks.has(payload.price)) decrementLevelQty(asks, payload.price, qtyBig);
+
+            return {
+                bids,
+                asks,
+                orderMap,
+                seenEventIds: state.seenEventIds
+            }
+        }
         const levels = entry.side === "BUY" ? bids : asks;
         const newRemaining = entry.remainingQty - qtyBig;
 
@@ -69,6 +79,16 @@ function applyDelta(state: OrderBookState, payload: WireBookDeltaPayload): Order
         else orderMap.set(makerOrderId, { ...entry, remainingQty: newRemaining });
 
         decrementLevelQty(levels, entry.price, qtyBig);
+    }
+
+    if (payload.type === "MARKET_ORDER_SETTLED") {
+        orderMap.delete(payload.orderId);
+        return {
+            bids,
+            asks,
+            orderMap,
+            seenEventIds: state.seenEventIds
+        }
     }
 
     if (payload.type === "CANCEL") {

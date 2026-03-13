@@ -141,6 +141,8 @@ exports.Prisma.TradingBalanceScalarFieldEnum = {
 exports.Prisma.OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  orderType: 'orderType',
+  consumedLocked: 'consumedLocked',
   market: 'market',
   side: 'side',
   price: 'price',
@@ -206,6 +208,11 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
+exports.OrderType = exports.$Enums.OrderType = {
+  LIMIT: 'LIMIT',
+  MARKET: 'MARKET'
+};
+
 exports.OrderSide = exports.$Enums.OrderSide = {
   BUY: 'BUY',
   SELL: 'SELL'

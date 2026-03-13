@@ -68,7 +68,7 @@ export function FillHistory({ market, config }: Props): React.JSX.Element {
                             </span>
                         </td>
                         <td className="px-4 py-2 font-mono text-lo text-right text-[11px]">
-                            {new Date(fill.executedAt).toLocaleTimeString()}
+                            {new Date(fill.executedAtMs).toLocaleTimeString()}
                         </td>
                     </tr>
                 ))}

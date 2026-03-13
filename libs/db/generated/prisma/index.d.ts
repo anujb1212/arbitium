@@ -56,6 +56,14 @@ export namespace $Enums {
 export type OrderSide = (typeof OrderSide)[keyof typeof OrderSide]
 
 
+export const OrderType: {
+  LIMIT: 'LIMIT',
+  MARKET: 'MARKET'
+};
+
+export type OrderType = (typeof OrderType)[keyof typeof OrderType]
+
+
 export const OrderStatus: {
   OPEN: 'OPEN',
   PENDING: 'PENDING',
@@ -100,6 +108,10 @@ export type KlineInterval = (typeof KlineInterval)[keyof typeof KlineInterval]
 export type OrderSide = $Enums.OrderSide
 
 export const OrderSide: typeof $Enums.OrderSide
+
+export type OrderType = $Enums.OrderType
+
+export const OrderType: typeof $Enums.OrderType
 
 export type OrderStatus = $Enums.OrderStatus
 
@@ -3711,6 +3723,7 @@ export namespace Prisma {
   }
 
   export type OrderAvgAggregateOutputType = {
+    consumedLocked: number | null
     price: number | null
     qty: number | null
     filledQty: number | null
@@ -3718,6 +3731,7 @@ export namespace Prisma {
   }
 
   export type OrderSumAggregateOutputType = {
+    consumedLocked: bigint | null
     price: bigint | null
     qty: bigint | null
     filledQty: bigint | null
@@ -3727,6 +3741,8 @@ export namespace Prisma {
   export type OrderMinAggregateOutputType = {
     id: string | null
     userId: string | null
+    orderType: $Enums.OrderType | null
+    consumedLocked: bigint | null
     market: string | null
     side: $Enums.OrderSide | null
     price: bigint | null
@@ -3742,6 +3758,8 @@ export namespace Prisma {
   export type OrderMaxAggregateOutputType = {
     id: string | null
     userId: string | null
+    orderType: $Enums.OrderType | null
+    consumedLocked: bigint | null
     market: string | null
     side: $Enums.OrderSide | null
     price: bigint | null
@@ -3757,6 +3775,8 @@ export namespace Prisma {
   export type OrderCountAggregateOutputType = {
     id: number
     userId: number
+    orderType: number
+    consumedLocked: number
     market: number
     side: number
     price: number
@@ -3772,6 +3792,7 @@ export namespace Prisma {
 
 
   export type OrderAvgAggregateInputType = {
+    consumedLocked?: true
     price?: true
     qty?: true
     filledQty?: true
@@ -3779,6 +3800,7 @@ export namespace Prisma {
   }
 
   export type OrderSumAggregateInputType = {
+    consumedLocked?: true
     price?: true
     qty?: true
     filledQty?: true
@@ -3788,6 +3810,8 @@ export namespace Prisma {
   export type OrderMinAggregateInputType = {
     id?: true
     userId?: true
+    orderType?: true
+    consumedLocked?: true
     market?: true
     side?: true
     price?: true
@@ -3803,6 +3827,8 @@ export namespace Prisma {
   export type OrderMaxAggregateInputType = {
     id?: true
     userId?: true
+    orderType?: true
+    consumedLocked?: true
     market?: true
     side?: true
     price?: true
@@ -3818,6 +3844,8 @@ export namespace Prisma {
   export type OrderCountAggregateInputType = {
     id?: true
     userId?: true
+    orderType?: true
+    consumedLocked?: true
     market?: true
     side?: true
     price?: true
@@ -3920,6 +3948,8 @@ export namespace Prisma {
   export type OrderGroupByOutputType = {
     id: string
     userId: string
+    orderType: $Enums.OrderType
+    consumedLocked: bigint
     market: string
     side: $Enums.OrderSide
     price: bigint
@@ -3954,6 +3984,8 @@ export namespace Prisma {
   export type OrderSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    orderType?: boolean
+    consumedLocked?: boolean
     market?: boolean
     side?: boolean
     price?: boolean
@@ -3973,6 +4005,8 @@ export namespace Prisma {
   export type OrderSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    orderType?: boolean
+    consumedLocked?: boolean
     market?: boolean
     side?: boolean
     price?: boolean
@@ -3989,6 +4023,8 @@ export namespace Prisma {
   export type OrderSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    orderType?: boolean
+    consumedLocked?: boolean
     market?: boolean
     side?: boolean
     price?: boolean
@@ -4005,6 +4041,8 @@ export namespace Prisma {
   export type OrderSelectScalar = {
     id?: boolean
     userId?: boolean
+    orderType?: boolean
+    consumedLocked?: boolean
     market?: boolean
     side?: boolean
     price?: boolean
@@ -4017,7 +4055,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "market" | "side" | "price" | "qty" | "filledQty" | "status" | "lockedAmount" | "commandId" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "orderType" | "consumedLocked" | "market" | "side" | "price" | "qty" | "filledQty" | "status" | "lockedAmount" | "commandId" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
   export type OrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     trades?: boolean | Order$tradesArgs<ExtArgs>
@@ -4041,6 +4079,8 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       userId: string
+      orderType: $Enums.OrderType
+      consumedLocked: bigint
       market: string
       side: $Enums.OrderSide
       price: bigint
@@ -4479,6 +4519,8 @@ export namespace Prisma {
   interface OrderFieldRefs {
     readonly id: FieldRef<"Order", 'String'>
     readonly userId: FieldRef<"Order", 'String'>
+    readonly orderType: FieldRef<"Order", 'OrderType'>
+    readonly consumedLocked: FieldRef<"Order", 'BigInt'>
     readonly market: FieldRef<"Order", 'String'>
     readonly side: FieldRef<"Order", 'OrderSide'>
     readonly price: FieldRef<"Order", 'BigInt'>
@@ -8431,6 +8473,8 @@ export namespace Prisma {
   export const OrderScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
+    orderType: 'orderType',
+    consumedLocked: 'consumedLocked',
     market: 'market',
     side: 'side',
     price: 'price',
@@ -8569,6 +8613,20 @@ export namespace Prisma {
    * Reference to a field of type 'BigInt[]'
    */
   export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrderType'
+   */
+  export type EnumOrderTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderType'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrderType[]'
+   */
+  export type ListEnumOrderTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderType[]'>
     
 
 
@@ -8802,6 +8860,8 @@ export namespace Prisma {
     NOT?: OrderWhereInput | OrderWhereInput[]
     id?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
+    orderType?: EnumOrderTypeFilter<"Order"> | $Enums.OrderType
+    consumedLocked?: BigIntFilter<"Order"> | bigint | number
     market?: StringFilter<"Order"> | string
     side?: EnumOrderSideFilter<"Order"> | $Enums.OrderSide
     price?: BigIntFilter<"Order"> | bigint | number
@@ -8820,6 +8880,8 @@ export namespace Prisma {
   export type OrderOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
+    orderType?: SortOrder
+    consumedLocked?: SortOrder
     market?: SortOrder
     side?: SortOrder
     price?: SortOrder
@@ -8842,6 +8904,8 @@ export namespace Prisma {
     OR?: OrderWhereInput[]
     NOT?: OrderWhereInput | OrderWhereInput[]
     userId?: StringFilter<"Order"> | string
+    orderType?: EnumOrderTypeFilter<"Order"> | $Enums.OrderType
+    consumedLocked?: BigIntFilter<"Order"> | bigint | number
     market?: StringFilter<"Order"> | string
     side?: EnumOrderSideFilter<"Order"> | $Enums.OrderSide
     price?: BigIntFilter<"Order"> | bigint | number
@@ -8859,6 +8923,8 @@ export namespace Prisma {
   export type OrderOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
+    orderType?: SortOrder
+    consumedLocked?: SortOrder
     market?: SortOrder
     side?: SortOrder
     price?: SortOrder
@@ -8882,6 +8948,8 @@ export namespace Prisma {
     NOT?: OrderScalarWhereWithAggregatesInput | OrderScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Order"> | string
     userId?: StringWithAggregatesFilter<"Order"> | string
+    orderType?: EnumOrderTypeWithAggregatesFilter<"Order"> | $Enums.OrderType
+    consumedLocked?: BigIntWithAggregatesFilter<"Order"> | bigint | number
     market?: StringWithAggregatesFilter<"Order"> | string
     side?: EnumOrderSideWithAggregatesFilter<"Order"> | $Enums.OrderSide
     price?: BigIntWithAggregatesFilter<"Order"> | bigint | number
@@ -9274,6 +9342,8 @@ export namespace Prisma {
 
   export type OrderCreateInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -9292,6 +9362,8 @@ export namespace Prisma {
   export type OrderUncheckedCreateInput = {
     id: string
     userId: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -9308,6 +9380,8 @@ export namespace Prisma {
 
   export type OrderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -9326,6 +9400,8 @@ export namespace Prisma {
   export type OrderUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -9343,6 +9419,8 @@ export namespace Prisma {
   export type OrderCreateManyInput = {
     id: string
     userId: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -9357,6 +9435,8 @@ export namespace Prisma {
 
   export type OrderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -9372,6 +9452,8 @@ export namespace Prisma {
   export type OrderUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -9881,6 +9963,13 @@ export namespace Prisma {
     _max?: NestedBigIntFilter<$PrismaModel>
   }
 
+  export type EnumOrderTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderType | EnumOrderTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumOrderTypeFilter<$PrismaModel> | $Enums.OrderType
+  }
+
   export type EnumOrderSideFilter<$PrismaModel = never> = {
     equals?: $Enums.OrderSide | EnumOrderSideFieldRefInput<$PrismaModel>
     in?: $Enums.OrderSide[] | ListEnumOrderSideFieldRefInput<$PrismaModel>
@@ -9908,6 +9997,8 @@ export namespace Prisma {
   export type OrderCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    orderType?: SortOrder
+    consumedLocked?: SortOrder
     market?: SortOrder
     side?: SortOrder
     price?: SortOrder
@@ -9921,6 +10012,7 @@ export namespace Prisma {
   }
 
   export type OrderAvgOrderByAggregateInput = {
+    consumedLocked?: SortOrder
     price?: SortOrder
     qty?: SortOrder
     filledQty?: SortOrder
@@ -9930,6 +10022,8 @@ export namespace Prisma {
   export type OrderMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    orderType?: SortOrder
+    consumedLocked?: SortOrder
     market?: SortOrder
     side?: SortOrder
     price?: SortOrder
@@ -9945,6 +10039,8 @@ export namespace Prisma {
   export type OrderMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    orderType?: SortOrder
+    consumedLocked?: SortOrder
     market?: SortOrder
     side?: SortOrder
     price?: SortOrder
@@ -9958,10 +10054,21 @@ export namespace Prisma {
   }
 
   export type OrderSumOrderByAggregateInput = {
+    consumedLocked?: SortOrder
     price?: SortOrder
     qty?: SortOrder
     filledQty?: SortOrder
     lockedAmount?: SortOrder
+  }
+
+  export type EnumOrderTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderType | EnumOrderTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumOrderTypeWithAggregatesFilter<$PrismaModel> | $Enums.OrderType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrderTypeFilter<$PrismaModel>
+    _max?: NestedEnumOrderTypeFilter<$PrismaModel>
   }
 
   export type EnumOrderSideWithAggregatesFilter<$PrismaModel = never> = {
@@ -10444,6 +10551,10 @@ export namespace Prisma {
     connect?: TradeWhereUniqueInput | TradeWhereUniqueInput[]
   }
 
+  export type EnumOrderTypeFieldUpdateOperationsInput = {
+    set?: $Enums.OrderType
+  }
+
   export type EnumOrderSideFieldUpdateOperationsInput = {
     set?: $Enums.OrderSide
   }
@@ -10742,6 +10853,13 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type NestedEnumOrderTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderType | EnumOrderTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumOrderTypeFilter<$PrismaModel> | $Enums.OrderType
+  }
+
   export type NestedEnumOrderSideFilter<$PrismaModel = never> = {
     equals?: $Enums.OrderSide | EnumOrderSideFieldRefInput<$PrismaModel>
     in?: $Enums.OrderSide[] | ListEnumOrderSideFieldRefInput<$PrismaModel>
@@ -10754,6 +10872,16 @@ export namespace Prisma {
     in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
+  }
+
+  export type NestedEnumOrderTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderType | EnumOrderTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OrderType[] | ListEnumOrderTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumOrderTypeWithAggregatesFilter<$PrismaModel> | $Enums.OrderType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrderTypeFilter<$PrismaModel>
+    _max?: NestedEnumOrderTypeFilter<$PrismaModel>
   }
 
   export type NestedEnumOrderSideWithAggregatesFilter<$PrismaModel = never> = {
@@ -10889,6 +11017,8 @@ export namespace Prisma {
 
   export type OrderCreateWithoutUserInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -10905,6 +11035,8 @@ export namespace Prisma {
 
   export type OrderUncheckedCreateWithoutUserInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11008,6 +11140,8 @@ export namespace Prisma {
     NOT?: OrderScalarWhereInput | OrderScalarWhereInput[]
     id?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
+    orderType?: EnumOrderTypeFilter<"Order"> | $Enums.OrderType
+    consumedLocked?: BigIntFilter<"Order"> | bigint | number
     market?: StringFilter<"Order"> | string
     side?: EnumOrderSideFilter<"Order"> | $Enums.OrderSide
     price?: BigIntFilter<"Order"> | bigint | number
@@ -11279,6 +11413,8 @@ export namespace Prisma {
 
   export type OrderCreateWithoutTradesInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11296,6 +11432,8 @@ export namespace Prisma {
   export type OrderUncheckedCreateWithoutTradesInput = {
     id: string
     userId: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11316,6 +11454,8 @@ export namespace Prisma {
 
   export type OrderCreateWithoutTakerTradesInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11333,6 +11473,8 @@ export namespace Prisma {
   export type OrderUncheckedCreateWithoutTakerTradesInput = {
     id: string
     userId: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11364,6 +11506,8 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutTradesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11381,6 +11525,8 @@ export namespace Prisma {
   export type OrderUncheckedUpdateWithoutTradesInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11407,6 +11553,8 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutTakerTradesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11424,6 +11572,8 @@ export namespace Prisma {
   export type OrderUncheckedUpdateWithoutTakerTradesInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11499,6 +11649,8 @@ export namespace Prisma {
 
   export type OrderCreateManyUserInput = {
     id: string
+    orderType?: $Enums.OrderType
+    consumedLocked?: bigint | number
     market: string
     side: $Enums.OrderSide
     price: bigint | number
@@ -11524,6 +11676,8 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11540,6 +11694,8 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number
@@ -11556,6 +11712,8 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderType?: EnumOrderTypeFieldUpdateOperationsInput | $Enums.OrderType
+    consumedLocked?: BigIntFieldUpdateOperationsInput | bigint | number
     market?: StringFieldUpdateOperationsInput | string
     side?: EnumOrderSideFieldUpdateOperationsInput | $Enums.OrderSide
     price?: BigIntFieldUpdateOperationsInput | bigint | number

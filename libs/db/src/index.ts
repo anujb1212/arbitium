@@ -54,3 +54,4 @@ export { db as prisma };
 
 export * from "./balanceService";
 export * from "./klineService";
+export * from "./orderQueryService";

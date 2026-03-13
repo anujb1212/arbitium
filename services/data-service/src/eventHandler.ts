@@ -1,5 +1,5 @@
 import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
-import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder, KlineInterval, getOpenTime, getCloseTime, upsertKline, markOrderOpen } from "@arbitium/db";
+import { prisma, consumeLockOnFill, creditFillProceeds, releaseLockForOrder, KlineInterval, getOpenTime, getCloseTime, upsertKline, markOrderOpen, settleMarketOrder } from "@arbitium/db";
 
 function isPrismaUniqueViolation(error: unknown): boolean {
     return (
@@ -83,6 +83,11 @@ async function handleTrade(
 async function handleBookDelta(
     event: Extract<EventEnvelope, { kind: "BOOK_DELTA" }>
 ): Promise<void> {
+    if (event.payload.type === "MARKET_ORDER_SETTLED") {
+        await settleMarketOrder({ prisma, orderId: event.payload.orderId });
+        return;
+    }
+
     if (event.payload.type === "ADD") {
         await markOrderOpen({
             prisma,
@@ -103,7 +108,7 @@ async function handleCommandRejected(
     event: Extract<EventEnvelope, { kind: "COMMAND_REJECTED" }>
 ): Promise<void> {
     if (!event.commandId) return;
-    if (event.payload.commandKind !== "PLACE_LIMIT") return;
+    if (event.payload.commandKind !== "PLACE_LIMIT" && event.payload.commandKind !== "PLACE_MARKET") return;
 
     const order = await prisma.order.findUnique({
         where: { commandId: event.commandId },

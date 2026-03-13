@@ -45,7 +45,23 @@ export const TradesQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(200).optional(),
 });
 
+export const FillsQuerySchema = z.object({
+    market: z.string().min(1),
+});
+
+export const OrderHistoryQuerySchema = z.object({
+    market: z.string().min(1),
+});
+
+export const PlaceMarketBodySchema = z.object({
+    market: boundedString,
+    orderId: boundedString,
+    side: z.enum(["BUY", "SELL"]),
+    qty: decimalBigintString,
+});
+
 export type PlaceLimitBody = z.infer<typeof PlaceLimitBodySchema>
 export type CancelParams = z.infer<typeof CancelParamsSchema>
 export type CancelBody = z.infer<typeof CancelBodySchema>
 export type TransferBody = z.infer<typeof TransferBodySchema>
+export type PlaceMarketBody = z.infer<typeof PlaceMarketBodySchema>;

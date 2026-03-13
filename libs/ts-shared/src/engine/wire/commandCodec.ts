@@ -19,6 +19,15 @@ export function encodeCommandToStreamFields(command: CommandEnvelope): ReadonlyA
         ]
     }
 
+    if (command.kind === "PLACE_MARKET") {
+        return [
+            ...common,
+            ["orderId", command.payload.orderId],
+            ["side", command.payload.side],
+            ["qty", command.payload.qty.toString(10)],
+        ];
+    }
+
     return [
         ...common,
         ["orderId", command.payload.orderId]
@@ -40,7 +49,7 @@ export function decodeCommandFromStreamFields(fields: Record<string, string>): D
         rejectReason: "MISSING_COMMAND_ID"
     }
 
-    if (kind !== "PLACE_LIMIT" && kind !== "CANCEL") return {
+    if (kind !== "PLACE_LIMIT" && kind !== "PLACE_MARKET" && kind !== "CANCEL") return {
         accepted: false,
         rejectReason: "INVALID_COMMAND_KIND"
     }
@@ -49,6 +58,36 @@ export function decodeCommandFromStreamFields(fields: Record<string, string>): D
     if (!isNonEmptyString(orderId)) return {
         accepted: false,
         rejectReason: "MISSING_ORDER_ID"
+    }
+
+    if (kind === "PLACE_MARKET") {
+        const side = readField(fields, "side");
+        if (side !== "BUY" && side !== "SELL")
+            return {
+                accepted: false,
+                rejectReason: "INVALID_SIDE"
+            };
+
+        const qtyParsed = parseDecimalBigint(readField(fields, "qty"));
+        if (!qtyParsed.ok)
+            return {
+                accepted: false,
+                rejectReason: "INVALID_QTY"
+            };
+
+        return {
+            accepted: true,
+            value: {
+                market,
+                kind,
+                commandId,
+                payload: {
+                    orderId,
+                    side,
+                    qty: qtyParsed.value
+                }
+            }
+        };
     }
 
     if (kind === "CANCEL") {

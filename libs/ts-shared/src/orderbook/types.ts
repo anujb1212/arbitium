@@ -17,6 +17,14 @@ export interface PlaceLimitInput {
     seq: Seq
 }
 
+export interface PlaceMarketInput {
+    market: MarketId;
+    orderId: OrderId;
+    side: Side;
+    qty: Qty;
+    seq: Seq;
+}
+
 export interface CancelInput {
     market: MarketId;
     orderId: OrderId;
@@ -60,6 +68,12 @@ export type BookDelta =
         price: Price;
         qty: Qty;
         seq: Seq
+    }
+    | {
+        type: "MARKET_ORDER_SETTLED";
+        market: MarketId;
+        orderId: OrderId;
+        seq: Seq
     };
 
 export interface PlaceLimitResult {
@@ -68,6 +82,15 @@ export interface PlaceLimitResult {
     trades: Trade[];
     deltas: BookDelta[];
     remainingQty: Qty
+}
+
+export interface PlaceMarketResult {
+    accepted: boolean;
+    rejectReason?: RejectReason;
+    trades: Trade[];
+    deltas: BookDelta[];
+    filledQty: Qty;
+    remainingQty: Qty;
 }
 
 export interface CancelResult {

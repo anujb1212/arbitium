@@ -1,7 +1,7 @@
-import { CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, Price, Qty, RejectReason, RestingOrder, Seq, Side } from "./types";
+import { BookDelta, CancelInput, CancelResult, MarketId, OrderId, PlaceLimitInput, PlaceLimitResult, PlaceMarketInput, PlaceMarketResult, Price, Qty, RejectReason, RestingOrder, Seq, Side, Trade } from "./types";
 import { insertPriceIntoLadder } from "./priceLadder";
 import { PriceLevel, prunePriceLevel, removeOrderFromPriceLevel } from "./priceLevelQueue";
-import { matchIncomingBuyOrder, matchIncomingSellOrder, createCancelDelta } from "./matching";
+import { matchIncomingBuyOrder, matchIncomingSellOrder, createCancelDelta, matchMarketSellOrder, matchMarketBuyOrder } from "./matching";
 
 export class OrderBook {
     private bids = new Map<Price, PriceLevel>();
@@ -112,6 +112,77 @@ export class OrderBook {
         }
 
         return { accepted: true, trades, deltas, remainingQty }
+    }
+
+    placeMarket(input: PlaceMarketInput): PlaceMarketResult {
+        const marketReject = this.validateMarket(input.market);
+        if (marketReject) {
+            return {
+                accepted: false,
+                rejectReason: marketReject,
+                trades: [],
+                deltas: [],
+                filledQty: 0n,
+                remainingQty: input.qty
+            };
+        }
+
+        if (input.qty <= 0n) {
+            return {
+                accepted: false,
+                rejectReason: "INVALID_QTY",
+                trades: [],
+                deltas: [],
+                filledQty: 0n,
+                remainingQty: input.qty
+            };
+        }
+
+        if (this.seenOrderIds.has(input.orderId)) {
+            return {
+                accepted: false,
+                rejectReason: "DUPLICATE_ORDER_ID",
+                trades: [],
+                deltas: [],
+                filledQty: 0n,
+                remainingQty: input.qty
+            };
+        }
+
+        this.seenOrderIds.add(input.orderId);
+
+        const trades: Trade[] = [];
+        const deltas: BookDelta[] = [];
+        let remainingQty = input.qty;
+
+        if (input.side === "BUY") {
+            remainingQty = matchMarketBuyOrder({
+                input, startingRemainingQty: remainingQty,
+                asksByPrice: this.asks, askPricesAsc: this.askPricesAsc,
+                ordersById: this.ordersById, trades, deltas,
+            });
+        } else {
+            remainingQty = matchMarketSellOrder({
+                input, startingRemainingQty: remainingQty,
+                bidsByPrice: this.bids, bidPricesDesc: this.bidPricesDesc,
+                ordersById: this.ordersById, trades, deltas,
+            });
+        }
+
+        deltas.push({
+            type: "MARKET_ORDER_SETTLED",
+            market: input.market,
+            orderId: input.orderId,
+            seq: input.seq
+        });
+
+        return {
+            accepted: true,
+            trades,
+            deltas,
+            filledQty: input.qty - remainingQty,
+            remainingQty
+        };
     }
 
     cancel(input: CancelInput): CancelResult {

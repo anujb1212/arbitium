@@ -48,7 +48,7 @@ export type FillDTO = {
     price: string
     qty: string
     role: "MAKER" | "TAKER"
-    executedAt: number
+    executedAtMs: number
 }
 
 export type OrderHistoryDTO = {
@@ -59,7 +59,7 @@ export type OrderHistoryDTO = {
     qty: string
     filledQty: string
     status: "OPEN" | "PARTIALLY_FILLED" | "FILLED" | "CANCELLED"
-    createdAt: number
+    createdAtMs: number
 }
 
 export async function fetchOpenOrders(market: string): Promise<OpenOrderDTO[]> {
@@ -179,14 +179,16 @@ export async function fetchFillHistory(market: string): Promise<FillDTO[]> {
     const res = await fetch(`${API_URL}/orders/fills?market=${encodeURIComponent(market)}`, {
         headers: getAuthHeaders(),
     })
-    return handleResponse<FillDTO[]>(res)
+    const data = await handleResponse<{ fills: FillDTO[] }>(res)
+    return data.fills
 }
 
 export async function fetchOrderHistory(market: string): Promise<OrderHistoryDTO[]> {
     const res = await fetch(`${API_URL}/orders/history?market=${encodeURIComponent(market)}`, {
         headers: getAuthHeaders(),
     })
-    return handleResponse<OrderHistoryDTO[]>(res)
+    const data = await handleResponse<{ orders: OrderHistoryDTO[] }>(res)
+    return data.orders
 }
 
 export async function placeMarketOrder(params: {

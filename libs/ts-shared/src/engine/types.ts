@@ -1,11 +1,17 @@
 import { MarketId, OrderId, Price, Qty, RejectReason, Seq, Side } from "../orderbook/types";
 
-export type CommandKind = "PLACE_LIMIT" | "CANCEL";
+export type CommandKind = "PLACE_LIMIT" | "PLACE_MARKET" | "CANCEL";
 
 export type PlaceLimitCommandPayload = {
     orderId: OrderId;
     side: Side;
     price: Price;
+    qty: Qty;
+};
+
+export type PlaceMarketCommandPayload = {
+    orderId: OrderId;
+    side: Side;
     qty: Qty;
 };
 
@@ -19,6 +25,12 @@ export type CommandEnvelope =
         market: MarketId;
         kind: "PLACE_LIMIT";
         payload: PlaceLimitCommandPayload;
+    }
+    | {
+        commandId: string;
+        market: MarketId;
+        kind: "PLACE_MARKET";
+        payload: PlaceMarketCommandPayload
     }
     | {
         commandId: string;
@@ -51,6 +63,10 @@ export type BookDeltaPayload =
         takerOrderId: OrderId;
         price: Price;
         qty: Qty;
+    }
+    | {
+        type: "MARKET_ORDER_SETTLED";
+        orderId: OrderId
     }
     | {
         type: "CANCEL";

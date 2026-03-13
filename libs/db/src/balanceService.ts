@@ -1,6 +1,5 @@
 import { OrderSide, Prisma, PrismaClient } from "../generated/prisma";
 
-
 export type LockBalanceArgs = {
     prisma: PrismaClient;
     userId: string;
@@ -9,6 +8,16 @@ export type LockBalanceArgs = {
     market: string;
     side: OrderSide;
     price: bigint;
+    qty: bigint;
+};
+
+export type LockMarketOrderArgs = {
+    prisma: PrismaClient;
+    userId: string;
+    orderId: string;
+    commandId: string;
+    market: string;
+    side: OrderSide;
     qty: bigint;
 };
 
@@ -109,7 +118,7 @@ export async function releaseLockForOrder(args: ReleaseOrConsumeArgs): Promise<v
 
         if (order.status === "CANCELLED" || order.status === "FILLED" || order.status === "REJECTED") return
 
-        const remainingLocked = order.lockedAmount - (order.price * order.filledQty);
+        const remainingLocked = order.lockedAmount - order.consumedLocked;
 
         if (remainingLocked > 0n) {
             await tx.tradingBalance.update({
@@ -128,24 +137,60 @@ export async function releaseLockForOrder(args: ReleaseOrConsumeArgs): Promise<v
     });
 }
 
+export async function settleMarketOrder(args: { prisma: PrismaClient; orderId: string }): Promise<void> {
+    const { prisma, orderId } = args;
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const order = await tx.order.findUnique({ where: { id: orderId } });
+        if (!order || order.orderType !== "MARKET") return;
+        if (order.status === "FILLED" || order.status === "CANCELLED" || order.status === "REJECTED") return;
+
+        const remainingLocked = order.lockedAmount - order.consumedLocked;
+
+        if (remainingLocked > 0n) {
+            await tx.tradingBalance.updateMany({
+                where: { userId: order.userId },
+                data: {
+                    available: { increment: remainingLocked },
+                    locked: { decrement: remainingLocked },
+                },
+            });
+        }
+
+        const finalStatus = order.filledQty > 0n ? "FILLED" : "CANCELLED";
+        await tx.order.update({
+            where: { id: orderId },
+            data: { status: finalStatus },
+        });
+    });
+}
+
 export async function consumeLockOnFill(args: ConsumeOnFillArgs): Promise<void> {
     const { tx, orderId, filledQty, fillPrice } = args;
 
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) return;
 
+    const reservedForFill = order.orderType === "MARKET"
+        ? fillPrice * filledQty
+        : order.price * filledQty;
+
     const newFilledQty = order.filledQty + filledQty;
     const isFullyFilled = newFilledQty >= order.qty
-    const reservedForFill = order.price * filledQty
+
     const actualCost = fillPrice * filledQty
     const refund = reservedForFill - actualCost
 
     if (reservedForFill > 0n) {
-        await tx.tradingBalance.update({
+        await tx.tradingBalance.updateMany({
             where: { userId: order.userId },
             data: {
                 locked: { decrement: reservedForFill },
-                ...(refund > 0n ? { available: { increment: refund } } : {}),
+                ...(refund > 0n ? {
+                    available: {
+                        increment: refund
+                    }
+                } : {}),
             },
         });
     }
@@ -169,9 +214,18 @@ export async function creditFillProceeds(args: CreditFillProceedsArgs): Promise<
     const newFilledQty = order.filledQty + fillQty;
     const isFullyFilled = newFilledQty >= order.qty;
 
-    await tx.tradingBalance.update({
+    await tx.tradingBalance.upsert({
         where: { userId: order.userId },
-        data: { available: { increment: proceeds } },
+        update: {
+            available: {
+                increment: proceeds
+            }
+        },
+        create: {
+            userId: order.userId,
+            available: proceeds,
+            locked: 0n
+        }
     });
 
     await tx.order.update({
@@ -196,6 +250,55 @@ export async function markOrderOpen(args: ReleaseOrConsumeArgs): Promise<void> {
         },
     });
 }
+
+export async function lockBalanceForMarketOrder(args: LockMarketOrderArgs): Promise<void> {
+    const { prisma, userId, orderId, commandId, market, side, qty } = args;
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await tx.tradingBalance.upsert({
+            where: { userId },
+            update: {},
+            create: { userId, available: 0n, locked: 0n },
+        });
+
+        await tx.$queryRaw`SELECT id FROM "TradingBalance" WHERE "userId" = ${userId} FOR UPDATE`;
+
+        const balance = await tx.tradingBalance.findUnique({ where: { userId } });
+        const lockedAmount = side === "BUY" ? (balance?.available ?? 0n) : 0n;
+
+        if (side === "BUY" && lockedAmount === 0n) {
+            throw new InsufficientBalanceError("No available balance for market buy order");
+        }
+
+        if (side === "BUY") {
+            await tx.tradingBalance.update({
+                where: { userId },
+                data: {
+                    available: { decrement: lockedAmount },
+                    locked: { increment: lockedAmount },
+                },
+            });
+        }
+
+        await tx.order.create({
+            data: {
+                id: orderId,
+                userId,
+                commandId,
+                market,
+                side,
+                price: 0n,
+                qty,
+                filledQty: 0n,
+                lockedAmount,
+                consumedLocked: 0n,
+                orderType: "MARKET",
+                status: "PENDING",
+            },
+        });
+    });
+}
+
 //Credit (deposit from Vaultly)
 export async function creditTradingBalance(args: CreditBalanceArgs): Promise<void> {
     const { prisma, userId, amountInPaise } = args;

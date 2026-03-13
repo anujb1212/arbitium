@@ -13,6 +13,11 @@ enum OrderSide {
   SELL
 }
 
+enum OrderType {
+  LIMIT
+  MARKET
+}
+
 enum OrderStatus {
   OPEN
   PENDING
@@ -73,6 +78,9 @@ model Order {
   id     String @id
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  orderType      OrderType @default(LIMIT)
+  consumedLocked BigInt    @default(0)
 
   market    String
   side      OrderSide

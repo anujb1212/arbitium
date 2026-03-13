@@ -50,6 +50,7 @@ export function encodeEventToStreamFields(event: EventEnvelope): ReadonlyArray<[
             ["qty", event.payload.qty.toString(10)],
         ];
     }
+
     if (deltaType === "FILL") {
         return [
             ...base,
@@ -60,6 +61,15 @@ export function encodeEventToStreamFields(event: EventEnvelope): ReadonlyArray<[
             ["qty", event.payload.qty.toString(10)],
         ];
     }
+
+    if (deltaType === "MARKET_ORDER_SETTLED") {
+        return [
+            ...base,
+            ["deltaType", "MARKET_ORDER_SETTLED"],
+            ["orderId", event.payload.orderId],
+        ];
+    }
+
     return [
         ...base,
         ["deltaType", "CANCEL"],
@@ -93,7 +103,7 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
 
     if (kind === "COMMAND_REJECTED") {
         const commandKind = readField(fields, "commandKind");
-        if (commandKind !== "PLACE_LIMIT" && commandKind !== "CANCEL")
+        if (commandKind !== "PLACE_LIMIT" && commandKind !== "PLACE_MARKET" && commandKind !== "CANCEL")
             return {
                 accepted: false,
                 rejectReason: "INVALID_COMMAND_KIND"
@@ -111,7 +121,10 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
             value: {
                 market,
                 kind,
-                payload: { commandKind, rejectReason: rejectReason as any },
+                payload: {
+                    commandKind,
+                    rejectReason: rejectReason as any
+                },
                 commandId,
                 eventId,
             },
@@ -182,7 +195,7 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
 
     // BOOK_DELTA
     const deltaType = readField(fields, "deltaType");
-    if (deltaType !== "ADD" && deltaType !== "FILL" && deltaType !== "CANCEL") {
+    if (deltaType !== "ADD" && deltaType !== "FILL" && deltaType !== "MARKET_ORDER_SETTLED" && deltaType !== "CANCEL") {
         return {
             accepted: false,
             rejectReason: "INVALID_DELTA_TYPE"
@@ -282,6 +295,31 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
                 eventId
             },
         }
+    }
+
+    if (deltaType === "MARKET_ORDER_SETTLED") {
+        const orderId = readField(fields, "orderId");
+
+        if (!isNonEmptyString(orderId))
+            return {
+                accepted: false,
+                rejectReason: "MISSING_ORDER_ID"
+            };
+
+        return {
+            accepted: true,
+            value: {
+                market,
+                kind: "BOOK_DELTA",
+                bookSeq,
+                payload: {
+                    type: "MARKET_ORDER_SETTLED",
+                    orderId
+                },
+                commandId,
+                eventId
+            }
+        };
     }
 
     const orderId = readField(fields, "orderId");
