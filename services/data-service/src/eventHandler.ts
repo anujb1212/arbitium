@@ -40,8 +40,6 @@ async function handleTrade(
     const buyOrderId = takerSide === "BUY" ? takerOrderId : makerOrderId;
     const sellOrderId = takerSide === "SELL" ? takerOrderId : makerOrderId;
 
-    const tradeTime = new Date();
-
     try {
         await prisma.$transaction(async (tx) => {
             await tx.trade.create({
@@ -52,7 +50,7 @@ async function handleTrade(
                     price: BigInt(price),
                     qty: BigInt(qty),
                     takerSide: takerSide,
-                    executedAt: tradeTime
+                    executedAt: new Date(event.payload.executedAtMs)
                 }
             });
 
@@ -61,7 +59,7 @@ async function handleTrade(
             await creditFillProceeds({ tx, orderId: sellOrderId, fillPrice: price, fillQty: qty });
 
             for (const interval of ALL_INTERVALS) {
-                const openTime = getOpenTime(tradeTime, interval);
+                const openTime = getOpenTime(new Date(event.payload.executedAtMs), interval);
                 const closeTime = getCloseTime(openTime, interval);
                 await upsertKline({
                     tx,

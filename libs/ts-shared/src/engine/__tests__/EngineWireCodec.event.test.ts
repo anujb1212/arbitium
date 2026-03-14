@@ -17,6 +17,7 @@ describe('engine wireCodec(event)', () => {
                 price: 100n,
                 qty: 2n,
                 takerSide: "BUY",
+                executedAtMs: 1700000000000,
             },
         };
 
@@ -32,7 +33,14 @@ describe('engine wireCodec(event)', () => {
             market: "TATA-INR",
             kind: "TRADE",
             bookSeq: 11n,
-            payload: { takerOrderId: "t2", makerOrderId: "m2", price: 101n, qty: 1n, takerSide: "SELL" },
+            payload: {
+                takerOrderId: "t2",
+                makerOrderId: "m2",
+                price: 101n,
+                qty: 1n,
+                takerSide: "SELL",
+                executedAtMs: 1700000000000
+            },
         };
 
         const fields = pairsToRecord(encodeEventToStreamFields(event));

@@ -35,6 +35,7 @@ export function encodeEventToStreamFields(event: EventEnvelope): ReadonlyArray<[
             ["price", event.payload.price.toString(10)],
             ["qty", event.payload.qty.toString(10)],
             ["takerSide", event.payload.takerSide],
+            ["executedAtMs", event.payload.executedAtMs.toString(10)]
         ];
     }
 
@@ -142,6 +143,13 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
     if (kind === "TRADE") {
         const takerOrderId = readField(fields, "takerOrderId");
         const makerOrderId = readField(fields, "makerOrderId");
+        const executedAtMsRaw = readField(fields, "executedAtMs");
+        const executedAtMs = Number(executedAtMsRaw);
+
+        if (!executedAtMsRaw || !Number.isFinite(executedAtMs) || executedAtMs <= 0) {
+            return { accepted: false, rejectReason: "INVALID_EXECUTED_AT_MS" };
+        }
+
         if (!isNonEmptyString(takerOrderId))
             return {
                 accepted: false,
@@ -185,7 +193,8 @@ export function decodeEventFromStreamFields(fields: Record<string, string>): Dec
                     makerOrderId,
                     price: priceParsed.value,
                     qty: qtyParsed.value,
-                    takerSide
+                    takerSide,
+                    executedAtMs
                 },
                 commandId,
                 eventId,

@@ -396,4 +396,40 @@ export class OrderBook {
             insertPriceIntoLadder(this.askPricesAsc, order.price, "ASC");
         }
     }
+
+    public toSnapshotState(): {
+        restingOrders: RestingOrder[];
+        seenOrderIds: string[];
+    } {
+        return {
+            restingOrders: Array.from(this.ordersById.values()),
+            seenOrderIds: Array.from(this.seenOrderIds),
+        };
+    }
+
+    public restoreFromSnapshotState(params: {
+        restingOrders: RestingOrder[];
+        seenOrderIds: string[];
+        bookSeq: bigint;
+    }): void {
+        this.seenOrderIds = new Set(params.seenOrderIds);
+        this.lastSeq = params.bookSeq;
+
+        const ordersInSeqOrder = [...params.restingOrders].sort((a, b) =>
+            a.seq < b.seq ? -1 : a.seq > b.seq ? 1 : 0
+        );
+
+        for (const order of ordersInSeqOrder) {
+            this.ordersById.set(order.orderId, order);
+            if (order.side === "BUY") {
+                const level = this.getOrCreateLevel(this.bids, order.price);
+                level.queue.push(order);
+                insertPriceIntoLadder(this.bidPricesDesc, order.price, "DESC");
+            } else {
+                const level = this.getOrCreateLevel(this.asks, order.price);
+                level.queue.push(order);
+                insertPriceIntoLadder(this.askPricesAsc, order.price, "ASC");
+            }
+        }
+    }
 }

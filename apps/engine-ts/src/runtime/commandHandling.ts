@@ -158,7 +158,7 @@ function tradeToEventEnvelope(
     bookSeq: bigint,
     commandId?: string
 ): EventEnvelope {
-
+    const executedAtMs = Date.now()
     return {
         market,
         kind: "TRADE",
@@ -168,7 +168,8 @@ function tradeToEventEnvelope(
             makerOrderId: trade.makerOrderId,
             price: trade.price,
             qty: trade.qty,
-            takerSide: trade.takerSide
+            takerSide: trade.takerSide,
+            executedAtMs
         },
         commandId
     };

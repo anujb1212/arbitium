@@ -12,6 +12,7 @@ describe("commandHandling", () => {
             kind: "PLACE_LIMIT",
             payload: {
                 orderId: "o-1",
+                userId: "user-buyer",
                 side: "BUY",
                 price: 100n,
                 qty: 10n
@@ -31,7 +32,6 @@ describe("commandHandling", () => {
     it("PLACE_LIMIT with match => emits TRADE then BOOK_DELTA in order", () => {
         const orderBook = new OrderBook("TATA-INR");
 
-        // Resting sell
         applyCommandToOrderBook({
             orderBook,
             command: {
@@ -40,6 +40,7 @@ describe("commandHandling", () => {
                 kind: "PLACE_LIMIT",
                 payload: {
                     orderId: "o-sell",
+                    userId: "user-seller",
                     side: "SELL",
                     price: 100n,
                     qty: 5n
@@ -48,7 +49,6 @@ describe("commandHandling", () => {
             bookSeq: 0n
         });
 
-        // Incoming buy crosses
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
             command: {
@@ -57,6 +57,7 @@ describe("commandHandling", () => {
                 kind: "PLACE_LIMIT",
                 payload: {
                     orderId: "o-buy",
+                    userId: "user-buyer",
                     side: "BUY",
                     price: 100n,
                     qty: 5n
@@ -78,6 +79,7 @@ describe("commandHandling", () => {
             kind: "PLACE_LIMIT",
             payload: {
                 orderId: "o-1",
+                userId: "user-buyer",
                 side: "BUY",
                 price: 0n,
                 qty: 10n
@@ -93,13 +95,13 @@ describe("commandHandling", () => {
     it("CANCEL accepted => emits BOOK_DELTA CANCEL", () => {
         const orderBook = new OrderBook("TATA-INR");
 
-        const placed = applyCommandToOrderBook({
+        applyCommandToOrderBook({
             orderBook,
             command: {
                 commandId: "cmd-1",
                 market: "TATA-INR",
                 kind: "PLACE_LIMIT",
-                payload: { orderId: "o-1", side: "BUY", price: 100n, qty: 10n }
+                payload: { orderId: "o-1", userId: "user-buyer", side: "BUY", price: 100n, qty: 10n }
             },
             bookSeq: 0n
         });
@@ -128,13 +130,19 @@ describe("PLACE_MARKET flow", () => {
         const orderBook = new OrderBook("TATA-INR");
         applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT", payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 5n } },
+            command: {
+                commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "sell-1", userId: "user-seller", side: "SELL", price: 100n, qty: 5n }
+            },
             bookSeq: 0n,
         });
 
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-1", side: "BUY", qty: 5n } },
+            command: {
+                commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET",
+                payload: { orderId: "mkt-1", userId: "user-buyer", side: "BUY", qty: 5n }
+            },
             bookSeq: 1n,
         });
 
@@ -149,7 +157,10 @@ describe("PLACE_MARKET flow", () => {
 
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c-bad", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-bad", side: "BUY", qty: 0n } },
+            command: {
+                commandId: "c-bad", market: "TATA-INR", kind: "PLACE_MARKET",
+                payload: { orderId: "mkt-bad", userId: "user-buyer", side: "BUY", qty: 0n }
+            },
             bookSeq: 3n,
         });
 
@@ -163,7 +174,10 @@ describe("PLACE_MARKET flow", () => {
 
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c3", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-2", side: "BUY", qty: 10n } },
+            command: {
+                commandId: "c3", market: "TATA-INR", kind: "PLACE_MARKET",
+                payload: { orderId: "mkt-2", userId: "user-buyer", side: "BUY", qty: 10n }
+            },
             bookSeq: 0n,
         });
 
@@ -171,22 +185,26 @@ describe("PLACE_MARKET flow", () => {
         expect(events.some(e => e.kind === "TRADE")).toBe(false);
         const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
         expect(settled).toBeDefined();
-        // market order must NOT rest in book
         expect(orderBook.getOrder("mkt-2")).toBeNull();
     });
 
     it("partial fill => TRADE emitted for filled portion, MARKET_ORDER_SETTLED always follows", () => {
         const orderBook = new OrderBook("TATA-INR");
-        // Only 3 available, market order wants 10
         applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT", payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 3n } },
+            command: {
+                commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "sell-1", userId: "user-seller", side: "SELL", price: 100n, qty: 3n }
+            },
             bookSeq: 0n,
         });
 
         const { events } = applyCommandToOrderBook({
             orderBook,
-            command: { commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET", payload: { orderId: "mkt-3", side: "BUY", qty: 10n } },
+            command: {
+                commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET",
+                payload: { orderId: "mkt-3", userId: "user-buyer", side: "BUY", qty: 10n }
+            },
             bookSeq: 1n,
         });
 
@@ -195,16 +213,17 @@ describe("PLACE_MARKET flow", () => {
         if (trades[0]!.kind === "TRADE") {
             expect(trades[0]!.payload.qty).toBe(3n);
         }
-
         const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
         expect(settled).toBeDefined();
-        expect(orderBook.getOrder("mkt-3")).toBeNull(); // never rested
+        expect(orderBook.getOrder("mkt-3")).toBeNull();
     });
 });
 
 describe("CANCEL flow", () => {
-    it("CANCEL on non-existent orderId => emits COMMAND_REJECTED, bookSeq unchanged", () => {
-        const orderBook = new OrderBook("TATA-INR")
+    it("CANCEL on non-existent orderId => no-op: zero events, bookSeq still advances", () => {
+        // Invariant: cancel unknown orderId => accepted:true, cancelled:false, no delta
+        // commandHandling only emits COMMAND_REJECTED when accepted:false — this is accepted:true
+        const orderBook = new OrderBook("TATA-INR");
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
             command: {
@@ -214,32 +233,32 @@ describe("CANCEL flow", () => {
                 payload: { orderId: "ghost-order" }
             },
             bookSeq: 5n
-        })
+        });
 
-        expect(nextBookSeq).toBe(5n)
-        expect(events[0]!.kind).toBe("COMMAND_REJECTED")
-    })
+        expect(nextBookSeq).toBe(6n);  // accepted → seq advances
+        expect(events).toHaveLength(0); // no delta, no rejection
+    });
 
     it("CANCEL after partial fill => emits BOOK_DELTA CANCEL with correct orderId", () => {
-        const orderBook = new OrderBook("TATA-INR")
+        const orderBook = new OrderBook("TATA-INR");
 
         applyCommandToOrderBook({
             orderBook,
             command: {
                 commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
-                payload: { orderId: "buy-1", side: "BUY", price: 100n, qty: 10n }
+                payload: { orderId: "buy-1", userId: "user-buyer", side: "BUY", price: 100n, qty: 10n }
             },
             bookSeq: 0n
-        })
+        });
 
         applyCommandToOrderBook({
             orderBook,
             command: {
                 commandId: "c2", market: "TATA-INR", kind: "PLACE_LIMIT",
-                payload: { orderId: "sell-1", side: "SELL", price: 100n, qty: 3n }
+                payload: { orderId: "sell-1", userId: "user-seller", side: "SELL", price: 100n, qty: 3n }
             },
             bookSeq: 1n
-        })
+        });
 
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
@@ -248,43 +267,44 @@ describe("CANCEL flow", () => {
                 payload: { orderId: "buy-1" }
             },
             bookSeq: 2n
-        })
+        });
 
-        expect(nextBookSeq).toBe(3n)
-        expect(events[0]!.kind).toBe("BOOK_DELTA")
+        expect(nextBookSeq).toBe(3n);
+        expect(events[0]!.kind).toBe("BOOK_DELTA");
         if (events[0]!.kind === "BOOK_DELTA") {
-            expect(events[0]!.payload.type).toBe("CANCEL")
+            expect(events[0]!.payload.type).toBe("CANCEL");
             if (events[0]!.payload.type === "CANCEL") {
-                expect(events[0]!.payload.orderId).toBe("buy-1")
+                expect(events[0]!.payload.orderId).toBe("buy-1");
             }
         }
-    })
-})
+    });
+});
 
 describe("PEL replay idempotency", () => {
     it("replaying PLACE_LIMIT after seedRestingOrder emits COMMAND_REJECTED, not a second ADD", () => {
         const orderBook = new OrderBook("TATA-INR");
 
-        // Simulate rehydration from DB
         orderBook.seedRestingOrder({
-            orderId: "seed-1", side: "SELL",
-            price: 100n, qtyRemaining: 5n, seq: 1n
+            orderId: "seed-1",
+            userId: "user-seller",
+            side: "SELL",
+            price: 100n,
+            qtyRemaining: 5n,
+            seq: 1n
         });
 
-        // Simulate PEL replay of the same command
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
             command: {
                 commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
-                payload: { orderId: "seed-1", side: "SELL", price: 100n, qty: 5n }
+                payload: { orderId: "seed-1", userId: "user-seller", side: "SELL", price: 100n, qty: 5n }
             },
             bookSeq: 1n,
         });
 
-        expect(nextBookSeq).toBe(1n); // bookSeq unchanged on reject
+        expect(nextBookSeq).toBe(1n);
         expect(events).toHaveLength(1);
         expect(events[0]!.kind).toBe("COMMAND_REJECTED");
-        // Order must still be in book — seedRestingOrder was the real placement
         expect(orderBook.getOrder("seed-1")).not.toBeNull();
     });
 
@@ -292,16 +312,19 @@ describe("PEL replay idempotency", () => {
         const orderBook = new OrderBook("TATA-INR");
 
         orderBook.seedRestingOrder({
-            orderId: "seed-sell-1", side: "SELL",
-            price: 100n, qtyRemaining: 5n, seq: 1n
+            orderId: "seed-sell-1",
+            userId: "user-seller",
+            side: "SELL",
+            price: 100n,
+            qtyRemaining: 5n,
+            seq: 1n
         });
 
-        // New BUY market order hits the seeded SELL
         const { events } = applyCommandToOrderBook({
             orderBook,
             command: {
                 commandId: "c2", market: "TATA-INR", kind: "PLACE_MARKET",
-                payload: { orderId: "mkt-buy-1", side: "BUY", qty: 3n }
+                payload: { orderId: "mkt-buy-1", userId: "user-buyer", side: "BUY", qty: 3n }
             },
             bookSeq: 1n,
         });
@@ -312,5 +335,51 @@ describe("PEL replay idempotency", () => {
             expect(trades[0]!.payload.qty).toBe(3n);
             expect(trades[0]!.payload.makerOrderId).toBe("seed-sell-1");
         }
+    });
+});
+
+describe("WAL dry-run replay correctness", () => {
+    it("replaying same command after first apply returns COMMAND_REJECTED, bookSeq does not advance", () => {
+        const orderBook = new OrderBook("TATA-INR");
+        const command: CommandEnvelope = {
+            commandId: "cmd-wal-1", market: "TATA-INR", kind: "PLACE_LIMIT",
+            payload: { orderId: "o-wal-1", userId: "user-buyer", side: "BUY", price: 100n, qty: 10n }
+        };
+
+        const first = applyCommandToOrderBook({ orderBook, command, bookSeq: 0n });
+        expect(first.nextBookSeq).toBe(1n);
+
+        // WAL dry-run: same command re-applied — seenOrderIds blocks it
+        const duplicate = applyCommandToOrderBook({ orderBook, command, bookSeq: first.nextBookSeq });
+        expect(duplicate.events[0]?.kind).toBe("COMMAND_REJECTED");
+        expect(duplicate.nextBookSeq).toBe(1n); // must not advance
+    });
+
+    it("discarding WAL dry-run events leaves orderbook state correct", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const r1 = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c1", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "wal-buy", userId: "user-buyer", side: "BUY", price: 100n, qty: 5n }
+            },
+            bookSeq: 0n
+        });
+
+        // events discarded in dry-run — book state must still reflect the trade
+        applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "c2", market: "TATA-INR", kind: "PLACE_LIMIT",
+                payload: { orderId: "wal-sell", userId: "user-seller", side: "SELL", price: 100n, qty: 5n }
+            },
+            bookSeq: r1.nextBookSeq
+        });
+
+        expect(orderBook.getBestBid()).toBeNull();
+        expect(orderBook.getBestAsk()).toBeNull();
+        expect(orderBook.getOrder("wal-buy")).toBeNull();
+        expect(orderBook.getOrder("wal-sell")).toBeNull();
     });
 });

@@ -49,6 +49,7 @@ export type TradeEventPayload = {
     price: Price;
     qty: Qty;
     takerSide: Side;
+    executedAtMs: number
 };
 
 export type BookDeltaPayload =

@@ -8,11 +8,15 @@ import {
 import { decodeCommandFromStreamFields, encodeEventToStreamFields } from "@arbitium/ts-shared/engine/wireCodec";
 import { applyCommandToOrderBook } from "./commandHandling";
 import type { EngineContext } from "./types";
-import { prisma } from "@arbitium/db";
+import { restoreOrderBook } from "./recovery";
+import { EngineSnapshot, saveSnapshot } from "../persistence/snapshotStore";
 
 const READ_COUNT = 10;
 const BLOCK_MS = 2000;
 const DEPTH_SNAPSHOT_LEVELS = 20;
+const SNAPSHOT_EVERY_N_COMMANDS = parseInt(
+    process.env.SNAPSHOT_EVERY_N_COMMANDS ?? "500", 10
+);
 
 async function processMessage(params: {
     client: EngineContext["client"]
@@ -80,13 +84,10 @@ async function processMessage(params: {
 
         const cmdWriteTs = parseInt(message.id.split("-")[0]!, 10)
         const cmdToEngineMs = Date.now() - cmdWriteTs
-        const engineInternalMs = performance.now() - engineStartMs
-        console.log(
-            `[latency] market=${config.market}` +
-            ` events=${events.length}` +
-            ` cmd→engine=${cmdToEngineMs}ms` +
-            ` engine_internal=${engineInternalMs.toFixed(1)}ms`
-        )
+
+        if (cmdToEngineMs > 500) {
+            console.warn(`[engine lag] market=${config.market} cmd→engine=${cmdToEngineMs}ms events=${events.length}`)
+        }
 
     } catch (error) {
         console.error(`[engine] processMessage failed for ${message.id} in ${config.market}:`, error)
@@ -133,57 +134,6 @@ async function replayPendingCommandMessages(params: {
     }
 }
 
-async function rehydrateOrderBook(params: {
-    client: EngineContext["client"];
-    config: EngineContext["config"];
-    orderBook: OrderBook;
-}): Promise<bigint> {
-    const { client, config, orderBook } = params;
-
-    const lastEventReply = await client.sendCommand([
-        "XREVRANGE", config.eventStreamKey, "+", "-", "COUNT", "1"
-    ]) as Array<[string, string[]]>;
-
-    let bookSeq = 0n;
-    if (lastEventReply.length > 0) {
-        const fields = lastEventReply[0]![1]!;
-        const bookSeqIdx = fields.indexOf("bookSeq");
-        if (bookSeqIdx !== -1 && fields[bookSeqIdx + 1]) {
-            bookSeq = BigInt(fields[bookSeqIdx + 1]!);
-        }
-    }
-
-    const openOrders = await prisma.order.findMany({
-        where: {
-            market: config.market,
-            status: { in: ["OPEN", "PARTIALLY_FILLED"] }
-        },
-        orderBy: { createdAt: "asc" },
-        select: { id: true, side: true, price: true, qty: true, filledQty: true }
-    });
-
-    for (const order of openOrders) {
-        const qtyRemaining = order.qty - order.filledQty;
-        if (qtyRemaining <= 0n) continue;
-        orderBook.seedRestingOrder({
-            orderId: order.id,
-            side: order.side,
-            price: order.price,
-            qtyRemaining,
-            seq: bookSeq
-        });
-    }
-
-    const depthJson = JSON.stringify(
-        orderBook.getDepth(DEPTH_SNAPSHOT_LEVELS),
-        (_k, v) => (typeof v === "bigint" ? v.toString() : v)
-    )
-    await client.sendCommand(["SET", `arbitium:depth:${config.market}`, depthJson])
-
-    console.log(`[engine rehydrate] market=${config.market} orders=${openOrders.length} bookSeq=${bookSeq}`)
-    return bookSeq;
-}
-
 export async function runEngineForMarket(
     context: EngineContext,
     signal: AbortSignal
@@ -197,14 +147,17 @@ export async function runEngineForMarket(
         startId: "0-0"
     });
 
-    const orderBook = new OrderBook(config.market);
-    let bookSeq = await rehydrateOrderBook({ client, config, orderBook });
+    const { orderBook, bookSeq: restoredBookSeq } = await restoreOrderBook({ client, config });
+    let bookSeq = restoredBookSeq;
 
     await replayPendingCommandMessages({
         client, config, orderBook,
         getBookSeq: () => bookSeq,
         setBookSeq: (seq) => { bookSeq = seq }
     });
+
+    let commandsProcessedSinceSnapshot = 0;
+    let lastProcessedCommandStreamId = "0-0";
 
     while (!signal.aborted) {
         const messages = await readFromConsumerGroup({
@@ -226,6 +179,31 @@ export async function runEngineForMarket(
                 setBookSeq: (seq) => { bookSeq = seq },
                 message
             })
+
+            lastProcessedCommandStreamId = message.id;
+            commandsProcessedSinceSnapshot++;
+
+            if (commandsProcessedSinceSnapshot >= SNAPSHOT_EVERY_N_COMMANDS) {
+                const { restingOrders, seenOrderIds } = orderBook.toSnapshotState();
+                const snapshot: EngineSnapshot = {
+                    market: config.market,
+                    bookSeq: bookSeq.toString(),
+                    restingOrders: restingOrders.map((order) => ({
+                        orderId: order.orderId,
+                        userId: order.userId,
+                        side: order.side,
+                        price: order.price.toString(),
+                        qtyRemaining: order.qtyRemaining.toString(),
+                        seq: order.seq.toString(),
+                    })),
+                    seenOrderIds,
+                    lastCommandStreamId: lastProcessedCommandStreamId,
+                    takenAtMs: Date.now(),
+                };
+                await saveSnapshot(snapshot);
+                commandsProcessedSinceSnapshot = 0;
+                console.log(`[engine snapshot] saved market=${config.market} bookSeq=${bookSeq} orders=${restingOrders.length}`);
+            }
         }
     }
 }
