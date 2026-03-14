@@ -13,6 +13,20 @@ export function peekFrontOrder(priceLevel: PriceLevel): RestingOrder | null {
         : null
 }
 
+export function peekFrontOrderExcludingUser(
+    priceLevel: PriceLevel,
+    excludeUserId: string
+): RestingOrder | null {
+    advanceHeadPastFilled(priceLevel)
+    for (let i = priceLevel.headIndex; i < priceLevel.queue.length; i++) {
+        const order = priceLevel.queue[i]!
+        if (order.qtyRemaining === 0n) continue
+        if (order.userId === excludeUserId) continue
+        return order
+    }
+    return null
+}
+
 export function advanceHeadPastFilled(priceLevel: PriceLevel): void {
     while (priceLevel.headIndex < priceLevel.queue.length) {
         const frontOrder = priceLevel.queue[priceLevel.headIndex]!

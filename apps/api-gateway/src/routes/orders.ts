@@ -111,7 +111,13 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
         commandId,
         market,
         kind: "PLACE_LIMIT",
-        payload: { orderId, side, price, qty }
+        payload: {
+            orderId,
+            userId: arbitiumUserId,
+            side,
+            price,
+            qty
+        }
     }
 
     try {
@@ -175,8 +181,13 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Reque
         commandId,
         market,
         kind: "PLACE_MARKET",
-        payload: { orderId, side, qty },
-    };
+        payload: {
+            orderId,
+            userId: arbitiumUserId,
+            side,
+            qty
+        }
+    }
 
     try {
         const fields = encodeCommandToStreamFields(command);
@@ -194,7 +205,12 @@ ordersRouter.get("/fills", requireAuth, resolveArbitiumUser, async (req: Request
         return;
     }
     const userId = (req as ArbitriumUserRequest).arbitiumUserId;
-    const fills = await queryFillsByUserAndMarket({ prisma, userId, market: parsed.data.market });
+    const fills = await queryFillsByUserAndMarket({
+        prisma,
+        userId,
+        market: parsed.data.market,
+        limit: parsed.data.limit
+    });
     res.json({ fills });
 });
 
@@ -205,7 +221,12 @@ ordersRouter.get("/history", requireAuth, resolveArbitiumUser, async (req: Reque
         return;
     }
     const userId = (req as ArbitriumUserRequest).arbitiumUserId;
-    const orders = await queryOrderHistoryByUserAndMarket({ prisma, userId, market: parsed.data.market });
+    const orders = await queryOrderHistoryByUserAndMarket({
+        prisma,
+        userId,
+        market: parsed.data.market,
+        limit: parsed.data.limit
+    });
     res.json({ orders });
 });
 

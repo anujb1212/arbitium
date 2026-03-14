@@ -47,10 +47,12 @@ export const TradesQuerySchema = z.object({
 
 export const FillsQuerySchema = z.object({
     market: z.string().min(1),
+    limit: z.coerce.number().int().min(1).max(200).optional()
 });
 
 export const OrderHistoryQuerySchema = z.object({
     market: z.string().min(1),
+    limit: z.coerce.number().int().min(1).max(200).optional()
 });
 
 export const PlaceMarketBodySchema = z.object({

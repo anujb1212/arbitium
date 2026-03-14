@@ -12,6 +12,7 @@ describe('engine wireCodec(command)', () => {
             kind: "PLACE_LIMIT",
             payload: {
                 orderId: "o1",
+                userId: "user-test",
                 side: "BUY",
                 price: 100n,
                 qty: 2n
@@ -47,6 +48,7 @@ describe('engine wireCodec(command)', () => {
             kind: "PLACE_LIMIT",
             payload: {
                 orderId: "o2",
+                userId: "user-test",
                 side: "SELL",
                 price: 1n,
                 qty: 2n
@@ -67,7 +69,13 @@ describe('engine wireCodec(command)', () => {
             commandId: "cmd-3",
             market: "TATA-INR",
             kind: "PLACE_LIMIT",
-            payload: { orderId: "o3", side: "BUY", price: 10n, qty: 1n },
+            payload: {
+                orderId: "o3",
+                userId: "user-test",
+                side: "BUY",
+                price: 10n,
+                qty: 1n
+            },
         };
 
         const fields = pairsToRecord(encodeCommandToStreamFields(command));

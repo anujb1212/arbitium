@@ -8,6 +8,7 @@ describe("OrderBook.placeMarket", () => {
         book.placeLimit({
             market: "TATA-INR",
             orderId: "sell-1",
+            userId: "user-A",
             side: "SELL",
             price: 200n,
             qty: 5n,
@@ -17,6 +18,7 @@ describe("OrderBook.placeMarket", () => {
         const result = book.placeMarket({
             market: "TATA-INR",
             orderId: "mkt-buy-1",
+            userId: "user-B",
             side: "BUY",
             qty: 5n,
             seq: 2n
@@ -35,6 +37,7 @@ describe("OrderBook.placeMarket", () => {
         book.placeLimit({
             market: "TATA-INR",
             orderId: "sell-1",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 3n,
@@ -44,6 +47,7 @@ describe("OrderBook.placeMarket", () => {
         const result = book.placeMarket({
             market: "TATA-INR",
             orderId: "mkt-buy-1",
+            userId: "user-B",
             side: "BUY",
             qty: 10n,
             seq: 2n
@@ -62,6 +66,7 @@ describe("OrderBook.placeMarket", () => {
         const result = book.placeMarket({
             market: "TATA-INR",
             orderId: "mkt-buy-1",
+            userId: "user-A",
             side: "BUY",
             qty: 5n,
             seq: 1n
@@ -80,6 +85,7 @@ describe("OrderBook.placeMarket", () => {
         book.placeMarket({
             market: "TATA-INR",
             orderId: "mkt-1",
+            userId: "user-B",
             side: "BUY",
             qty: 5n,
             seq: 1n
@@ -88,6 +94,7 @@ describe("OrderBook.placeMarket", () => {
         const result = book.placeMarket({
             market: "TATA-INR",
             orderId: "mkt-1",
+            userId: "user-B",
             side: "BUY",
             qty: 5n,
             seq: 2n

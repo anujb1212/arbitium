@@ -8,6 +8,7 @@ describe("OrderBook - cancel edge cases", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S1",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 5n,
@@ -17,6 +18,7 @@ describe("OrderBook - cancel edge cases", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 5n,
@@ -41,6 +43,7 @@ describe("OrderBook - cancel edge cases", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S1",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 10n,
@@ -50,6 +53,7 @@ describe("OrderBook - cancel edge cases", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 4n,
@@ -77,6 +81,7 @@ describe("OrderBook - cancel idempotency", () => {
         const place = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S1",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 5n,

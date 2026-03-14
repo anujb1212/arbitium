@@ -9,6 +9,7 @@ describe("OrderBook - market mismatch + seq", () => {
         const wrong = orderBook.placeLimit({
             market: "PAYTM_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,
@@ -21,6 +22,7 @@ describe("OrderBook - market mismatch + seq", () => {
         const ok = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B2",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,

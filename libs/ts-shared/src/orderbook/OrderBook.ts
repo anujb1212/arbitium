@@ -3,6 +3,8 @@ import { insertPriceIntoLadder } from "./priceLadder";
 import { PriceLevel, prunePriceLevel, removeOrderFromPriceLevel } from "./priceLevelQueue";
 import { matchIncomingBuyOrder, matchIncomingSellOrder, createCancelDelta, matchMarketSellOrder, matchMarketBuyOrder } from "./matching";
 
+const MAX_SEEN_ORDER_IDS = 100_000
+
 export class OrderBook {
     private bids = new Map<Price, PriceLevel>();
     private asks = new Map<Price, PriceLevel>();
@@ -12,6 +14,20 @@ export class OrderBook {
 
     private ordersById = new Map<OrderId, RestingOrder>();
     private seenOrderIds = new Set<OrderId>();
+    private lastSeq: Seq = 0n;
+
+    private validateSeq(seq: Seq): RejectReason | null {
+        if (seq <= this.lastSeq) return "SEQ_OUT_OF_ORDER";
+        return null;
+    }
+
+    private trackSeenOrderId(orderId: OrderId): void {
+        if (this.seenOrderIds.size >= MAX_SEEN_ORDER_IDS) {
+            const oldestId = this.seenOrderIds.values().next().value
+            if (oldestId !== undefined) this.seenOrderIds.delete(oldestId)
+        }
+        this.seenOrderIds.add(orderId)
+    }
 
     constructor(readonly market: MarketId) { }
 
@@ -26,6 +42,17 @@ export class OrderBook {
                 deltas: [],
                 remainingQty: input.qty
             };
+        }
+
+        const seqReject = this.validateSeq(input.seq);
+        if (seqReject) {
+            return {
+                accepted: false,
+                rejectReason: seqReject,
+                trades: [],
+                deltas: [],
+                remainingQty: input.qty
+            }
         }
 
         const limitReject = this.validateLimit(input.price, input.qty);
@@ -49,7 +76,8 @@ export class OrderBook {
             };
         }
 
-        this.seenOrderIds.add(input.orderId);
+        this.lastSeq = input.seq;
+        this.trackSeenOrderId(input.orderId);
 
         let remainingQty: Qty = input.qty;
         const trades: PlaceLimitResult["trades"] = [];
@@ -81,6 +109,7 @@ export class OrderBook {
         if (remainingQty > 0n) {
             const newRestingOrder: RestingOrder = {
                 orderId: input.orderId,
+                userId: input.userId,
                 side: input.side,
                 price: input.price,
                 qtyRemaining: remainingQty,
@@ -127,6 +156,18 @@ export class OrderBook {
             };
         }
 
+        const seqReject = this.validateSeq(input.seq);
+        if (seqReject) {
+            return {
+                accepted: false,
+                rejectReason: seqReject,
+                trades: [],
+                deltas: [],
+                filledQty: 0n,
+                remainingQty: input.qty
+            }
+        }
+
         if (input.qty <= 0n) {
             return {
                 accepted: false,
@@ -149,7 +190,8 @@ export class OrderBook {
             };
         }
 
-        this.seenOrderIds.add(input.orderId);
+        this.lastSeq = input.seq;
+        this.trackSeenOrderId(input.orderId);
 
         const trades: Trade[] = [];
         const deltas: BookDelta[] = [];
@@ -196,11 +238,22 @@ export class OrderBook {
             };
         }
 
+        const seqReject = this.validateSeq(input.seq);
+        if (seqReject) {
+            return {
+                accepted: false,
+                rejectReason: seqReject,
+                cancelled: false,
+                deltas: []
+            }
+        }
+
+        this.lastSeq = input.seq;
+
         const restingOrder = this.ordersById.get(input.orderId);
         if (!restingOrder) {
             return {
-                accepted: false,
-                rejectReason: "UNKNOWN_ORDER_ID" as const,
+                accepted: true,
                 cancelled: false,
                 deltas: []
             };
@@ -313,16 +366,18 @@ export class OrderBook {
 
     public seedRestingOrder(order: {
         orderId: OrderId;
+        userId: string;
         side: Side;
         price: Price;
         qtyRemaining: Qty;
         seq: Seq;
     }): void {
         if (this.seenOrderIds.has(order.orderId)) return;
-        this.seenOrderIds.add(order.orderId);
+        this.trackSeenOrderId(order.orderId);
 
         const restingOrder: RestingOrder = {
             orderId: order.orderId,
+            userId: order.userId,
             side: order.side,
             price: order.price,
             qtyRemaining: order.qtyRemaining,

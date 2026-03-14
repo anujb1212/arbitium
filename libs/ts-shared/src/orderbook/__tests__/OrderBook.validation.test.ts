@@ -8,6 +8,7 @@ describe("OrderBook - duplicate orderId", () => {
         const first = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 5n,
@@ -19,6 +20,7 @@ describe("OrderBook - duplicate orderId", () => {
         const second = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1", // duplicate
+            userId: "user-B",
             side: "BUY",
             price: 101n,
             qty: 5n,
@@ -41,6 +43,7 @@ describe("OrderBook - duplicate orderId after fill", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S1",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 5n,
@@ -50,6 +53,7 @@ describe("OrderBook - duplicate orderId after fill", () => {
         const first = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 5n,
@@ -62,6 +66,7 @@ describe("OrderBook - duplicate orderId after fill", () => {
         const second = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,

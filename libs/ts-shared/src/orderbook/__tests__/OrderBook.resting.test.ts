@@ -8,6 +8,7 @@ describe("OrderBook - resting", () => {
         const placeResult = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 5n,
@@ -27,6 +28,7 @@ describe("OrderBook - resting", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S1",
+            userId: "user-A",
             side: "SELL",
             price: 101n,
             qty: 1n,
@@ -36,6 +38,7 @@ describe("OrderBook - resting", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "S2",
+            userId: "user-A",
             side: "SELL",
             price: 100n,
             qty: 1n,
@@ -51,6 +54,7 @@ describe("OrderBook - resting", () => {
         orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 5n,

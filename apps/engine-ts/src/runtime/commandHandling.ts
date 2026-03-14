@@ -18,6 +18,7 @@ export function applyCommandToOrderBook(params: {
         const result = orderBook.placeLimit({
             market: command.market,
             orderId: command.payload.orderId,
+            userId: command.payload.userId,
             side: command.payload.side,
             price: command.payload.price,
             qty: command.payload.qty,
@@ -69,6 +70,7 @@ export function applyCommandToOrderBook(params: {
         const result = orderBook.placeMarket({
             market: command.market,
             orderId: command.payload.orderId,
+            userId: command.payload.userId,
             side: command.payload.side,
             qty: command.payload.qty,
             seq: nextBookSeq,

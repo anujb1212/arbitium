@@ -7,6 +7,7 @@ describe("OrderBook.seedRestingOrder", () => {
 
         book.seedRestingOrder({
             orderId: "seed-1",
+            userId: "user-B",
             side: "BUY",
             price: 10000n,
             qtyRemaining: 5n,
@@ -33,6 +34,7 @@ describe("OrderBook.seedRestingOrder", () => {
 
         book.seedRestingOrder({
             orderId: "seed-ask",
+            userId: "user-A",
             side: "SELL",
             price: 10000n,
             qtyRemaining: 5n,
@@ -42,6 +44,7 @@ describe("OrderBook.seedRestingOrder", () => {
         const result = book.placeLimit({
             market: "TATA-INR",
             orderId: "incoming-buy",
+            userId: "user-B",
             side: "BUY",
             price: 10000n,
             qty: 5n,
@@ -59,6 +62,7 @@ describe("OrderBook.seedRestingOrder", () => {
 
         book.seedRestingOrder({
             orderId: "seed-1",
+            userId: "user-B",
             side: "BUY",
             price: 10000n,
             qtyRemaining: 5n,
@@ -66,6 +70,7 @@ describe("OrderBook.seedRestingOrder", () => {
         });
         book.seedRestingOrder({
             orderId: "seed-1",
+            userId: "user-B",
             side: "BUY",
             price: 10000n,
             qtyRemaining: 5n,

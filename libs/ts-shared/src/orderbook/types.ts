@@ -2,7 +2,8 @@ export type Side = "BUY" | "SELL";
 export type OrderId = string;
 export type MarketId = string;
 
-export type RejectReason = "MARKET_MISMATCH" | "SEQ_OUT_OF_ORDER" | "DUPLICATE_ORDER_ID" | "INVALID_PRICE" | "INVALID_QTY" | "UNKNOWN_ORDER_ID"
+export type SelfTradeRejectReason = "SELF_TRADE"
+export type RejectReason = "MARKET_MISMATCH" | "SEQ_OUT_OF_ORDER" | "DUPLICATE_ORDER_ID" | "INVALID_PRICE" | "INVALID_QTY" | "UNKNOWN_ORDER_ID" | "SELF_TRADE"
 
 export type Price = bigint;
 export type Qty = bigint;
@@ -11,6 +12,7 @@ export type Seq = bigint;
 export interface PlaceLimitInput {
     market: MarketId;
     orderId: OrderId;
+    userId: string;
     side: Side;
     price: Price;
     qty: Qty;
@@ -20,6 +22,7 @@ export interface PlaceLimitInput {
 export interface PlaceMarketInput {
     market: MarketId;
     orderId: OrderId;
+    userId: string;
     side: Side;
     qty: Qty;
     seq: Seq;
@@ -102,6 +105,7 @@ export interface CancelResult {
 
 export interface RestingOrder {
     orderId: OrderId;
+    userId: string;
     side: Side;
     price: Price;
     qtyRemaining: Qty;

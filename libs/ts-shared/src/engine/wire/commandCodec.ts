@@ -13,6 +13,7 @@ export function encodeCommandToStreamFields(command: CommandEnvelope): ReadonlyA
         return [
             ...common,
             ["orderId", command.payload.orderId],
+            ["userId", command.payload.userId],
             ["side", command.payload.side],
             ["price", command.payload.price.toString(10)],
             ["qty", command.payload.qty.toString(10)]
@@ -23,6 +24,7 @@ export function encodeCommandToStreamFields(command: CommandEnvelope): ReadonlyA
         return [
             ...common,
             ["orderId", command.payload.orderId],
+            ["userId", command.payload.userId],
             ["side", command.payload.side],
             ["qty", command.payload.qty.toString(10)],
         ];
@@ -60,6 +62,24 @@ export function decodeCommandFromStreamFields(fields: Record<string, string>): D
         rejectReason: "MISSING_ORDER_ID"
     }
 
+    if (kind === "CANCEL") {
+        return {
+            accepted: true,
+            value: {
+                market,
+                kind,
+                commandId,
+                payload: { orderId }
+            }
+        }
+    }
+
+    const userId = readField(fields, "userId")
+    if (!isNonEmptyString(userId)) return {
+        accepted: false,
+        rejectReason: "MISSING_USER_ID"
+    }
+
     if (kind === "PLACE_MARKET") {
         const side = readField(fields, "side");
         if (side !== "BUY" && side !== "SELL")
@@ -83,23 +103,12 @@ export function decodeCommandFromStreamFields(fields: Record<string, string>): D
                 commandId,
                 payload: {
                     orderId,
+                    userId,
                     side,
                     qty: qtyParsed.value
                 }
             }
         };
-    }
-
-    if (kind === "CANCEL") {
-        return {
-            accepted: true,
-            value: {
-                market,
-                kind,
-                commandId,
-                payload: { orderId }
-            }
-        }
     }
 
     const side = readField(fields, "side");
@@ -128,6 +137,7 @@ export function decodeCommandFromStreamFields(fields: Record<string, string>): D
             commandId,
             payload: {
                 orderId,
+                userId,
                 side,
                 price: priceParsed.value,
                 qty: qtyParsed.value

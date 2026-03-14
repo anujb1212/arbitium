@@ -4,6 +4,7 @@ export type CommandKind = "PLACE_LIMIT" | "PLACE_MARKET" | "CANCEL";
 
 export type PlaceLimitCommandPayload = {
     orderId: OrderId;
+    userId: string;
     side: Side;
     price: Price;
     qty: Qty;
@@ -11,6 +12,7 @@ export type PlaceLimitCommandPayload = {
 
 export type PlaceMarketCommandPayload = {
     orderId: OrderId;
+    userId: string;
     side: Side;
     qty: Qty;
 };

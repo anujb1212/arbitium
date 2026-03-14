@@ -8,6 +8,7 @@ describe("OrderBook - seq ordering", () => {
         const ok = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,
@@ -18,6 +19,7 @@ describe("OrderBook - seq ordering", () => {
         const bad = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B2",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,
@@ -37,6 +39,7 @@ describe("OrderBook - seq ordering", () => {
         const bad = orderBook.placeLimit({
             market: "TATA_INR",
             orderId: "B1",
+            userId: "user-B",
             side: "BUY",
             price: 100n,
             qty: 1n,

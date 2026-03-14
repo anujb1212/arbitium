@@ -1,4 +1,4 @@
-import { peekFrontOrder, PriceLevel, prunePriceLevel } from "./priceLevelQueue";
+import { peekFrontOrder, peekFrontOrderExcludingUser, PriceLevel, prunePriceLevel } from "./priceLevelQueue";
 import { BookDelta, MarketId, OrderId, PlaceLimitInput, PlaceMarketInput, Price, Qty, Side, Trade } from "./types";
 
 export function matchIncomingBuyOrder(params: {
@@ -29,8 +29,19 @@ export function matchIncomingBuyOrder(params: {
             continue
         }
 
-        const makerOrder = peekFrontOrder(askLevel)
+        const makerOrder = peekFrontOrderExcludingUser(askLevel, input.userId)
         if (!makerOrder) {
+            prunePriceLevel({
+                levelByPrice: asksByPrice,
+                priceLadder: askPricesAsc,
+                price: bestAskPrice
+            })
+
+            if (asksByPrice.has(bestAskPrice)) break
+            continue
+        }
+
+        if (makerOrder.userId === input.userId) {
             prunePriceLevel({
                 levelByPrice: asksByPrice,
                 priceLadder: askPricesAsc,
@@ -108,8 +119,18 @@ export function matchIncomingSellOrder(params: {
             continue
         }
 
-        const makerOrder = peekFrontOrder(bidLevel)
+        const makerOrder = peekFrontOrderExcludingUser(bidLevel, input.userId)
         if (!makerOrder) {
+            prunePriceLevel({
+                levelByPrice: bidsByPrice,
+                priceLadder: bidPricesDesc,
+                price: bestBidPrice
+            })
+            if (bidsByPrice.has(bestBidPrice)) break
+            continue
+        }
+
+        if (makerOrder.userId === input.userId) {
             prunePriceLevel({
                 levelByPrice: bidsByPrice,
                 priceLadder: bidPricesDesc,
@@ -185,14 +206,15 @@ export function matchMarketBuyOrder(params: {
             continue;
         }
 
-        const makerOrder = peekFrontOrder(askLevel);
+        const makerOrder = peekFrontOrderExcludingUser(askLevel, input.userId)
         if (!makerOrder) {
             prunePriceLevel({
                 levelByPrice: asksByPrice,
                 priceLadder: askPricesAsc,
                 price: bestAskPrice
-            });
-            continue;
+            })
+            if (asksByPrice.has(bestAskPrice)) break
+            continue
         }
 
         const fillQty = makerOrder.qtyRemaining < remainingQty ? makerOrder.qtyRemaining : remainingQty;
@@ -256,14 +278,24 @@ export function matchMarketSellOrder(params: {
             continue;
         }
 
-        const makerOrder = peekFrontOrder(bidLevel);
+        const makerOrder = peekFrontOrderExcludingUser(bidLevel, input.userId)
         if (!makerOrder) {
             prunePriceLevel({
                 levelByPrice: bidsByPrice,
                 priceLadder: bidPricesDesc,
                 price: bestBidPrice
-            });
-            continue;
+            })
+            if (bidsByPrice.has(bestBidPrice)) break
+            continue
+        }
+
+        if (makerOrder.userId === input.userId) {
+            prunePriceLevel({
+                levelByPrice: bidsByPrice,
+                priceLadder: bidPricesDesc,
+                price: bestBidPrice
+            })
+            continue
         }
 
         const fillQty = makerOrder.qtyRemaining < remainingQty ? makerOrder.qtyRemaining : remainingQty;

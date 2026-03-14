@@ -52,7 +52,7 @@ async function handleTrade(
                     price: BigInt(price),
                     qty: BigInt(qty),
                     takerSide: takerSide,
-                    executedAt: new Date(),
+                    executedAt: tradeTime
                 }
             });
 
