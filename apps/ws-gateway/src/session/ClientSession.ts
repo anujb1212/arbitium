@@ -13,16 +13,30 @@ function bigintReplacer(_key: string, value: unknown): unknown {
 
 export class ClientSession {
     private readonly subscriptions: Set<string> = new Set()
+    private readonly ownedCommandIds: Set<string> = new Set()
+    private static readonly MAX_OWNED_COMMAND_IDS = 500
+
+
+    public constructor(private readonly socket: WebSocket) { }
 
     public readonly onEvent: EventListener = (envelope: EventEnvelope): void => {
+        if (envelope.kind === "COMMAND_REJECTED") {
+            if (!envelope.commandId || !this.ownedCommandIds.has(envelope.commandId)) return
+        }
+
         this.send({
             type: "event",
             data: envelope
         })
     }
 
-    public constructor(private readonly socket: WebSocket) { }
-
+    public registerCommandId(commandId: string): void {
+        if (this.ownedCommandIds.size >= ClientSession.MAX_OWNED_COMMAND_IDS) {
+            const firstEntry = this.ownedCommandIds.values().next().value
+            if (firstEntry !== undefined) this.ownedCommandIds.delete(firstEntry)
+        }
+        this.ownedCommandIds.add(commandId)
+    }
 
     public canSubscribe(): boolean {
         return this.subscriptions.size < MAX_SUBSCRIPTIONS_PER_CLIENT

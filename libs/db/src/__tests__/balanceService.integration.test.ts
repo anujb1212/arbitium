@@ -6,6 +6,8 @@ import {
     creditFillProceeds,
     releaseLockForOrder,
     InsufficientBalanceError,
+    settleMarketOrder,
+    lockBalanceForMarketOrder,
 } from "../balanceService";
 import type { Prisma } from "../../generated/prisma";
 
@@ -52,7 +54,7 @@ describe("lockBalanceForOrder", () => {
         expect(balance!.locked).toBe(500n);
 
         const order = await prisma.order.findUnique({ where: { id: "order-1" } });
-        expect(order!.status).toBe("OPEN");
+        expect(order!.status).toBe("PENDING");
         expect(order!.lockedAmount).toBe(500n);
     });
 
@@ -187,6 +189,58 @@ describe("releaseLockForOrder — idempotency", () => {
 
         const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
         expect(balance!.available).toBe(500n);
+        expect(balance!.locked).toBe(0n);
+    });
+});
+
+describe("consumeLockOnFill — consumedLocked tracking", () => {
+    it("LIMIT BUY partial fill: consumedLocked increments so cancel releases correct remainder", async () => {
+        const user = await createUserWithBalance("user-partial-1", 1000n);
+        await lockBalanceForOrder({
+            prisma,
+            userId: user.id,
+            orderId: "order-partial-1",
+            commandId: "cmd-partial-1",
+            market: "TATA-INR",
+            side: "BUY",
+            price: 10n,
+            qty: 100n,
+        });
+
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            await consumeLockOnFill({ tx, orderId: "order-partial-1", filledQty: 30n, fillPrice: 9n });
+        });
+
+        const orderAfterFill = await prisma.order.findUnique({ where: { id: "order-partial-1" } });
+        expect(orderAfterFill!.consumedLocked).toBe(300n); // limitPrice(10) * filledQty(30)
+
+        await releaseLockForOrder({ prisma, orderId: "order-partial-1" });
+
+        const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
+        expect(balance!.available).toBe(700n); // 1000 locked - 300 consumed = 700 released
+        expect(balance!.locked).toBe(0n);
+    });
+
+    it("MARKET BUY: settleMarketOrder releases only unfilled locked portion", async () => {
+        const user = await createUserWithBalance("user-market-settle-1", 100n);
+        await lockBalanceForMarketOrder({
+            prisma,
+            userId: user.id,
+            orderId: "order-market-settle-1",
+            commandId: "cmd-market-settle-1",
+            market: "TATA-INR",
+            side: "BUY",
+            qty: 10n,
+        });
+
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            await consumeLockOnFill({ tx, orderId: "order-market-settle-1", filledQty: 10n, fillPrice: 3n });
+        });
+
+        await settleMarketOrder({ prisma, orderId: "order-market-settle-1" });
+
+        const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
+        expect(balance!.available).toBe(70n); // 100 locked - 30 consumed = 70 released
         expect(balance!.locked).toBe(0n);
     });
 });

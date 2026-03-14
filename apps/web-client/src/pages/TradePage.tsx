@@ -71,7 +71,7 @@ export default function TradePage(): React.JSX.Element {
         navigate(`/trade/${market}`, { replace: true })
     }
 
-    useMarketFeed(selectedMarket, handleEvent)
+    const { registerCommandId } = useMarketFeed(selectedMarket, handleEvent)
 
     const config = getMarketConfig(selectedMarket)!
     const bestBidPrice = bids[0]?.price ?? null
@@ -174,8 +174,10 @@ export default function TradePage(): React.JSX.Element {
                     bestBidPrice={bestBidPrice}
                     bestAskPrice={bestAskPrice}
                     onPlaceSubmitted={(draft) => openOrders.addOptimistic(draft)}
-                    onPlaceAccepted={({ orderId, commandId }) =>
-                        openOrders.ackAccepted({ orderId, commandId })}
+                    onPlaceAccepted={({ orderId, commandId }) => {
+                        registerCommandId(commandId)
+                        openOrders.ackAccepted({ orderId, commandId })
+                    }}
                     onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
                 />
                 {rejectToast !== null && (

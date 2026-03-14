@@ -10,14 +10,14 @@ const boundedString = z.string().min(1).max(64)
 
 export const PlaceLimitBodySchema = z.object({
     market: boundedString,
-    orderId: boundedString,
+    orderId: z.string().uuid(),
     side: z.enum(["BUY", "SELL"]),
     price: decimalBigintString,
     qty: decimalBigintString
 })
 
 export const CancelParamsSchema = z.object({
-    id: boundedString
+    id: z.string().uuid()
 })
 
 export const CancelBodySchema = z.object({
@@ -55,7 +55,7 @@ export const OrderHistoryQuerySchema = z.object({
 
 export const PlaceMarketBodySchema = z.object({
     market: boundedString,
-    orderId: boundedString,
+    orderId: z.string().uuid(),
     side: z.enum(["BUY", "SELL"]),
     qty: decimalBigintString,
 });

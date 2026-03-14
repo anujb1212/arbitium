@@ -79,16 +79,21 @@ transfersRouter.post(
             return;
         }
 
-        await creditTradingBalance({
-            prisma,
-            userId: authReq.arbitiumUserId,
-            amountInPaise,
-        });
+        await prisma.$transaction(async (tx) => {
+            await creditTradingBalance({
+                prisma: tx,
+                userId: authReq.arbitiumUserId,
+                amountInPaise
+            })
 
-        await prisma.balanceTransfer.update({
-            where: { id: transfer.id },
-            data: { status: "COMPLETED", resolvedAt: new Date() },
-        });
+            await tx.balanceTransfer.update({
+                where: { id: transfer.id },
+                data: {
+                    status: "COMPLETED",
+                    resolvedAt: new Date()
+                },
+            })
+        })
 
         res.status(200).json({ transferId: transfer.id, status: "COMPLETED" });
     }

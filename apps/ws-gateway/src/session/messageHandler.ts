@@ -5,6 +5,7 @@ import { MAX_MARKET_ID_LENGTH } from "../config";
 type IncomingMessage =
     | { type: "subscribe"; market: string; fromEventId?: string }
     | { type: "unsubscribe"; market: string }
+    | { type: "register_command"; commandId: string }
 
 const KNOWN_MARKETS = parseKnownMarkets(process.env.MARKETS)
 
@@ -22,7 +23,14 @@ function parsedMessage(raw: string): IncomingMessage | null {
     const type = msg["type"]
     const market = msg["market"]
 
-    if (type !== "subscribe" && type !== "unsubscribe") return null
+    if (type !== "subscribe" && type !== "unsubscribe" && type !== "register_command") return null
+
+    if (type === "register_command") {
+        const commandId = msg["commandId"]
+        if (typeof commandId !== "string" || !/^[0-9a-f-]{36}$/.test(commandId)) return null
+        return { type: "register_command", commandId }
+    }
+
     if (typeof market !== "string") return null
 
     const rawFromEventId = msg["fromEventId"]
@@ -63,6 +71,12 @@ export async function handleMessage(
 
         session.addSubscription(message.market)
         await feedManager.subscribeMarket(message.market, session.onEvent, message.fromEventId)
+        return
+    }
+
+    //register-command
+    if (message.type === "register_command") {
+        session.registerCommandId(message.commandId)
         return
     }
 

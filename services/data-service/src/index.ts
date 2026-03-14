@@ -63,6 +63,24 @@ async function processMessages(
     }
 }
 
+async function runMarketConsumerLoop(
+    client: ReturnType<InstanceType<typeof RedisManager>["getClient"]>,
+    streamKey: string,
+    abortSignal: AbortSignal
+): Promise<void> {
+    while (!abortSignal.aborted) {
+        const messages = await readFromConsumerGroup({
+            client,
+            streamKey,
+            groupName: CONSUMER_GROUP,
+            consumerName: CONSUMER_NAME,
+            count: 50,
+            blockMs: POLL_BLOCK_MS,
+        })
+        await processMessages(client, streamKey, messages)
+    }
+}
+
 async function main(): Promise<void> {
     const redisManager = new RedisManager(REDIS_URL);
     await redisManager.connect();
@@ -83,22 +101,11 @@ async function main(): Promise<void> {
     process.on("SIGINT", () => abortController.abort());
     process.on("SIGTERM", () => abortController.abort());
 
-    while (!abortController.signal.aborted) {
-        for (const market of MARKETS) {
-            const streamKey = `${STREAM_PREFIX}${market}`;
-
-            const messages = await readFromConsumerGroup({
-                client,
-                streamKey,
-                groupName: CONSUMER_GROUP,
-                consumerName: CONSUMER_NAME,
-                count: 50,
-                blockMs: POLL_BLOCK_MS,
-            });
-
-            await processMessages(client, streamKey, messages);
-        }
-    }
+    await Promise.all(
+        MARKETS.map((market) =>
+            runMarketConsumerLoop(client, `${STREAM_PREFIX}${market}`, abortController.signal)
+        )
+    )
 
     await redisManager.close();
 }

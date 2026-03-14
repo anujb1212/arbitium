@@ -7,13 +7,25 @@ const MAX_DELAY_MS = 30_000
 
 export type FeedCallback = (event: WireEventEnvelope) => void
 
-export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromEventId?: string): void {
+export function useMarketFeed(
+    market: string,
+    onEvent: FeedCallback,
+    resumeFromEventId?: string): {
+        registerCommandId: (commandId: string) => void
+    } {
     const wsRef = useRef<WebSocket | null>(null)
-    const lastSeenEventIdRef = useRef<string | null>(null)
+    const lastSeenEventIdRef = useRef<string | null>(resumeFromEventId ?? null)
     const reconnectDelayRef = useRef(BASE_DELAY_MS)
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const onEventRef = useRef(onEvent)
     const shouldStopRef = useRef(false)
+
+    const registerCommandId = useCallback((commandId: string): void => {
+        const ws = wsRef.current
+        if (ws !== null && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "register_command", commandId }))
+        }
+    }, [])
 
     useEffect(() => {
         onEventRef.current = onEvent
@@ -86,4 +98,6 @@ export function useMarketFeed(market: string, onEvent: FeedCallback, resumeFromE
             }
         }
     }, [connect, market])
+
+    return { registerCommandId }
 }

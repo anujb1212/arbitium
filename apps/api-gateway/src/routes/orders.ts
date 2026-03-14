@@ -14,40 +14,18 @@ import type { CommandEnvelope } from "@arbitium/ts-shared/engine/types.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
-import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, queryHoldingsByUser } from "@arbitium/db";
+import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, queryHoldingsByUser, releaseLockForOrder } from "@arbitium/db";
 
 export const ordersRouter = Router()
 
 const STREAM_PREFIX = "arbitium:cmd:"
 
-async function getAvailableSellQty(params: {
-    userId: string;
-    market: string;
-}): Promise<bigint> {
-    const { userId, market } = params;
-
-    const holdings = await queryHoldingsByUser({ prisma, userId });
-    const holding = holdings.find(h => h.market === market);
-    const netQty = BigInt(holding?.netQty ?? "0");
-
-    const openSellOrders = await prisma.order.findMany({
-        where: {
-            userId,
-            market,
-            side: "SELL",
-            status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
-        },
-        select: { qty: true, filledQty: true },
-    });
-
-    const lockedSellQty = openSellOrders.reduce(
-        (sum, o) => sum + (o.qty - o.filledQty),
-        0n
-    );
-
-    const available = netQty - lockedSellQty;
-    return available < 0n ? 0n : available;
-}
+const KNOWN_MARKETS: Set<string> = new Set(
+    (process.env.MARKETS ?? "TATA-INR,RELIANCE-INR,INFY-INR")
+        .split(",")
+        .map((m) => m.trim())
+        .filter((m) => m.length > 0)
+)
 
 ordersRouter.get("/", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const market = req.query["market"]
@@ -104,12 +82,9 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
 
     const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId
 
-    if (side === "SELL") {
-        const availableQty = await getAvailableSellQty({ userId: arbitiumUserId, market });
-        if (BigInt(qty) > availableQty) {
-            res.status(422).json({ error: "Insufficient share holdings to sell" });
-            return;
-        }
+    if (!KNOWN_MARKETS.has(market)) {
+        res.status(422).json({ error: "Unknown market" })
+        return
     }
 
     try {
@@ -148,6 +123,9 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
         })
         res.status(202).json({ commandId })
     } catch {
+        await releaseLockForOrder({ prisma, orderId }).catch((releaseErr) => {
+            console.error(`Stream fail — lock release error orderId=${orderId}`, releaseErr)
+        })
         res.status(503).json({ error: "Command stream unavailable" })
     }
 })
@@ -163,12 +141,9 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Reque
     const commandId = crypto.randomUUID();
     const arbitiumUserId = (req as ArbitriumUserRequest).arbitiumUserId;
 
-    if (side === "SELL") {
-        const availableQty = await getAvailableSellQty({ userId: arbitiumUserId, market });
-        if (BigInt(qty) > availableQty) {
-            res.status(422).json({ error: "Insufficient share holdings to sell" });
-            return;
-        }
+    if (!KNOWN_MARKETS.has(market)) {
+        res.status(422).json({ error: "Unknown market" })
+        return
     }
 
     try {
@@ -187,6 +162,11 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Reque
             res.status(422).json({ error: "Insufficient trading balance" });
             return;
         }
+
+        await releaseLockForOrder({ prisma, orderId }).catch((releaseErr) => {
+            console.error(`Stream fail — lock release error orderId=${orderId}`, releaseErr)
+        })
+
         res.status(500).json({ error: "Balance lock failed" });
         return;
     }
@@ -268,6 +248,11 @@ ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Reques
 
     if (order.status !== "OPEN" && order.status !== "PARTIALLY_FILLED") {
         res.status(409).json({ error: "Order is not cancellable" })
+        return
+    }
+
+    if (!KNOWN_MARKETS.has(market)) {
+        res.status(422).json({ error: "Unknown market" })
         return
     }
 

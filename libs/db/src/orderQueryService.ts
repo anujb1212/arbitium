@@ -1,4 +1,4 @@
-import type { PrismaClient } from "../generated/prisma";
+import type { Prisma, PrismaClient } from "../generated/prisma";
 
 export interface FillDTO {
     id: string;
@@ -32,7 +32,7 @@ export async function queryHoldingsByUser({
     prisma,
     userId,
 }: {
-    prisma: PrismaClient;
+    prisma: PrismaClient | Prisma.TransactionClient;
     userId: string;
 }): Promise<HoldingDTO[]> {
     const trades = await prisma.trade.findMany({

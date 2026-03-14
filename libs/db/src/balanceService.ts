@@ -1,4 +1,5 @@
 import { OrderSide, Prisma, PrismaClient } from "../generated/prisma";
+import { queryHoldingsByUser } from "./orderQueryService";
 
 export type LockBalanceArgs = {
     prisma: PrismaClient;
@@ -27,7 +28,7 @@ export type ReleaseOrConsumeArgs = {
 };
 
 export type CreditBalanceArgs = {
-    prisma: PrismaClient;
+    prisma: PrismaClient | Prisma.TransactionClient;
     userId: string;
     amountInPaise: bigint;
 };
@@ -73,6 +74,33 @@ export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> 
       WHERE "userId" = ${userId}
       FOR UPDATE
     `;
+
+        if (side === "SELL") {
+            const holdings = await queryHoldingsByUser({ prisma: tx, userId });
+            const holding = holdings.find((h) => h.market === market);
+            const netQty = BigInt(holding?.netQty ?? "0");
+
+            const openSellOrders = await tx.order.findMany({
+                where: {
+                    userId,
+                    market,
+                    side: "SELL",
+                    status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
+                },
+                select: { qty: true, filledQty: true },
+            });
+            const lockedSellQty = openSellOrders.reduce(
+                (sum, o) => sum + (o.qty - o.filledQty),
+                0n
+            );
+            const availableSellQty = netQty - lockedSellQty < 0n ? 0n : netQty - lockedSellQty;
+
+            if (qty > availableSellQty) {
+                throw new InsufficientBalanceError(
+                    `Insufficient holdings: available=${availableSellQty} required=${qty}`
+                );
+            }
+        }
 
         const balance = await tx.tradingBalance.findUnique({
             where: { userId },
@@ -199,6 +227,7 @@ export async function consumeLockOnFill(args: ConsumeOnFillArgs): Promise<void> 
         where: { id: orderId },
         data: {
             filledQty: newFilledQty,
+            consumedLocked: { increment: reservedForFill },
             status: isFullyFilled ? "FILLED" : "PARTIALLY_FILLED",
         },
     });
