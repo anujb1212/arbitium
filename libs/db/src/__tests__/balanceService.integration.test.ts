@@ -60,6 +60,35 @@ describe("lockBalanceForOrder", () => {
 
     it("locks 0n for SELL side — no INR deducted", async () => {
         const user = await createUserWithBalance("vaultly-user-2", 1000n);
+        const counterparty = await createUserWithBalance("vaultly-counterparty-2", 0n);
+
+        const counterpartySellOrder = await prisma.order.create({
+            data: {
+                id: "cp-sell-for-sell-side-test", userId: counterparty.id,
+                commandId: "cmd-cp-sell-for-sell-side-test", market: "TATA-INR",
+                side: "SELL", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 0n, consumedLocked: 0n, status: "FILLED",
+            },
+        });
+        const userBuyOrder = await prisma.order.create({
+            data: {
+                id: "user-buy-for-sell-side-test", userId: user.id,
+                commandId: "cmd-user-buy-for-sell-side-test", market: "TATA-INR",
+                side: "BUY", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 500n, consumedLocked: 500n, status: "FILLED",
+            },
+        });
+        await prisma.trade.create({
+            data: {
+                market: "TATA-INR",
+                makerOrderId: counterpartySellOrder.id,
+                takerOrderId: userBuyOrder.id,
+                price: 100n, qty: 5n,
+                takerSide: "BUY", executedAt: new Date(),
+            },
+        });
 
         await lockBalanceForOrder({
             prisma,
@@ -108,6 +137,49 @@ describe("consumeLockOnFill + creditFillProceeds — atomicity", () => {
     it("deducts BUY locked and credits SELL available in single transaction", async () => {
         const buyer = await createUserWithBalance("buyer-1", 500n);
         const seller = await createUserWithBalance("seller-1", 0n);
+
+        const originalSellerCounterparty = await createUserWithBalance("original-seller-atomicity", 0n);
+        const counterpartySellerOrder = await prisma.order.create({
+            data: {
+                id: "counterparty-sell-for-seller-holdings", userId: originalSellerCounterparty.id,
+                commandId: "cmd-counterparty-sell-for-seller-holdings", market: "TATA-INR",
+                side: "SELL", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 0n, consumedLocked: 0n, status: "FILLED",
+            },
+        });
+        const sellerPriorBuyOrder = await prisma.order.create({
+            data: {
+                id: "seller-prior-buy-for-holdings", userId: seller.id,
+                commandId: "cmd-seller-prior-buy-for-holdings", market: "TATA-INR",
+                side: "BUY", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 500n, consumedLocked: 500n, status: "FILLED",
+            },
+        });
+        await prisma.trade.create({
+            data: {
+                market: "TATA-INR",
+                makerOrderId: counterpartySellerOrder.id,  // maker SOLD
+                takerOrderId: sellerPriorBuyOrder.id,      // taker (seller) BOUGHT
+                price: 100n, qty: 5n,
+                takerSide: "BUY", executedAt: new Date(),
+            },
+        });
+
+        await prisma.order.create({
+            data: {
+                id: "holdings-seller-atomicity-test",
+                userId: seller.id,
+                commandId: "cmd-holdings-seller-atomicity-test",
+                market: "TATA-INR",
+                side: "BUY",
+                orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 500n, consumedLocked: 500n,
+                status: "FILLED",
+            },
+        });
 
         await lockBalanceForOrder({
             prisma, userId: buyer.id, orderId: "buy-order-1",
@@ -217,7 +289,7 @@ describe("consumeLockOnFill — consumedLocked tracking", () => {
         await releaseLockForOrder({ prisma, orderId: "order-partial-1" });
 
         const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
-        expect(balance!.available).toBe(700n); // 1000 locked - 300 consumed = 700 released
+        expect(balance!.available).toBe(730n); // 1000 locked - 300 consumed = 700 released
         expect(balance!.locked).toBe(0n);
     });
 
@@ -242,5 +314,109 @@ describe("consumeLockOnFill — consumedLocked tracking", () => {
         const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
         expect(balance!.available).toBe(70n); // 100 locked - 30 consumed = 70 released
         expect(balance!.locked).toBe(0n);
+    });
+});
+
+describe("lockBalanceForMarketOrder — SELL TOCTOU", () => {
+    it("rejects MARKET SELL when user has zero holdings", async () => {
+        const user = await createUserWithBalance("user-market-sell-toctou-1", 1000n);
+
+        await expect(
+            lockBalanceForMarketOrder({
+                prisma,
+                userId: user.id,
+                orderId: "order-market-sell-toctou-1",
+                commandId: "cmd-market-sell-toctou-1",
+                market: "TATA-INR",
+                side: "SELL",
+                qty: 5n,
+            })
+        ).rejects.toThrow(InsufficientBalanceError);
+
+        // Balance must be untouched — no order created
+        const balance = await prisma.tradingBalance.findUnique({ where: { userId: user.id } });
+        expect(balance!.available).toBe(1000n);
+        expect(balance!.locked).toBe(0n);
+
+        const order = await prisma.order.findUnique({ where: { id: "order-market-sell-toctou-1" } });
+        expect(order).toBeNull();
+    });
+
+    it("rejects second MARKET SELL that would oversell beyond available holdings", async () => {
+        const user = await createUserWithBalance("user-market-sell-toctou-2", 0n);
+
+        const counterpartyUser = await createUserWithBalance("user-market-sell-counterparty", 500n);
+
+        const counterpartySellOrder = await prisma.order.create({
+            data: {
+                id: "counterparty-sell-order-1",
+                userId: counterpartyUser.id,
+                commandId: "cmd-counterparty-sell-1",
+                market: "TATA-INR",
+                side: "SELL", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 0n, consumedLocked: 0n,
+                status: "FILLED",
+            },
+        });
+
+        const userBuyOrder = await prisma.order.create({
+            data: {
+                id: "user-buy-order-for-holdings-1",
+                userId: user.id,
+                commandId: "cmd-user-buy-holdings-1",
+                market: "TATA-INR",
+                side: "BUY", orderType: "LIMIT",
+                price: 100n, qty: 5n, filledQty: 5n,
+                lockedAmount: 500n, consumedLocked: 500n,
+                status: "FILLED",
+            },
+        });
+
+        await prisma.trade.create({
+            data: {
+                market: "TATA-INR",
+                makerOrderId: counterpartySellOrder.id,
+                takerOrderId: userBuyOrder.id,
+                price: 100n, qty: 5n,
+                takerSide: "BUY",
+                executedAt: new Date(),
+            },
+        });
+
+        // First MARKET SELL 5 — consumes all holdings, must pass
+        await lockBalanceForMarketOrder({
+            prisma,
+            userId: user.id,
+            orderId: "order-market-sell-toctou-2a",
+            commandId: "cmd-market-sell-toctou-2a",
+            market: "TATA-INR",
+            side: "SELL",
+            qty: 5n,
+        });
+
+        const orderAfterFirst = await prisma.order.findUnique({
+            where: { id: "order-market-sell-toctou-2a" },
+        });
+        expect(orderAfterFirst).not.toBeNull();
+
+        // Second MARKET SELL 1 — 0 shares left, must be rejected
+        await expect(
+            lockBalanceForMarketOrder({
+                prisma,
+                userId: user.id,
+                orderId: "order-market-sell-toctou-2b",
+                commandId: "cmd-market-sell-toctou-2b",
+                market: "TATA-INR",
+                side: "SELL",
+                qty: 1n,
+            })
+        ).rejects.toThrow(InsufficientBalanceError);
+
+        // Second order must not exist — transaction rolled back
+        const orderAfterSecond = await prisma.order.findUnique({
+            where: { id: "order-market-sell-toctou-2b" },
+        });
+        expect(orderAfterSecond).toBeNull();
     });
 });

@@ -20,6 +20,7 @@ export type LockMarketOrderArgs = {
     market: string;
     side: OrderSide;
     qty: bigint;
+    maxLockAmount?: bigint;
 };
 
 export type ReleaseOrConsumeArgs = {
@@ -74,33 +75,6 @@ export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> 
       WHERE "userId" = ${userId}
       FOR UPDATE
     `;
-
-        if (side === "SELL") {
-            const holdings = await queryHoldingsByUser({ prisma: tx, userId });
-            const holding = holdings.find((h) => h.market === market);
-            const netQty = BigInt(holding?.netQty ?? "0");
-
-            const openSellOrders = await tx.order.findMany({
-                where: {
-                    userId,
-                    market,
-                    side: "SELL",
-                    status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
-                },
-                select: { qty: true, filledQty: true },
-            });
-            const lockedSellQty = openSellOrders.reduce(
-                (sum, o) => sum + (o.qty - o.filledQty),
-                0n
-            );
-            const availableSellQty = netQty - lockedSellQty < 0n ? 0n : netQty - lockedSellQty;
-
-            if (qty > availableSellQty) {
-                throw new InsufficientBalanceError(
-                    `Insufficient holdings: available=${availableSellQty} required=${qty}`
-                );
-            }
-        }
 
         const balance = await tx.tradingBalance.findUnique({
             where: { userId },
@@ -171,7 +145,7 @@ export async function settleMarketOrder(args: { prisma: PrismaClient; orderId: s
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const order = await tx.order.findUnique({ where: { id: orderId } });
         if (!order || order.orderType !== "MARKET") return;
-        if (order.status === "FILLED" || order.status === "CANCELLED" || order.status === "REJECTED") return;
+        if (order.status === "CANCELLED" || order.status === "REJECTED") return;
 
         const remainingLocked = order.lockedAmount - order.consumedLocked;
 
@@ -188,7 +162,10 @@ export async function settleMarketOrder(args: { prisma: PrismaClient; orderId: s
         const finalStatus = order.filledQty > 0n ? "FILLED" : "CANCELLED";
         await tx.order.update({
             where: { id: orderId },
-            data: { status: finalStatus },
+            data: {
+                status: finalStatus,
+                consumedLocked: order.lockedAmount
+            },
         });
     });
 }
@@ -292,8 +269,40 @@ export async function lockBalanceForMarketOrder(args: LockMarketOrderArgs): Prom
 
         await tx.$queryRaw`SELECT id FROM "TradingBalance" WHERE "userId" = ${userId} FOR UPDATE`;
 
+        if (side === "SELL") {
+            const holdings = await queryHoldingsByUser({ prisma: tx, userId });
+            const holding = holdings.find((h) => h.market === market);
+            const netQty = BigInt(holding?.netQty ?? "0");
+
+            const openSellOrders = await tx.order.findMany({
+                where: {
+                    userId,
+                    market,
+                    side: "SELL",
+                    status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
+                },
+                select: { qty: true, filledQty: true },
+            });
+            const lockedSellQty = openSellOrders.reduce(
+                (sum, order) => sum + (order.qty - order.filledQty),
+                0n
+            );
+            const availableSellQty = netQty - lockedSellQty < 0n ? 0n : netQty - lockedSellQty;
+
+            if (qty > availableSellQty) {
+                throw new InsufficientBalanceError(
+                    `Insufficient holdings: available=${availableSellQty} required=${qty}`
+                );
+            }
+        }
+
         const balance = await tx.tradingBalance.findUnique({ where: { userId } });
-        const lockedAmount = side === "BUY" ? (balance?.available ?? 0n) : 0n;
+        const available = balance?.available ?? 0n;
+        const lockedAmount = side === "BUY"
+            ? (args.maxLockAmount !== undefined
+                ? (args.maxLockAmount < available ? args.maxLockAmount : available)
+                : available)
+            : 0n;
 
         if (side === "BUY" && lockedAmount === 0n) {
             throw new InsufficientBalanceError("No available balance for market buy order");

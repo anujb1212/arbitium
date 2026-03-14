@@ -17,15 +17,38 @@ export async function resolveArbitiumUser(
     const authReq = req as AuthenticatedRequest;
 
     try {
-        const user = await prisma.user.upsert({
+        let user = await prisma.user.findUnique({
             where: { vaultlyUserId: authReq.vaultlyUserId },
-            update: {},
-            create: {
-                vaultlyUserId: authReq.vaultlyUserId,
-                email: authReq.userEmail ?? undefined,
+            select: {
+                id: true,
+                welcomeBonusCredited: true
             },
-            select: { id: true, welcomeBonusCredited: true },
         });
+
+        if (!user) {
+            try {
+                user = await prisma.user.create({
+                    data: {
+                        vaultlyUserId: authReq.vaultlyUserId,
+                        email: authReq.userEmail ?? undefined,
+                    },
+                    select: { id: true, welcomeBonusCredited: true },
+                });
+            } catch (error: unknown) {
+                if ((error as { code?: string }).code === "P2002") {
+                    user = await prisma.user.findUnique({
+                        where: { vaultlyUserId: authReq.vaultlyUserId },
+                        select: { id: true, welcomeBonusCredited: true },
+                    });
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        if (!user) {
+            throw new Error(`Failed to resolve user for vaultlyUserId=${authReq.vaultlyUserId}`);
+        }
 
         let welcomeBonusGranted = false;
 
