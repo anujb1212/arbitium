@@ -2,8 +2,7 @@ export type Side = "BUY" | "SELL";
 export type OrderId = string;
 export type MarketId = string;
 
-export type SelfTradeRejectReason = "SELF_TRADE"
-export type RejectReason = "MARKET_MISMATCH" | "SEQ_OUT_OF_ORDER" | "DUPLICATE_ORDER_ID" | "INVALID_PRICE" | "INVALID_QTY" | "UNKNOWN_ORDER_ID" | "SELF_TRADE"
+export type RejectReason = "MARKET_MISMATCH" | "SEQ_OUT_OF_ORDER" | "DUPLICATE_ORDER_ID" | "INVALID_PRICE" | "INVALID_QTY" | "UNKNOWN_ORDER_ID" | "SELF_TRADE" | "NO_LIQUIDITY"
 
 export type Price = bigint;
 export type Qty = bigint;

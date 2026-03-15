@@ -92,6 +92,19 @@ export function applyCommandToOrderBook(params: {
             };
         }
 
+        if (result.filledQty === 0n) {
+            events.push({
+                market: command.market,
+                kind: "COMMAND_REJECTED",
+                payload: {
+                    commandKind: command.kind,
+                    rejectReason: "NO_LIQUIDITY"
+                },
+                commandId: command.commandId,
+            });
+            return { events, nextBookSeq };
+        }
+
         for (const trade of result.trades) {
             events.push(tradeToEventEnvelope(
                 trade,

@@ -169,7 +169,7 @@ describe("PLACE_MARKET flow", () => {
         expect(events[0]!.kind).toBe("COMMAND_REJECTED");
     });
 
-    it("empty book => no trades, still emits MARKET_ORDER_SETTLED, bookSeq advances", () => {
+    it("empty book => COMMAND_REJECTED with NO_LIQUIDITY, bookSeq advances, no MARKET_ORDER_SETTLED", () => {
         const orderBook = new OrderBook("TATA-INR");
 
         const { events, nextBookSeq } = applyCommandToOrderBook({
@@ -181,11 +181,11 @@ describe("PLACE_MARKET flow", () => {
             bookSeq: 0n,
         });
 
-        expect(nextBookSeq).toBe(1n);
-        expect(events.some(e => e.kind === "TRADE")).toBe(false);
-        const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
-        expect(settled).toBeDefined();
-        expect(orderBook.getOrder("mkt-2")).toBeNull();
+        expect(events).toHaveLength(1);
+        expect(events[0]!.kind).toBe("COMMAND_REJECTED");
+        expect(
+            (events[0]!.payload as { rejectReason: string }).rejectReason
+        ).toBe("NO_LIQUIDITY");
     });
 
     it("partial fill => TRADE emitted for filled portion, MARKET_ORDER_SETTLED always follows", () => {
@@ -381,5 +381,102 @@ describe("WAL dry-run replay correctness", () => {
         expect(orderBook.getBestAsk()).toBeNull();
         expect(orderBook.getOrder("wal-buy")).toBeNull();
         expect(orderBook.getOrder("wal-sell")).toBeNull();
+    });
+});
+
+describe("PLACE_MARKET — 0 fill rejection", () => {
+    it("MARKET SELL with empty bid book emits COMMAND_REJECTED with NO_LIQUIDITY", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const result = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "cmd-1",
+                market: "TATA-INR",
+                kind: "PLACE_MARKET",
+                payload: {
+                    orderId: crypto.randomUUID(),
+                    userId: "user-1",
+                    side: "SELL",
+                    qty: 5n,
+                },
+            },
+            bookSeq: 0n,
+        });
+
+        expect(result.events).toHaveLength(1);
+        expect(result.events[0]!.kind).toBe("COMMAND_REJECTED");
+        expect(
+            (result.events[0]!.payload as { rejectReason: string }).rejectReason
+        ).toBe("NO_LIQUIDITY");
+        // bookSeq must still advance to stay in sync with orderbook.lastSeq
+        expect(result.nextBookSeq).toBe(1n);
+    });
+
+    it("MARKET BUY with empty ask book emits COMMAND_REJECTED with NO_LIQUIDITY", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const result = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "cmd-2",
+                market: "TATA-INR",
+                kind: "PLACE_MARKET",
+                payload: {
+                    orderId: crypto.randomUUID(),
+                    userId: "user-1",
+                    side: "BUY",
+                    qty: 3n,
+                },
+            },
+            bookSeq: 0n,
+        });
+
+        expect(result.events[0]!.kind).toBe("COMMAND_REJECTED");
+        expect(
+            (result.events[0]!.payload as { rejectReason: string }).rejectReason
+        ).toBe("NO_LIQUIDITY");
+    });
+
+    it("seq stays consistent after 0-fill rejection — next command accepted", () => {
+        const orderBook = new OrderBook("TATA-INR");
+
+        const firstResult = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "cmd-3",
+                market: "TATA-INR",
+                kind: "PLACE_MARKET",
+                payload: {
+                    orderId: crypto.randomUUID(),
+                    userId: "user-1",
+                    side: "SELL",
+                    qty: 5n,
+                },
+            },
+            bookSeq: 0n,
+        });
+
+        expect(firstResult.nextBookSeq).toBe(1n);
+
+        // Next command using firstResult.nextBookSeq must not get SEQ_OUT_OF_ORDER
+        const secondResult = applyCommandToOrderBook({
+            orderBook,
+            command: {
+                commandId: "cmd-4",
+                market: "TATA-INR",
+                kind: "PLACE_LIMIT",
+                payload: {
+                    orderId: crypto.randomUUID(),
+                    userId: "user-2",
+                    side: "BUY",
+                    price: 100n,
+                    qty: 1n,
+                },
+            },
+            bookSeq: firstResult.nextBookSeq,
+        });
+
+        expect(secondResult.events.every((e) => e.kind !== "COMMAND_REJECTED")).toBe(true);
     });
 });
