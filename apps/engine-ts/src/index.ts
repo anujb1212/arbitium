@@ -8,14 +8,6 @@ const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 
 const MARKET_IDS = (process.env.MARKETS ?? "TATA-INR").split(",").map((m) => m.trim());
 
-const MARKETS: MarketConfig[] = MARKET_IDS.map((market) => ({
-    market,
-    commandStreamKey: `arbitium:cmd:${market}`,
-    eventStreamKey: `arbitium:evt:${market}`,
-    consumerGroupName: `engine:${market}`,
-    consumerName: "engine-1",
-}));
-
 async function main(): Promise<void> {
     const redisManager = new RedisManager(REDIS_URL);
     await redisManager.connect();
@@ -23,15 +15,31 @@ async function main(): Promise<void> {
     const client = redisManager.getClient();
     const instanceId = generateInstanceId();
 
+    const MARKETS: MarketConfig[] = MARKET_IDS.map((market) => ({
+        market,
+        commandStreamKey: `arbitium:cmd:${market}`,
+        eventStreamKey: `arbitium:evt:${market}`,
+        consumerGroupName: `engine:${market}`,
+        consumerName: `engine-${instanceId}`,
+    }));
+
+    const acquiredMarkets: string[] = []
+
     for (const config of MARKETS) {
         const acquired = await acquireMarketLock({ client, market: config.market, instanceId });
         if (!acquired) {
             console.error(
                 `[engine lock] failed to acquire lock for market=${config.market} instance=${instanceId} — another engine instance is running. Exiting.`
             );
+
+            for (const lockedMarket of acquiredMarkets) {
+                await releaseMarketLock({ client, market: lockedMarket, instanceId }).catch(console.error);
+            }
+
             await redisManager.close();
             process.exit(1);
         }
+        acquiredMarkets.push(config.market);
         console.log(`[engine lock] acquired market=${config.market} instance=${instanceId}`);
     }
 
