@@ -76,6 +76,34 @@ export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> 
       FOR UPDATE
     `;
 
+        if (side === "SELL") {
+            const holdings = await queryHoldingsByUser({ prisma: tx, userId });
+            const holding = holdings.find((h) => h.market === market);
+            const netQty = BigInt(holding?.netQty ?? "0");
+
+            const openSellOrders = await tx.order.findMany({
+                where: {
+                    userId,
+                    market,
+                    side: "SELL",
+                    status: { in: ["PENDING", "OPEN", "PARTIALLY_FILLED"] },
+                },
+                select: { qty: true, filledQty: true },
+            });
+
+            const lockedSellQty = openSellOrders.reduce(
+                (sum, order) => sum + (order.qty - order.filledQty),
+                0n
+            );
+            const availableSellQty = netQty - lockedSellQty < 0n ? 0n : netQty - lockedSellQty;
+
+            if (qty > availableSellQty) {
+                throw new InsufficientBalanceError(
+                    `Insufficient holdings: available=${availableSellQty} required=${qty}`
+                );
+            }
+        }
+
         const balance = await tx.tradingBalance.findUnique({
             where: { userId },
         });

@@ -9,6 +9,35 @@ import { callVaultlyBridge } from "../vautlyClient.js";
 
 export const transfersRouter = Router();
 
+export async function recoverRollbackPendingWithdrawals(): Promise<void> {
+    const stuckTransfers = await prisma.balanceTransfer.findMany({
+        where: { status: "ROLLBACK_PENDING", direction: "WITHDRAW" },
+    });
+
+    if (stuckTransfers.length === 0) return;
+
+    console.warn(`[transfers recovery] found ${stuckTransfers.length} ROLLBACK_PENDING withdrawals — crediting back`);
+
+    for (const transfer of stuckTransfers) {
+        try {
+            await prisma.$transaction(async (tx) => {
+                await creditTradingBalance({
+                    prisma: tx,
+                    userId: transfer.userId,
+                    amountInPaise: transfer.amountInPaise,
+                });
+                await tx.balanceTransfer.update({
+                    where: { id: transfer.id },
+                    data: { status: "FAILED" },
+                });
+            });
+            console.log(`[transfers recovery] rolled back transfer=${transfer.id} userId=${transfer.userId}`);
+        } catch (error) {
+            console.error(`[transfers recovery] failed to rollback transfer=${transfer.id}:`, error);
+        }
+    }
+}
+
 transfersRouter.get(
     "/balance",
     requireAuth,
@@ -45,23 +74,39 @@ transfersRouter.post(
         const { amountInPaise, idempotencyKey } = parsed.data;
         const authReq = req as ArbitriumUserRequest;
 
-        const existing = await prisma.balanceTransfer.findUnique({
+        let transfer: { id: string; status: string };
+
+        const existingTransfer = await prisma.balanceTransfer.findUnique({
             where: { idempotencyKey },
         });
-        if (existing) {
-            res.status(200).json({ transferId: existing.id, status: existing.status });
+
+        if (existingTransfer) {
+            res.status(200).json({ transferId: existingTransfer.id, status: existingTransfer.status });
             return;
         }
 
-        const transfer = await prisma.balanceTransfer.create({
-            data: {
-                userId: authReq.arbitiumUserId,
-                direction: "DEPOSIT",
-                amountInPaise,
-                idempotencyKey,
-                status: "PENDING",
-            },
-        });
+        try {
+            transfer = await prisma.balanceTransfer.create({
+                data: {
+                    userId: authReq.arbitiumUserId,
+                    direction: "DEPOSIT",
+                    amountInPaise,
+                    idempotencyKey,
+                    status: "PENDING",
+                },
+            });
+        } catch (createError: unknown) {
+            if ((createError as { code?: string }).code === "P2002") {
+                const raced = await prisma.balanceTransfer.findUnique({
+                    where: { idempotencyKey },
+                });
+                if (raced) {
+                    res.status(200).json({ transferId: raced.id, status: raced.status });
+                    return;
+                }
+            }
+            throw createError;
+        }
 
         const bridgeResult = await callVaultlyBridge({
             vaultlyUserId: authReq.vaultlyUserId,
@@ -132,17 +177,22 @@ transfersRouter.post(
         });
 
         try {
-            await debitTradingBalance({
-                prisma,
-                userId: authReq.arbitiumUserId,
-                amountInPaise,
+            await prisma.$transaction(async (tx) => {
+                await debitTradingBalance({
+                    prisma: tx as typeof prisma,
+                    userId: authReq.arbitiumUserId,
+                    amountInPaise,
+                });
+                await tx.balanceTransfer.update({
+                    where: { id: transfer.id },
+                    data: { status: "ROLLBACK_PENDING" },
+                });
             });
         } catch (error) {
             await prisma.balanceTransfer.update({
                 where: { id: transfer.id },
                 data: { status: "FAILED" },
             });
-
             if (error instanceof InsufficientBalanceError) {
                 res.status(422).json({ error: "Insufficient trading balance" });
                 return;
@@ -159,16 +209,18 @@ transfersRouter.post(
         });
 
         if (!bridgeResult.success) {
-            await creditTradingBalance({
-                prisma,
-                userId: authReq.arbitiumUserId,
-                amountInPaise,
+            await prisma.$transaction(async (tx) => {
+                await creditTradingBalance({
+                    prisma: tx,
+                    userId: authReq.arbitiumUserId,
+                    amountInPaise,
+                });
+                await tx.balanceTransfer.update({
+                    where: { id: transfer.id },
+                    data: { status: "FAILED" },
+                });
             });
-            await prisma.balanceTransfer.update({
-                where: { id: transfer.id },
-                data: { status: "FAILED" },
-            });
-            res.status(502).json({ error: "Vaultly credit failed — balance restored" });
+            res.status(502).json({ error: "Withdrawal failed — balance restored" });
             return;
         }
 

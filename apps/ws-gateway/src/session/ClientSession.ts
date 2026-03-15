@@ -17,7 +17,10 @@ export class ClientSession {
     private static readonly MAX_OWNED_COMMAND_IDS = 500
 
 
-    public constructor(private readonly socket: WebSocket) { }
+    public constructor(
+        private readonly socket: WebSocket,
+        public readonly userId: string
+    ) { }
 
     public readonly onEvent: EventListener = (envelope: EventEnvelope): void => {
         if (envelope.kind === "COMMAND_REJECTED") {

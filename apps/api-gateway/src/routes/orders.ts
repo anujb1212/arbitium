@@ -15,8 +15,13 @@ import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
 import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, queryHoldingsByUser, releaseLockForOrder } from "@arbitium/db";
+import { createUserRateLimiter } from "../middleware/rateLimiter";
 
 export const ordersRouter = Router()
+
+const placeLimitRateLimiter = createUserRateLimiter(20);
+const placeMarketRateLimiter = createUserRateLimiter(20);
+const cancelRateLimiter = createUserRateLimiter(40);
 
 const STREAM_PREFIX = "arbitium:cmd:"
 
@@ -87,7 +92,7 @@ ordersRouter.get("/", requireAuth, resolveArbitiumUser, async (req: Request, res
     })
 })
 
-ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, placeLimitRateLimiter, async (req: Request, res: Response) => {
     const parsedResult = PlaceLimitBodySchema.safeParse(req.body)
 
     if (!parsedResult.success) {
@@ -118,7 +123,7 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
         })
     } catch (error) {
         if (error instanceof InsufficientBalanceError) {
-            res.status(422).json({ error: "Insufficient trading balance" })
+            res.status(422).json({ error: (error as Error).message })
             return
         }
         res.status(500).json({ error: "Balance lock failed" })
@@ -154,7 +159,7 @@ ordersRouter.post("/limit", requireAuth, resolveArbitiumUser, async (req: Reques
     }
 })
 
-ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+ordersRouter.post("/market", requireAuth, resolveArbitiumUser, placeMarketRateLimiter, async (req: Request, res: Response) => {
     const parsedResult = PlaceMarketBodySchema.safeParse(req.body);
     if (!parsedResult.success) {
         res.status(400).json({ error: parsedResult.error.flatten() });
@@ -198,7 +203,7 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, async (req: Reque
 
     } catch (error) {
         if (error instanceof InsufficientBalanceError) {
-            res.status(422).json({ error: "Insufficient trading balance" });
+            res.status(422).json({ error: (error as Error).message });
             return;
         }
 
@@ -263,7 +268,7 @@ ordersRouter.get("/history", requireAuth, resolveArbitiumUser, async (req: Reque
     res.json({ orders });
 });
 
-ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
+ordersRouter.delete("/:id", requireAuth, resolveArbitiumUser, cancelRateLimiter, async (req: Request, res: Response) => {
     const paramsResult = CancelParamsSchema.safeParse(req.params)
     const bodyResult = CancelBodySchema.safeParse(req.body)
 

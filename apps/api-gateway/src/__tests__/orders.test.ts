@@ -30,7 +30,8 @@ vi.mock("../middleware/auth.js", () => ({
 
 vi.mock("../middleware/resolveArbitiumUser.js", () => ({
     resolveArbitiumUser: (req: Record<string, unknown>, _res: unknown, next: () => void) => {
-        req.arbitiumUserId = "user-1";
+        const expressReq = req as { headers?: Record<string, string> };
+        req.arbitiumUserId = expressReq.headers?.["x-test-user-id"] ?? "user-1";
         next();
     },
 }));
@@ -68,6 +69,7 @@ vi.mock("@arbitium/db", async (importOriginal) => {
 
 import { ordersRouter } from "../routes/orders"
 import { beforeEach } from "vitest";
+import { InsufficientBalanceError } from "@arbitium/db";
 
 const app = express();
 app.use(express.json());
@@ -77,8 +79,8 @@ beforeEach(() => {
     appendToStreamMock.mockClear();
     encodeCommandToStreamFieldsMock.mockClear();
     getRedisClientMock.mockClear();
-    lockBalanceForOrderMock.mockClear();
-    lockBalanceForMarketOrderMock.mockClear();
+    lockBalanceForOrderMock.mockReset();
+    lockBalanceForMarketOrderMock.mockReset();
     queryHoldingsByUserMock.mockReset();
     findUniqueMock.mockReset();
     queryFillsByUserAndMarketMock.mockReset();
@@ -96,21 +98,23 @@ beforeEach(() => {
 
 describe("POST /orders/limit", () => {
     it("returns 202 + commandId on valid body", async () => {
+        const orderId = crypto.randomUUID();
         const res = await request(app).post("/orders/limit").send({
-            market: "TATA_INR",
-            orderId: "ord-1",
+            market: "TATA-INR",
+            orderId,
             side: "BUY",
             price: "10050000",
             qty: "1000000",
         });
+        console.log("DEBUG body:", res.body);
         expect(res.status).toBe(202);
         expect(typeof res.body.commandId).toBe("string");
         expect(res.body.commandId.length).toBeGreaterThan(0);
         expect(lockBalanceForOrderMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 userId: "user-1",
-                orderId: "ord-1",
-                market: "TATA_INR",
+                orderId,
+                market: "TATA-INR",
             }),
         )
     });
@@ -118,7 +122,7 @@ describe("POST /orders/limit", () => {
     it("returns 400 when side is invalid", async () => {
         const res = await request(app).post("/orders/limit").send({
             market: "TATA_INR",
-            orderId: "ord-1",
+            orderId: crypto.randomUUID(),
             side: "LONG",
             price: "10050000",
             qty: "1000000",
@@ -130,7 +134,7 @@ describe("POST /orders/limit", () => {
     it("returns 400 when price is a float string", async () => {
         const res = await request(app).post("/orders/limit").send({
             market: "TATA_INR",
-            orderId: "ord-2",
+            orderId: crypto.randomUUID(),
             side: "SELL",
             price: "100.5",
             qty: "1000000",
@@ -141,16 +145,17 @@ describe("POST /orders/limit", () => {
 
 describe("DELETE /orders/:id", () => {
     it("returns 409 when order is still PENDING", async () => {
+        const orderId = crypto.randomUUID();
         appendToStreamMock.mockClear();
         findUniqueMock.mockResolvedValue({
             userId: "user-1",
             status: "PENDING",
-            market: "TATA_INR",
+            market: "TATA-INR",
         });
 
         const res = await request(app)
-            .delete("/orders/ord-1")
-            .send({ market: "TATA_INR" });
+            .delete(`/orders/${orderId}`)
+            .send({ market: "TATA-INR" });
 
         expect(res.status).toBe(409);
         expect(res.body).toEqual({ error: "Order is not open yet" });
@@ -158,33 +163,37 @@ describe("DELETE /orders/:id", () => {
     });
 
     it("returns 202 + commandId when order is OPEN", async () => {
+        const orderId = crypto.randomUUID();
         appendToStreamMock.mockClear();
         findUniqueMock.mockResolvedValue({
             userId: "user-1",
             status: "OPEN",
-            market: "TATA_INR",
+            market: "TATA-INR",
         });
         const res = await request(app)
-            .delete("/orders/ord-1")
-            .send({ market: "TATA_INR" });
+            .delete(`/orders/${orderId}`)
+            .send({ market: "TATA-INR" });
         expect(res.status).toBe(202);
         expect(typeof res.body.commandId).toBe("string");
         expect(appendToStreamMock).toHaveBeenCalledTimes(1);
     });
 
     it("returns 400 when market body is missing", async () => {
-        const res = await request(app).delete("/orders/ord-1").send({});
+        const res = await request(app).delete(`/orders/${crypto.randomUUID()}`).send({});
         expect(res.status).toBe(400);
     });
 
     it("returns 404 when order belongs to another user", async () => {
+        const orderId = crypto.randomUUID();
         findUniqueMock.mockResolvedValue({
             userId: "user-2",
             status: "OPEN",
-            market: "TATA_INR",
+            market: "TATA-INR",
         });
 
-        const res = await request(app).delete("/orders/ord-1").send({ market: "TATA_INR" });
+        const res = await request(app)
+            .delete(`/orders/${orderId}`)
+            .send({ market: "TATA-INR" });
         expect(res.status).toBe(404);
     });
 });
@@ -265,11 +274,13 @@ describe("GET /orders/history", () => {
 
 describe("SELL holdings validation", () => {
     it("rejects SELL limit order when user has 0 holdings", async () => {
-        queryHoldingsByUserMock.mockResolvedValue([]);
+        await lockBalanceForOrderMock.mockRejectedValueOnce(
+            new InsufficientBalanceError("Insufficient share holdings: available=0 required=5")
+        );
 
         const res = await request(app).post("/orders/limit").send({
             market: "TATA-INR",
-            orderId: "ord-sell-1",
+            orderId: crypto.randomUUID(),
             side: "SELL",
             price: "10000000",
             qty: "5",
@@ -277,22 +288,17 @@ describe("SELL holdings validation", () => {
 
         expect(res.status).toBe(422);
         expect(res.body.error).toMatch(/insufficient share holdings/i);
-        expect(lockBalanceForOrderMock).not.toHaveBeenCalled();
+        expect(lockBalanceForOrderMock).toHaveBeenCalledOnce();
     });
 
     it("rejects SELL limit when qty > holdings minus open sell qty", async () => {
-        // Net 6 shares held
-        queryHoldingsByUserMock.mockResolvedValue([
-            { asset: "TATA", market: "TATA-INR", netQty: "6", avgBuyPrice: "10000000" }
-        ]);
-        // 4 shares already locked in open SELL orders
-        findUniqueMock.mockResolvedValue(null); // not used in this path
-        // Override prisma.order.findMany for open sell orders
-        // Note: findUniqueMock won't work here — see note below
+        lockBalanceForOrderMock.mockRejectedValueOnce(
+            new InsufficientBalanceError("Insufficient share holdings: available=6 required=7")
+        );
 
         const res = await request(app).post("/orders/limit").send({
             market: "TATA-INR",
-            orderId: "ord-sell-2",
+            orderId: crypto.randomUUID(),
             side: "SELL",
             price: "10000000",
             qty: "7",   // 7 > 6 available
@@ -303,13 +309,9 @@ describe("SELL holdings validation", () => {
     });
 
     it("accepts SELL limit when qty <= available holdings", async () => {
-        queryHoldingsByUserMock.mockResolvedValue([
-            { asset: "TATA", market: "TATA-INR", netQty: "10", avgBuyPrice: "10000000" }
-        ]);
-
         const res = await request(app).post("/orders/limit").send({
             market: "TATA-INR",
-            orderId: "ord-sell-3",
+            orderId: crypto.randomUUID(),
             side: "SELL",
             price: "10000000",
             qty: "5",
@@ -320,17 +322,84 @@ describe("SELL holdings validation", () => {
     });
 
     it("rejects SELL market order when user has 0 holdings", async () => {
-        queryHoldingsByUserMock.mockResolvedValue([]);
+        lockBalanceForMarketOrderMock.mockRejectedValueOnce(
+            new InsufficientBalanceError("Insufficient share holdings: available=0 required=3")
+        );
 
         const res = await request(app).post("/orders/market").send({
             market: "TATA-INR",
-            orderId: "ord-mkt-sell-1",
+            orderId: crypto.randomUUID(),
             side: "SELL",
             qty: "3",
         });
 
         expect(res.status).toBe(422);
         expect(res.body.error).toMatch(/insufficient share holdings/i);
-        expect(lockBalanceForMarketOrderMock).not.toHaveBeenCalled();
+        expect(lockBalanceForMarketOrderMock).toHaveBeenCalledOnce();
+    });
+});
+
+describe("Rate limiting — per arbitiumUserId", () => {
+    const validLimitPayload = {
+        market: "TATA-INR",
+        side: "BUY",
+        price: "10050000",
+        qty: "1000000",
+    };
+
+    it("POST /orders/limit blocks on the 21st request for same user", async () => {
+        const rateLimitUserId = `rl-limit-${crypto.randomUUID()}`;
+        const responses: number[] = [];
+
+        for (let requestIndex = 0; requestIndex < 21; requestIndex++) {
+            const response = await request(app)
+                .post("/orders/limit")
+                .set("x-test-user-id", rateLimitUserId)
+                .send({ ...validLimitPayload, orderId: `ord-rl-${requestIndex}` });
+            responses.push(response.status);
+        }
+
+        expect(responses.slice(0, 20).every((status) => status !== 429)).toBe(true);
+        expect(responses[20]).toBe(429);
+    });
+
+    it("DELETE /orders/:id blocks on the 41st request for same user", async () => {
+        const rateLimitUserId = `rl-delete-${crypto.randomUUID()}`;
+        findUniqueMock.mockResolvedValue({
+            userId: rateLimitUserId,
+            status: "OPEN",
+            market: "TATA-INR",
+        });
+
+        const responses: number[] = [];
+        for (let requestIndex = 0; requestIndex < 41; requestIndex++) {
+            const response = await request(app)
+                .delete("/orders/some-order-id")
+                .set("x-test-user-id", rateLimitUserId)
+                .send({ market: "TATA-INR" });
+            responses.push(response.status);
+        }
+
+        expect(responses.slice(0, 40).every((status) => status !== 429)).toBe(true);
+        expect(responses[40]).toBe(429);
+    });
+
+    it("rate limit counters are isolated — user-B not blocked when user-A hits limit", async () => {
+        const userA = `rl-a-${crypto.randomUUID()}`;
+        const userB = `rl-b-${crypto.randomUUID()}`;
+
+        for (let requestIndex = 0; requestIndex < 20; requestIndex++) {
+            await request(app)
+                .post("/orders/limit")
+                .set("x-test-user-id", userA)
+                .send({ ...validLimitPayload, orderId: `ord-a-${requestIndex}` });
+        }
+
+        const response = await request(app)
+            .post("/orders/limit")
+            .set("x-test-user-id", userB)
+            .send({ ...validLimitPayload, orderId: "ord-b-0" });
+
+        expect(response.status).not.toBe(429);
     });
 });

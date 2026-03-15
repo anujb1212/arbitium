@@ -235,7 +235,8 @@ exports.TransferDirection = exports.$Enums.TransferDirection = {
 exports.TransferStatus = exports.$Enums.TransferStatus = {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
+  ROLLBACK_PENDING: 'ROLLBACK_PENDING'
 };
 
 exports.KlineInterval = exports.$Enums.KlineInterval = {

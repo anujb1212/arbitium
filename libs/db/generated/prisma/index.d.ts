@@ -87,7 +87,8 @@ export type TransferDirection = (typeof TransferDirection)[keyof typeof Transfer
 export const TransferStatus: {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
+  ROLLBACK_PENDING: 'ROLLBACK_PENDING'
 };
 
 export type TransferStatus = (typeof TransferStatus)[keyof typeof TransferStatus]

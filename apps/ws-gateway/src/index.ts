@@ -4,6 +4,8 @@ import { connectRedis, disconnectRedis, getCommandClient, getPubSubClient } from
 import { MarketFeedManager } from "./feed/MarketFeedManager";
 import { ClientSession } from "./session/ClientSession";
 import { handleMessage } from "./session/messageHandler";
+import { IncomingMessage } from "http";
+import { verifyConnectionToken } from "./auth/verifyToken";
 
 async function main(): Promise<void> {
     await connectRedis(REDIS_URL)
@@ -19,9 +21,22 @@ async function main(): Promise<void> {
         console.error("[ws-gateway] Server error:", err)
     })
 
-    wss.on("connection", (socket: WebSocket) => {
-        const session = new ClientSession(socket)
+    wss.on("connection", (socket: WebSocket, request: IncomingMessage) => {
+        const requestUrl = new URL(request.url ?? "", `http://localhost`);
+        const token = requestUrl.searchParams.get("token");
 
+        if (!token) {
+            socket.close(4001, "Unauthorized");
+            return;
+        }
+
+        const verified = verifyConnectionToken(token);
+        if (!verified) {
+            socket.close(4001, "Unauthorized");
+            return;
+        }
+
+        const session = new ClientSession(socket, verified.userId);
         socket.on("message", (data) => {
             handleMessage(data.toString(), session, feedManager).catch((err) => {
                 console.error("[WS] handleMessage error:", err)

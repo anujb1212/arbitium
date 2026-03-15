@@ -36,6 +36,7 @@ enum TransferStatus {
     PENDING
     COMPLETED
     FAILED
+    ROLLBACK_PENDING
 }
 
 enum KlineInterval {
