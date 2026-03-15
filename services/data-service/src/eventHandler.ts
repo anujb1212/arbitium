@@ -116,10 +116,11 @@ async function handleCommandRejected(
 
     if (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") return;
 
-    await releaseLockForOrder({ prisma, orderId: order.id });
-
-    await prisma.order.update({
-        where: { id: order.id },
-        data: { status: "REJECTED" },
+    await prisma.$transaction(async (tx) => {
+        await releaseLockForOrder({ prisma: tx, orderId: order.id });
+        await tx.order.update({
+            where: { id: order.id },
+            data: { status: "REJECTED" },
+        });
     });
 }

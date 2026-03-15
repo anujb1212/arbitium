@@ -7,17 +7,33 @@ const {
     mockConsumeLockOnFill,
     mockCreditFillProceeds,
     mockReleaseLockForOrder,
+    mockMarkOrderOpen,
+    mockSettleMarketOrder,
+    mockUpsertKline,
+    mockOrderUpdate,
+    mockOrderFindUnique
 } = vi.hoisted(() => {
     const mockTradeCreate = vi.fn();
+    const mockOrderUpdate = vi.fn().mockResolvedValue({});
+    const mockOrderFindUnique = vi.fn().mockResolvedValue(null);
     const mockTransaction = vi.fn(async (fn: (tx: unknown) => Promise<void>) => {
-        await fn({ trade: { create: mockTradeCreate } });
+        await fn({
+            trade: { create: mockTradeCreate },
+            order: { findUnique: mockOrderFindUnique, update: mockOrderUpdate },
+            tradingBalance: { update: vi.fn(), updateMany: vi.fn() },
+        });
     });
     return {
         mockTradeCreate,
         mockTransaction,
+        mockOrderUpdate,
+        mockOrderFindUnique,
         mockConsumeLockOnFill: vi.fn().mockResolvedValue(undefined),
         mockCreditFillProceeds: vi.fn().mockResolvedValue(undefined),
         mockReleaseLockForOrder: vi.fn().mockResolvedValue(undefined),
+        mockMarkOrderOpen: vi.fn().mockResolvedValue(undefined),
+        mockSettleMarketOrder: vi.fn().mockResolvedValue(undefined),
+        mockUpsertKline: vi.fn().mockResolvedValue(undefined),
     };
 });
 
@@ -30,9 +46,22 @@ vi.mock("@arbitium/db", () => ({
     consumeLockOnFill: mockConsumeLockOnFill,
     creditFillProceeds: mockCreditFillProceeds,
     releaseLockForOrder: mockReleaseLockForOrder,
+    markOrderOpen: mockMarkOrderOpen,
+    settleMarketOrder: mockSettleMarketOrder,
+    upsertKline: mockUpsertKline,
+    getOpenTime: vi.fn((date: Date) => date),
+    getCloseTime: vi.fn((date: Date) => date),
+    KlineInterval: {
+        ONE_MINUTE: "ONE_MINUTE",
+        FIVE_MINUTES: "FIVE_MINUTES",
+        FIFTEEN_MINUTES: "FIFTEEN_MINUTES",
+        ONE_HOUR: "ONE_HOUR",
+        ONE_DAY: "ONE_DAY",
+    },
 }));
 
 import { handleEvent } from "../eventHandler";
+import { prisma } from "@arbitium/db";
 
 function makeTradeEvent(overrides: {
     takerSide: "BUY" | "SELL";
@@ -49,6 +78,7 @@ function makeTradeEvent(overrides: {
             price: 100n,
             qty: 10n,
             takerSide: overrides.takerSide,
+            executedAtMs: 1700000000000
         },
     };
 }
@@ -58,7 +88,11 @@ describe("handleEvent — TRADE", () => {
         vi.clearAllMocks();
         mockTradeCreate.mockResolvedValue({});
         mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<void>) => {
-            await fn({ trade: { create: mockTradeCreate } });
+            await fn({
+                trade: { create: mockTradeCreate },
+                order: { findUnique: mockOrderFindUnique, update: mockOrderUpdate },
+                tradingBalance: { update: vi.fn(), updateMany: vi.fn() },
+            });
         });
     });
 
@@ -129,7 +163,13 @@ describe("handleEvent — BOOK_DELTA", () => {
             market: "TATA-INR",
             kind: "BOOK_DELTA",
             bookSeq: 2n,
-            payload: { type: "CANCEL", orderId: "order-to-cancel" },
+            payload: {
+                type: "CANCEL",
+                orderId: "order-to-cancel",
+                side: "BUY",
+                price: 100n,
+                qty: 5n
+            },
         };
 
         await handleEvent(event);
@@ -145,6 +185,69 @@ describe("handleEvent — BOOK_DELTA", () => {
             kind: "BOOK_DELTA",
             bookSeq: 3n,
             payload: { type: "ADD", orderId: "o1", side: "BUY", price: 100n, qty: 5n },
+        };
+
+        await handleEvent(event);
+
+        expect(mockReleaseLockForOrder).not.toHaveBeenCalled();
+    });
+});
+
+describe("handleEvent — COMMAND_REJECTED", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("releases lock and sets REJECTED status atomically for PLACE_MARKET rejection", async () => {
+        (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+            id: "order-123",
+            status: "PENDING",
+        });
+
+        mockOrderFindUnique.mockResolvedValueOnce({
+            id: "order-123",
+            userId: "user-1",
+            status: "PENDING",
+            lockedAmount: 0n,
+            consumedLocked: 0n,
+        });
+
+        const event: Extract<EventEnvelope, { kind: "COMMAND_REJECTED" }> = {
+            market: "TATA-INR",
+            kind: "COMMAND_REJECTED",
+            commandId: "cmd-abc",
+            payload: { commandKind: "PLACE_MARKET", rejectReason: "NO_LIQUIDITY" },
+        };
+
+        await handleEvent(event);
+
+        expect(mockTransaction).toHaveBeenCalledOnce();
+        expect(mockReleaseLockForOrder).toHaveBeenCalledWith(
+            expect.objectContaining({ orderId: "order-123" })
+        );
+    });
+
+    it("skips processing when commandId is missing", async () => {
+        const event: Extract<EventEnvelope, { kind: "COMMAND_REJECTED" }> = {
+            market: "TATA-INR",
+            kind: "COMMAND_REJECTED",
+            payload: { commandKind: "PLACE_MARKET", rejectReason: "NO_LIQUIDITY" },
+        };
+
+        await handleEvent(event);
+
+        expect(mockReleaseLockForOrder).not.toHaveBeenCalled();
+    });
+
+    it("skips OPEN orders — already processing, lock not double-released", async () => {
+        (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+            id: "order-open",
+            status: "OPEN",
+        });
+
+        const event: Extract<EventEnvelope, { kind: "COMMAND_REJECTED" }> = {
+            market: "TATA-INR",
+            kind: "COMMAND_REJECTED",
+            commandId: "cmd-open",
+            payload: { commandKind: "PLACE_LIMIT", rejectReason: "DUPLICATE_ORDER_ID" },
         };
 
         await handleEvent(event);

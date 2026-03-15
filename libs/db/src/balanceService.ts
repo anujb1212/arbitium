@@ -24,7 +24,7 @@ export type LockMarketOrderArgs = {
 };
 
 export type ReleaseOrConsumeArgs = {
-    prisma: PrismaClient;
+    prisma: PrismaClient | Prisma.TransactionClient;
     orderId: string;
 };
 
@@ -139,32 +139,38 @@ export async function lockBalanceForOrder(args: LockBalanceArgs): Promise<void> 
     });
 }
 
+async function releaseLockCore(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) return;
+
+    if (order.status === "CANCELLED" || order.status === "FILLED" || order.status === "REJECTED") return;
+
+    const remainingLocked = order.lockedAmount - order.consumedLocked;
+
+    if (remainingLocked > 0n) {
+        await tx.tradingBalance.update({
+            where: { userId: order.userId },
+            data: {
+                available: { increment: remainingLocked },
+                locked: { decrement: remainingLocked },
+            },
+        });
+    }
+
+    await tx.order.update({
+        where: { id: orderId },
+        data: { status: "CANCELLED" },
+    });
+}
+
 export async function releaseLockForOrder(args: ReleaseOrConsumeArgs): Promise<void> {
     const { prisma, orderId } = args;
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const order = await tx.order.findUnique({ where: { id: orderId } });
-        if (!order) return;
-
-        if (order.status === "CANCELLED" || order.status === "FILLED" || order.status === "REJECTED") return
-
-        const remainingLocked = order.lockedAmount - order.consumedLocked;
-
-        if (remainingLocked > 0n) {
-            await tx.tradingBalance.update({
-                where: { userId: order.userId },
-                data: {
-                    available: { increment: remainingLocked },
-                    locked: { decrement: remainingLocked },
-                },
-            });
-        }
-
-        await tx.order.update({
-            where: { id: orderId },
-            data: { status: "CANCELLED" },
-        });
-    });
+    if ("$transaction" in prisma) {
+        await prisma.$transaction((tx) => releaseLockCore(tx, orderId));
+    } else {
+        await releaseLockCore(prisma, orderId);
+    }
 }
 
 export async function settleMarketOrder(args: { prisma: PrismaClient; orderId: string }): Promise<void> {

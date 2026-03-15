@@ -5,6 +5,8 @@ import { acknowledgeMessage } from "@arbitium/ts-engine-client/streams/acknowled
 import { decodeEventFromStreamFields } from "@arbitium/ts-shared/engine/wire/eventCodec";
 import { handleEvent } from "./eventHandler";
 import { reclaimPendingMessages } from "@arbitium/ts-engine-client/streams/reclaimPendingMessages";
+import { createServer } from "http";
+import { prisma } from "@arbitium/db";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 const MARKETS = (process.env.MARKETS ?? "TATA-INR,RELIANCE-INR,INFY-INR").split(",");
@@ -14,6 +16,32 @@ const STREAM_PREFIX = "arbitium:evt:";
 const POLL_BLOCK_MS = 200;
 const PEL_IDLE_MS = 30_000;
 const PEL_BATCH_SIZE = 50;
+const HEALTH_PORT = Number(process.env.HEALTH_PORT ?? "8082");
+
+function startHealthServer(
+    redisClient: ReturnType<InstanceType<typeof RedisManager>["getClient"]>
+): ReturnType<typeof createServer> {
+    const server = createServer(async (req, res) => {
+        if (req.url !== "/healthz") {
+            res.writeHead(404).end();
+            return;
+        }
+        try {
+            await redisClient.sendCommand(["PING"]);
+            await prisma.$queryRaw`SELECT 1`;
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "ok" }));
+        } catch (error) {
+            console.error("[healthz] check failed:", error);
+            res.writeHead(503, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "degraded" }));
+        }
+    });
+    server.listen(HEALTH_PORT, () => {
+        console.log(`[data-service] Health check on :${HEALTH_PORT}`);
+    });
+    return server;
+}
 
 async function drainPendingMessages(
     client: ReturnType<InstanceType<typeof RedisManager>["getClient"]>,
@@ -85,6 +113,7 @@ async function main(): Promise<void> {
     const redisManager = new RedisManager(REDIS_URL);
     await redisManager.connect();
     const client = redisManager.getClient();
+    const healthServer = startHealthServer(client);
 
     for (const market of MARKETS) {
         const streamKey = `${STREAM_PREFIX}${market}`;
@@ -98,8 +127,12 @@ async function main(): Promise<void> {
     console.log("data-service started — consuming event streams");
 
     const abortController = new AbortController();
-    process.on("SIGINT", () => abortController.abort());
-    process.on("SIGTERM", () => abortController.abort());
+    const shutdown = (): void => {
+        healthServer.close();
+        abortController.abort();
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
 
     await Promise.all(
         MARKETS.map((market) =>

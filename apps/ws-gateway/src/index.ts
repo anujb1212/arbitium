@@ -4,11 +4,33 @@ import { connectRedis, disconnectRedis, getCommandClient, getPubSubClient } from
 import { MarketFeedManager } from "./feed/MarketFeedManager";
 import { ClientSession } from "./session/ClientSession";
 import { handleMessage } from "./session/messageHandler";
-import { IncomingMessage } from "http";
+import { createServer, IncomingMessage } from "http";
 import { verifyConnectionToken } from "./auth/verifyToken";
+
+const HEALTH_PORT = Number(process.env.HEALTH_PORT ?? "8081");
 
 async function main(): Promise<void> {
     await connectRedis(REDIS_URL)
+
+    const healthServer = createServer(async (req, res) => {
+        if (req.url !== "/healthz") {
+            res.writeHead(404).end();
+            return;
+        }
+        try {
+            await getCommandClient().sendCommand(["PING"]);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "ok" }));
+        } catch (error) {
+            console.error("[healthz] check failed:", error);
+            res.writeHead(503, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "degraded" }));
+        }
+    })
+
+    healthServer.listen(HEALTH_PORT, () => {
+        console.log(`[ws-gateway] Health check on :${HEALTH_PORT}`);
+    });
 
     const feedManager = new MarketFeedManager(getCommandClient(), getPubSubClient())
     const wss = new WebSocketServer({ port: WS_PORT })
@@ -56,12 +78,15 @@ async function main(): Promise<void> {
 
     const shutdown = async (): Promise<void> => {
         console.log("[ws-gateway] Shutting down...")
+        healthServer.close();
+
+        for (const socket of wss.clients) {
+            socket.close(1001, "Server shutting down");
+        }
 
         wss.close()
 
-        for (const socket of wss.clients) {
-            socket.terminate()
-        }
+        await new Promise<void>((resolve) => wss.once("close", resolve));
 
         await disconnectRedis()
         process.exit(0)
