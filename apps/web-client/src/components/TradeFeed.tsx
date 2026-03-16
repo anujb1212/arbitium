@@ -13,30 +13,29 @@ type Props = { trades: TradeEntry[]; config: MarketConfig }
 
 export function TradeFeed({ trades, config }: Props): React.JSX.Element {
     return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <div className="px-4 py-2.5 text-xs font-semibold text-hi border-b border-line flex-shrink-0">
-                Recent Trades
-            </div>
-            <div className="grid grid-cols-3 px-4 py-1.5 text-[11px] text-lo flex-shrink-0">
+        <div className="flex flex-col h-full bg-panel overflow-hidden">
+            <div className="grid grid-cols-3 px-4 py-2 text-[11px] font-medium text-lo flex-shrink-0 border-b border-line uppercase tracking-wider">
                 <span>Price</span>
                 <span className="text-right">Qty</span>
                 <span className="text-right">Time</span>
             </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="flex-1 overflow-y-auto scrollbar-thin pt-1 pb-1">
                 {trades.length === 0 ? (
-                    <p className="text-center text-xs text-lo py-8">Waiting for trades…</p>
+                    <div className="flex items-center justify-center h-full text-[12px] text-lo">
+                        Waiting for trades...
+                    </div>
                 ) : (
                     trades.map((trade) => (
                         <div key={trade.id}
-                            className="grid grid-cols-3 h-[21px] px-4 items-center hover:bg-raised">
-                            <span className={`font-mono text-xs font-medium
-                               ${trade.takerSide === 'BUY' ? 'text-bull' : 'text-bear'}`}>
+                            className="grid grid-cols-3 h-[22px] px-4 items-center hover:bg-raised transition-colors cursor-default group">
+                            <span className={`font-mono tabular-nums text-[12px] font-medium
+                                ${trade.takerSide === 'BUY' ? 'text-bull' : 'text-bear'}`}>
                                 {formatPrice(trade.price, config.priceScale)}
                             </span>
-                            <span className="font-mono text-xs text-mid text-right">
+                            <span className="font-mono tabular-nums text-[12px] text-mid text-right group-hover:text-hi transition-colors">
                                 {formatQty(trade.qty, config.qtyScale)}
                             </span>
-                            <span className="font-mono text-[11px] text-lo text-right">
+                            <span className="font-mono tabular-nums text-[12px] text-lo text-right">
                                 {formatTime(trade.timestamp)}
                             </span>
                         </div>

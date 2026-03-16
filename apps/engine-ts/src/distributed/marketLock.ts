@@ -25,7 +25,7 @@ function lockKey(market: string): string {
 }
 
 export function generateInstanceId(): string {
-    return `${os.hostname()}-${process.pid}`;
+    return `$User-${process.pid}`;
 }
 
 export async function acquireMarketLock(params: {

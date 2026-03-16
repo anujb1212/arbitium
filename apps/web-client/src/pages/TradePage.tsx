@@ -13,22 +13,23 @@ import { useMarketStats } from '../hooks/useMarketStats'
 import { useOpenOrders } from '../hooks/useOpenOrders'
 import { MarketHeaderBar } from '../components/MarketHeaderBar'
 import { BottomPanel } from '../components/BottomPanel'
-import { CommandRejectedToast } from '../components/CommandRejectedToast'
 import { WalletButton } from '../components/WalletButton'
 import { TradeFeed } from '../components/TradeFeed'
+import { useToast } from '../components/ToastProvider'
+import { MarketSidebar } from '../components/MarketSidebar'
 
 export default function TradePage(): React.JSX.Element {
     const { market: marketParam } = useParams<{ market: string }>()
     const navigate = useNavigate()
+    const { addToast } = useToast()
 
-    const validMarket =
-        MARKETS.find((m) => m.market === marketParam)?.market ?? MARKETS[0].market
+    const validMarket = MARKETS.find((m) => m.market === marketParam)?.market ?? MARKETS[0].market
 
     const [selectedMarket, setSelectedMarket] = useState(validMarket)
     const [eventCount, setEventCount] = useState(0)
-    const [rejectToast, setRejectToast] = useState<string | null>(null)
-    const [showBonusToast, setShowBonusToast] = useState(false)
     const [bookTab, setBookTab] = useState<'BOOK' | 'TRADES'>('BOOK')
+
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
     const { bids, asks, dispatchDelta, resetBook, seedBook } = useOrderBook()
     const { trades, dispatchTrade, resetFeed, seedFeed } = useTradeFeed()
@@ -57,16 +58,16 @@ export default function TradePage(): React.JSX.Element {
             }
             if (event.kind === 'COMMAND_REJECTED') {
                 if (event.commandId) openOrders.removeByCommandId(event.commandId)
-                setRejectToast(event.payload.rejectReason)
+                addToast('error', 'Command Rejected', event.payload.rejectReason)
             }
         },
-        [dispatchDelta, dispatchTrade, onTrade, openOrders]
+        [dispatchDelta, dispatchTrade, onTrade, openOrders, addToast]
     )
 
     function handleMarketChange(market: string): void {
         setSelectedMarket(market)
         setEventCount(0)
-        setRejectToast(null)
+        setIsSidebarOpen(false)
         resetBook(); resetFeed(); resetStats(); openOrders.reset()
         navigate(`/trade/${market}`, { replace: true })
     }
@@ -82,76 +83,100 @@ export default function TradePage(): React.JSX.Element {
             className="bg-base text-hi font-sans text-[13px]"
             style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 272px 300px',
-                gridTemplateRows: '56px 52px 1fr 260px',
+                gridTemplateColumns: isSidebarOpen ? '250px 1fr 272px 300px' : '0px 1fr 272px 300px',
+                gridTemplateRows: '56px 56px 1fr 280px',
+                transition: 'grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 height: '100dvh',
                 overflow: 'hidden',
             }}
         >
+            {/* Global Header */}
             <header
                 style={{ gridColumn: '1 / -1', gridRow: '1' }}
-                className="flex items-center justify-between px-6 border-b border-line bg-panel flex-shrink-0"
+                className="flex items-center justify-between px-5 border-b border-line bg-panel flex-shrink-0 z-30"
             >
                 <button
                     onClick={() => navigate('/')}
-                    className="text-[18px] font-bold tracking-tight text-hi hover:text-mid transition-colors flex-shrink-0"
+                    className="flex items-center gap-3 group active:scale-[0.98] transition-all"
                 >
-                    Arbitium
+                    <img
+                        src="/logo.png"
+                        alt="Arbitium"
+                        className="w-8 h-8 object-cover object-left mix-blend-lighten invert contrast-125 grayscale"
+                    />
+                    <span className="text-[16px] font-black tracking-tighter text-hi uppercase group-hover:text-mid transition-colors">
+                        ARBITIUM
+                    </span>
                 </button>
 
-                <div className="flex items-center gap-4">
-                    <div className={`flex items-center gap-1.5 text-[11px] font-mono
+                <div className="flex items-center gap-5">
+                    <div className={`flex items-center gap-2 text-[11px] font-mono font-bold
                         ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0
                             ${eventCount > 0 ? 'bg-bull animate-pulse' : 'bg-lo'}`} />
-                        {eventCount > 0 ? `Live · ${eventCount}` : 'Connecting…'}
+                        {eventCount > 0 ? `WS LIVE` : 'CONNECTING...'}
                     </div>
-                    <WalletButton onBonusGranted={() => setShowBonusToast(true)} />
+                    <div className="w-px h-4 bg-line" />
+                    <WalletButton onBonusGranted={() => addToast('success', 'Bonus Credited', 'INR 500 added to your account')} />
                 </div>
             </header>
 
+            {/* Sidebar */}
             <div
-                style={{ gridColumn: '1 / 3', gridRow: '2', zIndex: 20, position: 'relative' }}
-                className="border-b border-line"
+                style={{ gridColumn: '1', gridRow: '2 / 5' }}
+                className={`flex flex-col min-h-0 overflow-hidden bg-panel transition-colors z-20
+                    ${isSidebarOpen ? 'border-r border-line' : ''}`}
+            >
+                <div className="w-[250px] h-full flex-shrink-0">
+                    <MarketSidebar selectedMarket={selectedMarket} onMarketChange={handleMarketChange} />
+                </div>
+            </div>
+
+            {/* Chart Header Stats */}
+            <div
+                style={{ gridColumn: '2 / 4', gridRow: '2', zIndex: 10 }}
+                className="border-b border-line bg-panel"
             >
                 <MarketHeaderBar
                     config={config}
                     stats={stats}
                     bestBidPrice={bestBidPrice}
                     bestAskPrice={bestAskPrice}
-                    onMarketChange={handleMarketChange}
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                 />
             </div>
 
             <div
-                style={{ gridColumn: '3', gridRow: '2' }}
-                className="border-b border-l border-line bg-panel flex items-center px-4"
+                style={{ gridColumn: '4', gridRow: '2' }}
+                className="border-b border-l border-line bg-panel flex items-center px-5"
             >
-                <span className="text-[11px] font-semibold text-lo uppercase tracking-widest">
-                    Place Order
+                <span className="text-[12px] font-bold text-hi uppercase tracking-widest">
+                    Trade
                 </span>
             </div>
 
+            {/* Chart Area */}
             <div
-                style={{ gridColumn: '1', gridRow: '3' }}
-                className="flex flex-col min-h-0 overflow-hidden"
+                style={{ gridColumn: '2', gridRow: '3' }}
+                className="flex flex-col min-h-0 overflow-hidden bg-base"
             >
                 <Chart trades={trades} lastTradePrice={stats.lastPrice} config={config} />
             </div>
 
+            {/* Orderbook / Trades Area */}
             <div
-                style={{ gridColumn: '2', gridRow: '3' }}
+                style={{ gridColumn: '3', gridRow: '3' }}
                 className="border-l border-line flex flex-col min-h-0 overflow-hidden bg-panel"
             >
-                <div className="flex items-center gap-1 px-2 py-1.5 border-b border-line flex-shrink-0">
+                <div className="flex items-center gap-1 px-2 py-2 border-b border-line flex-shrink-0 bg-base">
                     {(['BOOK', 'TRADES'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setBookTab(tab)}
-                            className={`px-3 py-1 rounded text-[12px] font-medium transition-colors
-                                ${bookTab === tab ? 'bg-raised text-hi' : 'text-lo hover:text-mid'}`}
+                            className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all
+                                ${bookTab === tab ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
                         >
-                            {tab === 'BOOK' ? 'Book' : 'Trades'}
+                            {tab === 'BOOK' ? 'Order Book' : 'Recent Trades'}
                         </button>
                     ))}
                 </div>
@@ -165,8 +190,9 @@ export default function TradePage(): React.JSX.Element {
                 </div>
             </div>
 
+            {/* Order Form */}
             <div
-                style={{ gridColumn: '3', gridRow: '3 / 5' }}
+                style={{ gridColumn: '4', gridRow: '3 / 5' }}
                 className="border-l border-line flex flex-col overflow-y-auto overflow-x-hidden bg-panel"
             >
                 <OrderForm
@@ -180,16 +206,11 @@ export default function TradePage(): React.JSX.Element {
                     }}
                     onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
                 />
-                {rejectToast !== null && (
-                    <CommandRejectedToast
-                        message={rejectToast}
-                        onClose={() => setRejectToast(null)}
-                    />
-                )}
             </div>
 
+            {/* Bottom Panel */}
             <div
-                style={{ gridColumn: '1 / 3', gridRow: '4' }}
+                style={{ gridColumn: '2 / 4', gridRow: '4' }}
                 className="border-t border-line overflow-hidden"
             >
                 <BottomPanel
@@ -198,22 +219,6 @@ export default function TradePage(): React.JSX.Element {
                     selectedMarket={selectedMarket}
                 />
             </div>
-
-            {showBonusToast && (
-                <div className="fixed bottom-6 right-6 z-50 bg-panel border border-accent/30
-                    rounded-xl px-5 py-3 shadow-2xl flex items-center gap-4">
-                    <div>
-                        <p className="text-[13px] font-semibold text-hi">₹500 bonus credited!</p>
-                        <p className="text-[11px] text-mid">Welcome to Arbitium</p>
-                    </div>
-                    <button
-                        onClick={() => setShowBonusToast(false)}
-                        className="text-lo hover:text-hi text-xl leading-none"
-                    >
-                        ×
-                    </button>
-                </div>
-            )}
         </div>
     )
 }

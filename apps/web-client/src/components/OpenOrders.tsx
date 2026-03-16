@@ -3,7 +3,7 @@ import type { MarketConfig } from "../types/market"
 import type { OpenOrder } from "../hooks/useOpenOrders"
 import { cancelOrder } from "../lib/apiClient"
 import { formatPrice, formatQty, truncateId } from "../lib/format"
-
+import { useToast } from "./ToastProvider"
 
 type Props = {
     config: MarketConfig
@@ -12,14 +12,16 @@ type Props = {
 
 export function OpenOrders({ config, openOrders }: Props): React.JSX.Element {
     const [cancelingIds, setCancelingIds] = useState<Set<string>>(() => new Set())
+    const { addToast } = useToast()
 
     async function handleCancel(orderId: string): Promise<void> {
         if (cancelingIds.has(orderId)) return
         setCancelingIds((prev) => new Set(prev).add(orderId))
         try {
             await cancelOrder({ orderId, market: config.market })
+            addToast('info', 'Cancel Requested', `Order ${truncateId(orderId)} cancel request sent.`)
         } catch (err) {
-            alert(`Cancel failed: ${(err as Error).message}`)
+            addToast('error', 'Cancel Failed', (err as Error).message)
         } finally {
             setCancelingIds((prev) => {
                 const next = new Set(prev)
@@ -30,67 +32,71 @@ export function OpenOrders({ config, openOrders }: Props): React.JSX.Element {
     }
 
     if (openOrders.length === 0)
-        return <div className="flex items-center justify-center h-full text-[12px] text-lo">
-            No orders yet
+        return <div className="flex items-center justify-center h-full text-[13px] font-medium text-lo">
+            No active orders
         </div>
 
     return (
-        <table className="w-full min-w-[640px] text-[12px]">
-            <thead className="sticky top-0 bg-panel border-b border-line z-10">
-                <tr>
-                    {["Order ID", "Side", "Price", "Qty", "Remaining", "Status", "Action"].map((header, i) => (
-                        <th
-                            key={header}
-                            className={`px-4 py-2 text-[11px] font-medium text-lo
-                                ${i < 2 ? "text-left" : "text-right"}`}
-                        >
-                            {header}
-                        </th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {openOrders.map((order) => {
-                    const canceling = cancelingIds.has(order.orderId)
-                    const canCancel = order.status === "OPEN" && !canceling
-                    return (
-                        <tr key={order.orderId} className="border-b border-line/40 hover:bg-raised/50">
-                            <td className="px-4 py-2 font-mono text-mid">{truncateId(order.orderId)}</td>
-                            <td className={`px-4 py-2 font-semibold
-                                ${order.side === "BUY" ? "text-bull" : "text-bear"}`}>
-                                {order.side}
-                            </td>
-                            <td className="px-4 py-2 font-mono text-hi text-right">
-                                {formatPrice(order.price, config.priceScale)}
-                            </td>
-                            <td className="px-4 py-2 font-mono text-hi text-right">
-                                {formatQty(order.originalQty, config.qtyScale)}
-                            </td>
-                            <td className="px-4 py-2 font-mono text-mid text-right">
-                                {formatQty(order.remainingQty, config.qtyScale)}
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                                <span className={`text-[11px] font-medium
-                                    ${order.status === "OPEN" ? "text-bull" : "text-mid"}`}>
-                                    {order.status === "OPEN" ? "Open" : "Submitting"}
-                                </span>
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                                <button
-                                    type="button"
-                                    onClick={() => handleCancel(order.orderId)}
-                                    disabled={!canCancel}
-                                    className="px-2.5 py-1 rounded border border-bear/40 text-bear
-                                        text-[11px] font-medium hover:bg-bear/10
-                                        disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    {canceling ? "Canceling…" : canCancel ? "Cancel" : "—"}
-                                </button>
-                            </td>
-                        </tr>
-                    )
-                })}
-            </tbody>
-        </table>
+        <div className="w-full h-full overflow-x-auto overflow-y-auto scrollbar-thin">
+            <table className="w-full min-w-[720px] text-left border-collapse">
+                <thead className="sticky top-0 bg-panel z-10 after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-line">
+                    <tr>
+                        {["Order ID", "Side", "Price", "Qty", "Remaining", "Status", ""].map((header, i) => (
+                            <th
+                                key={header}
+                                className={`px-5 py-3 text-[11px] font-medium text-lo uppercase tracking-wider
+                                    ${(i >= 2 && i <= 4) || i === 6 ? "text-right" : ""}`}
+                            >
+                                {header}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-line/40">
+                    {openOrders.map((order) => {
+                        const canceling = cancelingIds.has(order.orderId)
+                        const canCancel = order.status === "OPEN" && !canceling
+                        return (
+                            <tr key={order.orderId} className="hover:bg-raised/40 transition-colors group">
+                                <td className="px-5 py-2.5 font-mono text-[12px] text-mid group-hover:text-hi transition-colors">
+                                    {truncateId(order.orderId)}
+                                </td>
+                                <td className={`px-5 py-2.5 text-[12px] font-bold
+                                    ${order.side === "BUY" ? "text-bull" : "text-bear"}`}>
+                                    {order.side}
+                                </td>
+                                <td className="px-5 py-2.5 font-mono tabular-nums text-[12px] text-hi text-right font-medium">
+                                    {formatPrice(order.price, config.priceScale)}
+                                </td>
+                                <td className="px-5 py-2.5 font-mono tabular-nums text-[12px] text-hi text-right">
+                                    {formatQty(order.originalQty, config.qtyScale)}
+                                </td>
+                                <td className="px-5 py-2.5 font-mono tabular-nums text-[12px] text-mid text-right">
+                                    {formatQty(order.remainingQty, config.qtyScale)}
+                                </td>
+                                <td className="px-5 py-2.5">
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm
+                                        ${order.status === "OPEN" ? "bg-bull/10 text-bull" : "bg-line text-mid"}`}>
+                                        {order.status === "OPEN" ? "Open" : "Pending"}
+                                    </span>
+                                </td>
+                                <td className="px-5 py-2.5 text-right">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCancel(order.orderId)}
+                                        disabled={!canCancel}
+                                        className="px-3 py-1 rounded bg-base border border-line text-hi
+                                            text-[11px] font-semibold hover:border-bear/50 hover:text-bear hover:bg-bear/10
+                                            active:scale-[0.96] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        {canceling ? "Canceling..." : canCancel ? "Cancel" : "-"}
+                                    </button>
+                                </td>
+                            </tr>
+                        )
+                    })}
+                </tbody>
+            </table>
+        </div>
     )
 }
