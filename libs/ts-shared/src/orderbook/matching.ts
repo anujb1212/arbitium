@@ -41,15 +41,6 @@ export function matchIncomingBuyOrder(params: {
             continue
         }
 
-        if (makerOrder.userId === input.userId) {
-            prunePriceLevel({
-                levelByPrice: asksByPrice,
-                priceLadder: askPricesAsc,
-                price: bestAskPrice
-            })
-            continue
-        }
-
         const fillQty = makerOrder.qtyRemaining < remainingQty
             ? makerOrder.qtyRemaining
             : remainingQty
@@ -127,15 +118,6 @@ export function matchIncomingSellOrder(params: {
                 price: bestBidPrice
             })
             if (bidsByPrice.has(bestBidPrice)) break
-            continue
-        }
-
-        if (makerOrder.userId === input.userId) {
-            prunePriceLevel({
-                levelByPrice: bidsByPrice,
-                priceLadder: bidPricesDesc,
-                price: bestBidPrice
-            })
             continue
         }
 

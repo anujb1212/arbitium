@@ -6,6 +6,8 @@ import { OpenOrderDTO } from "../lib/apiClient";
 
 export type OpenOrderStatus = "SUBMITTING" | "OPEN";
 
+const MAX_SEEN_EVENT_IDS = 2000
+
 export type OpenOrder = {
     orderId: string;
     commandId: string | null;
@@ -96,7 +98,12 @@ function reducer(state: State, action: Action): State {
         if (action.eventId && state.seenEventIds.has(action.eventId)) return state;
 
         const seenEventIds = new Set(state.seenEventIds);
-        if (action.eventId) seenEventIds.add(action.eventId);
+        if (action.eventId) {
+            seenEventIds.add(action.eventId)
+            if (seenEventIds.size > MAX_SEEN_EVENT_IDS) {
+                seenEventIds.delete(seenEventIds.values().next().value!)
+            }
+        }
 
         if (delta.type === "ADD") {
             return {
@@ -140,6 +147,14 @@ function reducer(state: State, action: Action): State {
                 seenEventIds,
                 orders: nextOrders
             };
+        }
+
+        if (delta.type === "MARKET_ORDER_SETTLED") {
+            return {
+                ...state,
+                seenEventIds,
+                orders: state.orders.filter((order) => order.orderId !== delta.orderId),
+            }
         }
 
         return state;

@@ -18,6 +18,10 @@ const SNAPSHOT_EVERY_N_COMMANDS = parseInt(
     process.env.SNAPSHOT_EVERY_N_COMMANDS ?? "500", 10
 );
 
+function engineLog(level: "INFO" | "WARN" | "ERROR", fields: Record<string, unknown>): void {
+    process.stdout.write(JSON.stringify({ ts: Date.now(), level, svc: "engine", ...fields }) + "\n")
+}
+
 async function processMessage(params: {
     client: EngineContext["client"]
     config: EngineContext["config"]
@@ -40,8 +44,6 @@ async function processMessage(params: {
     }
 
     try {
-        const engineStartMs = performance.now()
-
         const { events, nextBookSeq } = applyCommandToOrderBook({
             orderBook,
             command: decoded.value,
@@ -61,6 +63,9 @@ async function processMessage(params: {
             )
             lastEventId = eventIds[eventIds.length - 1] ?? null
         }
+
+        const cmdWriteTs = parseInt(message.id.split("-")[0]!, 10)
+        const cmdToEvtMs = Date.now() - cmdWriteTs
 
         setBookSeq(nextBookSeq)
 
@@ -82,15 +87,24 @@ async function processMessage(params: {
             })
         ])
 
-        const cmdWriteTs = parseInt(message.id.split("-")[0]!, 10)
-        const cmdToEngineMs = Date.now() - cmdWriteTs
-
-        if (cmdToEngineMs > 500) {
-            console.warn(`[engine lag] market=${config.market} cmd→engine=${cmdToEngineMs}ms events=${events.length}`)
-        }
+        engineLog(cmdToEvtMs > 500 ? "WARN" : "INFO", {
+            event: "COMMAND_PROCESSED",
+            market: config.market,
+            messageId: message.id,
+            commandKind: decoded.value.kind,
+            commandId: decoded.value.commandId,
+            eventsEmitted: events.length,
+            cmdToEvtMs,
+        })
 
     } catch (error) {
-        console.error(`[engine] processMessage failed for ${message.id} in ${config.market}:`, error)
+        engineLog("ERROR", {
+            event: "COMMAND_PROCESS_FAILED",
+            market: config.market,
+            messageId: message.id,
+            error: (error as Error).message,
+        })
+
         await acknowledgeMessage({
             client,
             streamKey: config.commandStreamKey,

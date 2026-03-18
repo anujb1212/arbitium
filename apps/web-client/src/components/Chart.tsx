@@ -17,30 +17,29 @@ const INTERVAL_GROUPS = [
         name: 'Minutes',
         options: [
             { label: '1m', apiValue: 'ONE_MINUTE', minutes: 1 },
-            { label: '15m', apiValue: 'FIFTEEN_MINUTES', minutes: 15 },
+            { label: '5m', apiValue: 'FIVE_MINUTES', minutes: 5 },
+            { label: '15m', apiValue: 'FIFTEEN_MINUTES', minutes: 15 }
         ]
     },
     {
         name: 'Hours',
         options: [
-            { label: '1H', apiValue: 'ONE_HOUR', minutes: 60 },
-            { label: '4H', apiValue: 'FOUR_HOURS', minutes: 240 },
+            { label: '1H', apiValue: 'ONE_HOUR', minutes: 60 }
         ]
     },
     {
         name: 'Days',
         options: [
-            { label: '1D', apiValue: 'ONE_DAY', minutes: 1440 },
-            { label: '1W', apiValue: 'ONE_WEEK', minutes: 10080 },
+            { label: '1D', apiValue: 'ONE_DAY', minutes: 1440 }
         ]
     }
 ]
 
 const QUICK_INTERVALS = [
-    INTERVAL_GROUPS[0].options[1], // 15m
+    INTERVAL_GROUPS[0].options[0], // 1m
+    INTERVAL_GROUPS[0].options[2], // 15m
     INTERVAL_GROUPS[1].options[0], // 1H
-    INTERVAL_GROUPS[1].options[1], // 4H
-    INTERVAL_GROUPS[2].options[0], // 1D
+    INTERVAL_GROUPS[2].options[0] // 1D
 ]
 
 function toScaledPrice(rawPrice: string, priceScale: number): number {
@@ -164,9 +163,6 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
                     s.setData(candleData)
                     hasSeededServerBarsRef.current = true
                     lastCandleRef.current = candleData.at(-1) ?? null
-                } else {
-                    s.setData(tradeCandles)
-                    lastCandleRef.current = tradeCandles.at(-1) ?? null
                 }
             })
             .catch((err) => console.error("Chart Fetch Error:", err))

@@ -1,10 +1,15 @@
 import { KlineInterval } from "@arbitium/db";
 import z from "zod";
 
-const decimalBigintString = z.string().refine(
-    (value) => /^[0-9]+$/.test(value) && value.length > 0 && value.length <= 36,
-    { message: "Must be a non negative int string" }
-).transform((value) => BigInt(value))
+const decimalBigintString = z
+    .string()
+    .min(1, "Must not be empty")
+    .max(36, "Value too large")
+    .refine(
+        (value) => Array.from(value).every((ch) => ch >= "0" && ch <= "9"),
+        { message: "Must be a non-negative integer string" }
+    )
+    .transform((value) => BigInt(value))
 
 const boundedString = z.string().min(1).max(64)
 

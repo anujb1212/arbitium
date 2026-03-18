@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { WebSocketServer, WebSocket } from "ws";
 import { REDIS_URL, WS_PORT } from "./config";
 import { connectRedis, disconnectRedis, getCommandClient, getPubSubClient } from "./redis";

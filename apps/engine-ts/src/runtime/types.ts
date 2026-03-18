@@ -6,7 +6,8 @@ export type MarketConfig = {
     commandStreamKey: string;
     eventStreamKey: string;
     consumerGroupName: string;
-    consumerName: string
+    consumerName: string;
+    client: RedisClient
 }
 
 export type EngineContext = {

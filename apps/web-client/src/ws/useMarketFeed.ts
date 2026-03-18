@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { WireEventEnvelope, WsServerMessage } from "../types/wire";
+import { getStoredToken } from "../lib/auth";
 
-const WS_URL: string = import.meta.env.VITE_WS_URL;
 const BASE_DELAY_MS = 500
 const MAX_DELAY_MS = 30_000
 
@@ -34,7 +34,14 @@ export function useMarketFeed(
     const connect = useCallback((): void => {
         if (shouldStopRef.current) return
 
-        const ws = new WebSocket(WS_URL)
+        const token = getStoredToken()
+        if (!token) {
+            reconnectTimerRef.current = setTimeout(connect, BASE_DELAY_MS)
+            return
+        }
+        const wsUrl = `${import.meta.env.VITE_WS_URL}?token=${encodeURIComponent(token)}`
+        const ws = new WebSocket(wsUrl)
+
         wsRef.current = ws
 
         ws.onopen = (): void => {
@@ -64,7 +71,11 @@ export function useMarketFeed(
             ws.close()
         }
 
-        ws.onclose = (): void => {
+        ws.onclose = (event: CloseEvent): void => {
+            if (event.code === 4001) {
+                console.error("[ws] auth rejected — token invalid or expired")
+                return
+            }
             if (shouldStopRef.current) return
             const delay = reconnectDelayRef.current
             reconnectDelayRef.current = Math.min(delay * 2, MAX_DELAY_MS)

@@ -24,8 +24,17 @@ describe("commandHandling", () => {
         expect(nextBookSeq).toBe(1n);
         expect(events).toHaveLength(1);
         expect(events[0]!.kind).toBe("BOOK_DELTA");
-        if (events[0]!.kind !== "COMMAND_REJECTED") {
+
+        if (events[0]!.kind === "BOOK_DELTA") {
             expect(events[0]!.bookSeq).toBe(1n);
+            expect(events[0]!.payload.type).toBe("ADD");
+
+            if (events[0]!.payload.type === "ADD") {
+                expect(events[0]!.payload.orderId).toBe("o-1");
+                expect(events[0]!.payload.side).toBe("BUY");
+                expect(events[0]!.payload.price).toBe(100n);
+                expect(events[0]!.payload.qty).toBe(10n);
+            }
         }
     });
 
@@ -69,6 +78,17 @@ describe("commandHandling", () => {
         expect(nextBookSeq).toBe(2n);
         expect(events[0]!.kind).toBe("TRADE");
         expect(events[1]!.kind).toBe("BOOK_DELTA");
+
+        if (events[1]!.kind === "BOOK_DELTA") {
+            expect(events[1]!.payload.type).toBe("FILL");
+            if (events[1]!.payload.type === "FILL") {
+                expect(events[1]!.payload.qty).toBe(5n);
+            }
+        }
+
+        expect(events).toHaveLength(2); // full fill — no ADD for taker
+        expect(orderBook.getOrder("o-sell")).toBeNull();
+        expect(orderBook.getOrder("o-buy")).toBeNull();
     });
 
     it("PLACE_LIMIT rejected => emits COMMAND_REJECTED, bookSeq unchanged", () => {
@@ -150,6 +170,13 @@ describe("PLACE_MARKET flow", () => {
         expect(events[0]!.kind).toBe("TRADE");
         const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
         expect(settled).toBeDefined();
+
+        const fillDelta = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "FILL");
+        expect(fillDelta).toBeDefined();
+        const fillIdx = events.findIndex(e => e.kind === "BOOK_DELTA" && e.payload.type === "FILL");
+        const settledIdx = events.findIndex(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
+        expect(fillIdx).toBeGreaterThan(-1);
+        expect(fillIdx).toBeLessThan(settledIdx);
     });
 
     it("PLACE_MARKET rejected (qty=0) => COMMAND_REJECTED, bookSeq unchanged", () => {
@@ -186,6 +213,10 @@ describe("PLACE_MARKET flow", () => {
         expect(
             (events[0]!.payload as { rejectReason: string }).rejectReason
         ).toBe("NO_LIQUIDITY");
+        expect(nextBookSeq).toBe(1n); // bookSeq must advance to stay in sync with orderBook.lastSeq
+        expect(events.some(e =>
+            e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED"
+        )).toBe(false); // no MARKET_ORDER_SETTLED on 0-fill rejection
     });
 
     it("partial fill => TRADE emitted for filled portion, MARKET_ORDER_SETTLED always follows", () => {
@@ -216,6 +247,8 @@ describe("PLACE_MARKET flow", () => {
         const settled = events.find(e => e.kind === "BOOK_DELTA" && e.payload.type === "MARKET_ORDER_SETTLED");
         expect(settled).toBeDefined();
         expect(orderBook.getOrder("mkt-3")).toBeNull();
+        // Partial fill: taker consumed 3, 7 unfilled — no resting order (market orders don't rest)
+        expect(orderBook.getBestBid()).toBeNull();
     });
 });
 

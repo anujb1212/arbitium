@@ -19,6 +19,7 @@ export class MarketFeedManager {
             const nextFeed = new MarketFeed(market, this.commandClient)
             this.feeds.set(market, nextFeed)
             nextFeed.initializeCursorWithLookback(120000)
+            nextFeed.startFallbackPoll()
 
             try {
                 await this.pubSubClient.subscribe(`evtPing:${market}`, () => {
@@ -26,6 +27,7 @@ export class MarketFeedManager {
                 })
             } catch (error) {
                 this.feeds.delete(market)
+                nextFeed.stopFallbackPoll()
                 throw error
             }
 
@@ -55,6 +57,7 @@ export class MarketFeedManager {
 
         if (!feed.hasListeners()) {
             this.feeds.delete(market)
+            feed.stopFallbackPoll()
             await this.pubSubClient.unsubscribe(`evtPing:${market}`)
         }
     }

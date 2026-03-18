@@ -5,6 +5,7 @@ import type { EventEnvelope } from "@arbitium/ts-shared/engine/types";
 import { STREAM_READ_COUNT, STREAM_READ_BLOCK_MS } from "../config";
 
 const MAX_LISTENERS_PER_FEED = 500
+const FALLBACK_POLL_INTERVAL_MS = 5_000
 
 export type EventListener = (envelope: EventEnvelope) => void
 
@@ -14,6 +15,7 @@ export class MarketFeed {
     private readonly streamKey: string
     private isReading: boolean = false
     private readPending: boolean = false
+    private fallbackTimer: ReturnType<typeof setInterval> | null = null
 
     public constructor(
         private readonly market: string,
@@ -21,6 +23,22 @@ export class MarketFeed {
     ) {
         this.streamKey = `arbitium:evt:${market}`
         this.lastSeenEventId = "0-0"
+    }
+
+    public startFallbackPoll(): void {
+        if (this.fallbackTimer !== null) return
+        this.fallbackTimer = setInterval(() => {
+            this.readAndFanOut().catch((err) => {
+                console.error(`MarketFeed:${this.market} fallback poll failed`, err)
+            })
+        }, FALLBACK_POLL_INTERVAL_MS)
+    }
+
+    public stopFallbackPoll(): void {
+        if (this.fallbackTimer !== null) {
+            clearInterval(this.fallbackTimer)
+            this.fallbackTimer = null
+        }
     }
 
     public initializeCursorWithLookback(lookbackMs: number): void {
