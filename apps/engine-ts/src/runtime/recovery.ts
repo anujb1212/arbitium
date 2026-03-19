@@ -16,22 +16,26 @@ async function fetchAllPendingMessageIds(params: {
 }): Promise<string[]> {
     const { client, config } = params;
     const pendingIds: string[] = [];
+    let startId = "-";
 
     while (true) {
-        const messages = await readFromConsumerGroup({
-            client,
-            streamKey: config.commandStreamKey,
-            groupName: config.consumerGroupName,
-            consumerName: config.consumerName,
-            count: PEL_FETCH_BATCH_SIZE,
-            blockMs: 0,
-            lastId: "0",
-        });
-        if (messages.length === 0) break;
-        for (const message of messages) {
-            pendingIds.push(message.id);
+        const reply = await params.client.sendCommand([
+            "XPENDING",
+            config.commandStreamKey,
+            config.consumerGroupName,
+            startId,
+            "+",
+            String(PEL_FETCH_BATCH_SIZE),
+        ]) as Array<[string, string, number, number]>
+
+        if (reply.length === 0) break;
+
+        for (const entry of reply) {
+            pendingIds.push(entry[0])
         }
-        if (messages.length < PEL_FETCH_BATCH_SIZE) break;
+
+        if (reply.length < PEL_FETCH_BATCH_SIZE) break;
+        startId = `(${reply[reply.length - 1]![0]}`
     }
 
     return pendingIds;

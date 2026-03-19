@@ -121,12 +121,12 @@ async function replayPendingCommandMessages(params: {
     getBookSeq: () => bigint;
     setBookSeq: (seq: bigint) => void;
 }): Promise<void> {
-    const { client, config } = params;
+    const { config } = params;
     let replayed = 0;
 
     while (true) {
         const messages = await readFromConsumerGroup({
-            client,
+            client: params.client,
             streamKey: config.commandStreamKey,
             groupName: config.consumerGroupName,
             consumerName: config.consumerName,
@@ -144,7 +144,7 @@ async function replayPendingCommandMessages(params: {
     }
 
     if (replayed > 0) {
-        console.log(`[engine startup] replayed ${replayed} pending commands for ${params.config.market}`);
+        console.log(`[engine startup] replayed ${replayed} pending commands for ${config.market}`);
     }
 }
 
@@ -170,8 +170,35 @@ export async function runEngineForMarket(
         setBookSeq: (seq) => { bookSeq = seq }
     });
 
+    // ↓ variables declared BEFORE takeSnapshot — closure captures correctly
     let commandsProcessedSinceSnapshot = 0;
     let lastProcessedCommandStreamId = "0-0";
+
+    async function takeSnapshot(): Promise<void> {
+        const { restingOrders, seenOrderIds } = orderBook.toSnapshotState()
+        const snapshot: EngineSnapshot = {
+            market: config.market,
+            bookSeq: bookSeq.toString(),
+            restingOrders: restingOrders.map((order) => ({
+                orderId: order.orderId,
+                userId: order.userId,
+                side: order.side,
+                price: order.price.toString(),
+                qtyRemaining: order.qtyRemaining.toString(),
+                seq: order.seq.toString(),
+            })),
+            seenOrderIds,
+            lastCommandStreamId: lastProcessedCommandStreamId,
+            takenAtMs: Date.now(),
+        }
+        await saveSnapshot(snapshot)
+        engineLog("INFO", {
+            event: "SNAPSHOT_SAVED",
+            market: config.market,
+            bookSeq: bookSeq.toString(),
+            orderCount: restingOrders.length,
+        })
+    }
 
     while (!signal.aborted) {
         const messages = await readFromConsumerGroup({
@@ -194,30 +221,16 @@ export async function runEngineForMarket(
                 message
             })
 
-            lastProcessedCommandStreamId = message.id;
-            commandsProcessedSinceSnapshot++;
+            lastProcessedCommandStreamId = message.id
+            commandsProcessedSinceSnapshot++
 
             if (commandsProcessedSinceSnapshot >= SNAPSHOT_EVERY_N_COMMANDS) {
-                const { restingOrders, seenOrderIds } = orderBook.toSnapshotState();
-                const snapshot: EngineSnapshot = {
-                    market: config.market,
-                    bookSeq: bookSeq.toString(),
-                    restingOrders: restingOrders.map((order) => ({
-                        orderId: order.orderId,
-                        userId: order.userId,
-                        side: order.side,
-                        price: order.price.toString(),
-                        qtyRemaining: order.qtyRemaining.toString(),
-                        seq: order.seq.toString(),
-                    })),
-                    seenOrderIds,
-                    lastCommandStreamId: lastProcessedCommandStreamId,
-                    takenAtMs: Date.now(),
-                };
-                await saveSnapshot(snapshot);
-                commandsProcessedSinceSnapshot = 0;
-                console.log(`[engine snapshot] saved market=${config.market} bookSeq=${bookSeq} orders=${restingOrders.length}`);
+                await takeSnapshot()
+                commandsProcessedSinceSnapshot = 0
             }
         }
     }
+
+    // Graceful shutdown — always save final state
+    await takeSnapshot()
 }
