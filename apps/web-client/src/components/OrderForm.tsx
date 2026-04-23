@@ -11,7 +11,7 @@ type Status =
     | { tag: 'error'; message: string }
 
 const inputCls =
-    'w-full bg-base border border-line rounded-lg px-3 py-2.5 font-mono text-[13px] text-hi ' +
+    'w-full bg-base border border-line rounded-md px-3 py-2 font-mono text-[12px] text-hi ' +
     'outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all placeholder:text-lo disabled:opacity-50'
 
 type Props = {
@@ -124,14 +124,15 @@ export function OrderForm({
     }
 
     return (
-        <div className="px-5 py-5 bg-panel flex flex-col gap-6 h-full">
-            <div className="flex bg-base p-1 rounded-lg border border-line">
+        <div className="px-4 py-4 bg-panel flex flex-col gap-4 h-full">
+            {/* Order Type Tabs */}
+            <div className="flex bg-base p-1 rounded-md border border-line">
                 {(['LIMIT', 'MARKET'] as OrderType[]).map((t) => (
                     <button
                         key={t}
                         type="button"
                         onClick={() => { setOrderType(t); setStatus({ tag: 'idle' }) }}
-                        className={`flex-1 py-1.5 text-[12px] font-semibold rounded-md transition-all active:scale-95
+                        className={`flex-1 py-1 text-[11px] font-semibold rounded transition-all active:scale-[0.98]
                             ${orderType === t ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
                     >
                         {t === 'LIMIT' ? 'Limit' : 'Market'}
@@ -139,13 +140,14 @@ export function OrderForm({
                 ))}
             </div>
 
-            <div className="flex bg-base p-1 rounded-lg border border-line">
+            {/* Buy/Sell Tabs */}
+            <div className="flex bg-base p-1 rounded-md border border-line">
                 {(['BUY', 'SELL'] as Side[]).map((s) => (
                     <button
                         key={s}
                         type="button"
                         onClick={() => setSide(s)}
-                        className={`flex-1 py-1.5 text-[13px] font-bold rounded-md transition-all active:scale-95
+                        className={`flex-1 py-1.5 text-[12px] font-bold rounded transition-all active:scale-[0.98]
                             ${side === s
                                 ? s === 'BUY' ? 'bg-bull/20 text-bull shadow-sm' : 'bg-bear/20 text-bear shadow-sm'
                                 : 'text-lo hover:text-mid'}`}
@@ -155,10 +157,10 @@ export function OrderForm({
                 ))}
             </div>
 
-            <form onSubmit={handlePlace} className="flex flex-col gap-4">
+            <form onSubmit={handlePlace} className="flex flex-col gap-3">
                 {orderType === 'LIMIT' && (
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor={priceId} className="text-[12px] font-medium text-mid flex justify-between">
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor={priceId} className="text-[11px] font-medium text-mid flex justify-between">
                             <span>Price</span>
                             <span className="text-lo font-mono">{config.currency}</span>
                         </label>
@@ -179,9 +181,9 @@ export function OrderForm({
                 )}
 
                 {orderType === 'MARKET' && (
-                    <div className="flex items-center justify-between px-3 py-3 bg-base rounded-lg border border-line">
-                        <span className="text-[12px] font-medium text-mid">Est. Price</span>
-                        <span className="font-mono tabular-nums text-[13px] text-hi font-bold">
+                    <div className="flex items-center justify-between px-3 py-2 bg-base rounded-md border border-line">
+                        <span className="text-[11px] font-medium text-mid">Est. Price</span>
+                        <span className="font-mono tabular-nums text-[12px] text-hi font-bold">
                             {estimatedPrice
                                 ? `₹${(Number(estimatedPrice) / Math.pow(10, config.priceScale)).toFixed(config.priceScale)}`
                                 : '—'}
@@ -189,8 +191,8 @@ export function OrderForm({
                     </div>
                 )}
 
-                <div className="flex flex-col gap-1.5">
-                    <label htmlFor={qtyId} className="text-[12px] font-medium text-mid flex justify-between">
+                <div className="flex flex-col gap-1">
+                    <label htmlFor={qtyId} className="text-[11px] font-medium text-mid flex justify-between">
                         <span>Quantity</span>
                         <span className="text-lo font-mono">Shares</span>
                     </label>
@@ -208,33 +210,36 @@ export function OrderForm({
                 </div>
 
                 {orderType === 'LIMIT' && price && qty && (
-                    <div className="text-[12px] font-mono tabular-nums text-mid text-right mt-[-8px]">
+                    <div className="text-[11px] font-mono tabular-nums text-mid text-right mt-[-4px]">
                         ≈ ₹{(parseFloat(price) * parseInt(qty, 10)).toFixed(2)} total
                     </div>
                 )}
 
-                <div className="pt-2 flex flex-col gap-3">
+                <div className="pt-1 flex flex-col gap-2">
+                    {/* Compact Button */}
                     <button
                         type="submit"
                         disabled={!canSubmit}
-                        className={`w-full py-3 rounded-lg text-[14px] font-bold transition-all
+                        className={`w-full py-2.5 rounded-md text-[13px] font-bold transition-all
                             disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]
-                            ${side === 'BUY' ? 'bg-bull text-base hover:bg-bull/90 shadow-sm' : 'bg-bear text-hi hover:bg-bear/90 shadow-sm'}`}
+                            ${side === 'BUY'
+                                ? 'bg-bull/10 text-bull hover:bg-bull hover:text-base border border-bull/30 hover:border-bull shadow-[0_0_8px_rgba(0,194,120,0.1)]'
+                                : 'bg-bear/10 text-bear hover:bg-bear hover:text-base border border-bear/30 hover:border-bear shadow-[0_0_8px_rgba(255,59,105,0.1)]'}`}
                     >
                         {placing ? 'Placing…' : `${side === 'BUY' ? 'Buy' : 'Sell'} ${config.market.split('_')[0]}`}
                     </button>
 
                     {status.tag === 'success' && (
-                        <div className="flex items-center justify-center gap-2 text-[12px] font-mono font-bold text-bull mt-1 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono font-bold text-bull animate-in fade-in duration-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-bull animate-pulse" />
                             Accepted · {status.commandId.slice(0, 8)}
                         </div>
                     )}
 
                     {status.tag === 'error' && (
-                        <div className="flex flex-col items-start gap-1 bg-bear/10 border border-bear/20 px-3 py-3 rounded-lg animate-in slide-in-from-top-2 fade-in duration-200">
-                            <div className="flex items-start gap-2 text-[12px] font-mono text-bear">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
+                        <div className="flex flex-col items-start gap-1 bg-bear/10 border border-bear/20 px-2 py-2 rounded-md animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="flex items-start gap-1.5 text-[11px] font-mono text-bear">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
                                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
                                 <p className="leading-snug break-words">{status.message}</p>

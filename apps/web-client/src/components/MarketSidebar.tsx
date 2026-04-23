@@ -12,7 +12,6 @@ type Props = {
 
 export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.JSX.Element {
     const [tickers, setTickers] = useState<Map<string, MiniTicker>>(new Map())
-    const [search, setSearch] = useState("")
 
     useEffect(() => {
         let active = true
@@ -28,36 +27,14 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
         return () => { active = false }
     }, [])
 
-    const filtered = MARKETS.filter(m => m.displayName.toLowerCase().includes(search.toLowerCase()) || m.market.toLowerCase().includes(search.toLowerCase()))
-
     return (
         <div className="flex flex-col h-full bg-panel border-r border-line overflow-hidden">
-
-            <div className="p-3 border-b border-line flex-shrink-0">
-                <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-lo">
-
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Search markets..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-base border border-line rounded-md pl-8 pr-3 py-1.5 text-[12px] text-hi outline-none focus:border-accent transition-colors placeholder:text-lo"
-                    />
-                </div>
-            </div>
-
             <div className="flex-1 overflow-y-auto scrollbar-thin pt-2">
                 <div className="px-4 pb-2 text-[10px] font-medium text-lo uppercase tracking-wider flex justify-between">
                     <span>Market</span>
                     <span>Price</span>
                 </div>
-                {filtered.map((m) => {
+                {MARKETS.map((m) => {
                     const t = tickers.get(m.market)
                     const config = getMarketConfig(m.market)!
                     const pct = t?.changePct ? parseFloat(t.changePct) : null
@@ -68,7 +45,7 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
                         <button
                             key={m.market}
                             onClick={() => onMarketChange(m.market)}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-raised transition-colors group
+                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-raised transition-all active:scale-[0.98] group
                                 ${isActive ? "bg-raised border-l-2 border-accent pl-[14px]" : "border-l-2 border-transparent"}`}
                         >
                             <div className="flex items-center gap-2.5">

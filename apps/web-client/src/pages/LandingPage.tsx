@@ -35,9 +35,16 @@ function Sparkline({ trades, positive }: SparklineProps): React.JSX.Element | nu
     const prices = trades.map((t) => Number(t.price))
     const path = buildSparkPath(prices)
     const color = positive ? '#00c278' : '#ff3b69'
+    const shadowColor = positive ? 'rgba(0, 194, 120, 0.4)' : 'rgba(255, 59, 105, 0.4)'
 
     return (
-        <svg width={SPARK_W} height={SPARK_H} viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} className="overflow-visible">
+        <svg
+            width={SPARK_W}
+            height={SPARK_H}
+            viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+            className="overflow-visible"
+            style={{ filter: `drop-shadow(0px 6px 6px ${shadowColor})` }}
+        >
             <path
                 d={path}
                 fill="none"
@@ -112,7 +119,6 @@ export default function LandingPage(): React.JSX.Element {
             </header>
 
             <main className="flex-1 flex flex-col items-center justify-start pt-24 pb-20 px-6 max-w-5xl mx-auto w-full">
-
                 <div className="text-center mb-16 max-w-3xl">
                     <div className="inline-block mb-6 px-3 py-1 border border-line bg-panel rounded-full text-[11px] font-bold text-accent tracking-wide uppercase">
                         V1 Engine Live
@@ -124,7 +130,7 @@ export default function LandingPage(): React.JSX.Element {
                     <p className="text-base md:text-lg text-lo font-medium leading-relaxed mb-8 max-w-xl mx-auto">
                         A deterministic matching engine. Experience millisecond execution.
                     </p>
-                    <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="bg-accent hover:bg-accent/90 text-white font-bold text-[15px] px-8 py-3.5 rounded-lg transition-all active:scale-95 shadow-lg shadow-accent/20">
+                    <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="bg-transparent border border-accent/50 hover:bg-accent/10 text-accent font-bold text-[15px] px-8 py-3.5 rounded-full transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
                         Launch Terminal
                     </button>
                 </div>

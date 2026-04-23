@@ -62,8 +62,7 @@ export function OrderBook({ bids, asks, config }: Props): React.JSX.Element {
             </div>
 
             {/* Spread */}
-            <div className="flex justify-between items-center px-4 py-1.5 my-1
-                border-y border-line bg-base flex-shrink-0">
+            <div className="flex justify-between items-center px-4 py-1.5 my-1 border-y border-line bg-base flex-shrink-0">
                 <span className="text-[11px] text-lo uppercase tracking-wide">Spread</span>
                 <span className="font-mono tabular-nums text-[12px] text-hi font-medium">{spread}</span>
             </div>

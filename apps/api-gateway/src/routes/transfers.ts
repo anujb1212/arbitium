@@ -177,16 +177,14 @@ transfersRouter.post(
         });
 
         try {
-            await prisma.$transaction(async (tx) => {
-                await debitTradingBalance({
-                    prisma: tx as typeof prisma,
-                    userId: authReq.arbitiumUserId,
-                    amountInPaise,
-                });
-                await tx.balanceTransfer.update({
-                    where: { id: transfer.id },
-                    data: { status: "ROLLBACK_PENDING" },
-                });
+            await debitTradingBalance({
+                prisma,
+                userId: authReq.arbitiumUserId,
+                amountInPaise,
+            });
+            await prisma.balanceTransfer.update({
+                where: { id: transfer.id },
+                data: { status: "ROLLBACK_PENDING" },
             });
         } catch (error) {
             await prisma.balanceTransfer.update({
@@ -197,6 +195,7 @@ transfersRouter.post(
                 res.status(422).json({ error: "Insufficient trading balance" });
                 return;
             }
+            console.error("[withdraw] debitTradingBalance failed:", error)
             res.status(500).json({ error: "Debit failed" });
             return;
         }

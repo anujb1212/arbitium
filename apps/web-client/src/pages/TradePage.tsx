@@ -29,7 +29,7 @@ export default function TradePage(): React.JSX.Element {
     const [eventCount, setEventCount] = useState(0)
     const [bookTab, setBookTab] = useState<'BOOK' | 'TRADES'>('BOOK')
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
     const { bids, asks, dispatchDelta, resetBook, seedBook } = useOrderBook()
     const { trades, dispatchTrade, resetFeed, seedFeed } = useTradeFeed()
@@ -67,7 +67,6 @@ export default function TradePage(): React.JSX.Element {
     function handleMarketChange(market: string): void {
         setSelectedMarket(market)
         setEventCount(0)
-        setIsSidebarOpen(false)
         resetBook(); resetFeed(); resetStats(); openOrders.reset()
         navigate(`/trade/${market}`, { replace: true })
     }
@@ -83,8 +82,8 @@ export default function TradePage(): React.JSX.Element {
             className="bg-base text-hi font-sans text-[13px]"
             style={{
                 display: 'grid',
-                gridTemplateColumns: isSidebarOpen ? '250px 1fr 272px 300px' : '0px 1fr 272px 300px',
-                gridTemplateRows: '56px 56px 1fr 280px',
+                gridTemplateColumns: isSidebarOpen ? '250px 1fr 320px' : '0px 1fr 320px',
+                gridTemplateRows: '56px 1fr 280px',
                 transition: 'grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 height: '100dvh',
                 overflow: 'hidden',
@@ -93,27 +92,37 @@ export default function TradePage(): React.JSX.Element {
             {/* Global Header */}
             <header
                 style={{ gridColumn: '1 / -1', gridRow: '1' }}
-                className="flex items-center justify-between px-5 border-b border-line bg-panel flex-shrink-0 z-30"
+                className="flex items-center justify-between border-b border-line bg-panel flex-shrink-0 z-30"
             >
-                <button
-                    onClick={() => navigate('/')}
-                    className="flex items-center gap-3 group active:scale-[0.98] transition-all"
-                >
-                    <img
-                        src="/logo.png"
-                        alt="Arbitium"
-                        className="w-8 h-8 object-cover object-left mix-blend-lighten invert contrast-125 grayscale"
-                    />
-                    <span className="text-[16px] font-black tracking-tighter text-hi uppercase group-hover:text-mid transition-colors">
-                        ARBITIUM
-                    </span>
-                </button>
+                <div className="flex items-center h-full">
+                    <div className="w-[250px] flex items-center px-5 h-full border-r border-line flex-shrink-0">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex items-center gap-3 group active:scale-[0.98] transition-all"
+                        >
+                            <img
+                                src="/logo.png"
+                                alt="Arbitium"
+                                className="w-7 h-7 object-cover object-left mix-blend-lighten invert contrast-125 grayscale"
+                            />
+                            <span className="text-[16px] font-black tracking-tighter text-hi uppercase group-hover:text-mid transition-colors">
+                                ARBITIUM
+                            </span>
+                        </button>
+                    </div>
 
-                <div className="flex items-center gap-5">
-                    <div className={`flex items-center gap-2 text-[11px] font-mono font-bold
-                        ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0
-                            ${eventCount > 0 ? 'bg-bull animate-pulse' : 'bg-lo'}`} />
+                    <MarketHeaderBar
+                        config={config}
+                        stats={stats}
+                        bestBidPrice={bestBidPrice}
+                        bestAskPrice={bestAskPrice}
+                        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                    />
+                </div>
+
+                <div className="flex items-center gap-5 px-5">
+                    <div className={`flex items-center gap-2 text-[11px] font-mono font-bold ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${eventCount > 0 ? 'bg-bull animate-pulse shadow-[0_0_8px_rgba(0,194,120,0.6)]' : 'bg-lo'}`} />
                         {eventCount > 0 ? `WS LIVE` : 'CONNECTING...'}
                     </div>
                     <div className="w-px h-4 bg-line" />
@@ -121,103 +130,87 @@ export default function TradePage(): React.JSX.Element {
                 </div>
             </header>
 
-            {/* Sidebar */}
+            {/* Left Sidebar (Markets) */}
             <div
-                style={{ gridColumn: '1', gridRow: '2 / 5' }}
-                className={`flex flex-col min-h-0 overflow-hidden bg-panel transition-colors z-20
-                    ${isSidebarOpen ? 'border-r border-line' : ''}`}
+                style={{ gridColumn: '1', gridRow: '2 / 4' }}
+                className={`flex flex-col min-h-0 overflow-hidden bg-panel transition-colors z-20 ${isSidebarOpen ? 'border-r border-line' : ''}`}
             >
                 <div className="w-[250px] h-full flex-shrink-0">
                     <MarketSidebar selectedMarket={selectedMarket} onMarketChange={handleMarketChange} />
                 </div>
             </div>
 
-            {/* Chart Header Stats */}
+            {/* Center Main Area: Chart (Top) */}
             <div
-                style={{ gridColumn: '2 / 4', gridRow: '2', zIndex: 10 }}
-                className="border-b border-line bg-panel"
-            >
-                <MarketHeaderBar
-                    config={config}
-                    stats={stats}
-                    bestBidPrice={bestBidPrice}
-                    bestAskPrice={bestAskPrice}
-                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-                />
-            </div>
-
-            <div
-                style={{ gridColumn: '4', gridRow: '2' }}
-                className="border-b border-l border-line bg-panel flex items-center px-5"
-            >
-                <span className="text-[12px] font-bold text-hi uppercase tracking-widest">
-                    Trade
-                </span>
-            </div>
-
-            {/* Chart Area */}
-            <div
-                style={{ gridColumn: '2', gridRow: '3' }}
+                style={{ gridColumn: '2', gridRow: '2' }}
                 className="flex flex-col min-h-0 overflow-hidden bg-base"
             >
                 <Chart trades={trades} lastTradePrice={stats.lastPrice} config={config} />
             </div>
 
-            {/* Orderbook / Trades Area */}
+            {/* Center Main Area: Balances / Bottom Panel (Bottom) */}
             <div
-                style={{ gridColumn: '3', gridRow: '3' }}
-                className="border-l border-line flex flex-col min-h-0 overflow-hidden bg-panel"
-            >
-                <div className="flex items-center gap-1 px-2 py-2 border-b border-line flex-shrink-0 bg-base">
-                    {(['BOOK', 'TRADES'] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setBookTab(tab)}
-                            className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all
-                                ${bookTab === tab ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
-                        >
-                            {tab === 'BOOK' ? 'Order Book' : 'Recent Trades'}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex-1 min-h-0 overflow-hidden relative">
-                    <div className={`absolute inset-0 ${bookTab === 'BOOK' ? 'block' : 'hidden'}`}>
-                        <OrderBook bids={bids} asks={asks} config={config} />
-                    </div>
-                    <div className={`absolute inset-0 ${bookTab === 'TRADES' ? 'block' : 'hidden'}`}>
-                        <TradeFeed trades={trades} config={config} />
-                    </div>
-                </div>
-            </div>
-
-            {/* Order Form */}
-            <div
-                style={{ gridColumn: '4', gridRow: '3 / 5' }}
-                className="border-l border-line flex flex-col overflow-y-auto overflow-x-hidden bg-panel"
-            >
-                <OrderForm
-                    config={config}
-                    bestBidPrice={bestBidPrice}
-                    bestAskPrice={bestAskPrice}
-                    onPlaceSubmitted={(draft) => openOrders.addOptimistic(draft)}
-                    onPlaceAccepted={({ orderId, commandId }) => {
-                        registerCommandId(commandId)
-                        openOrders.ackAccepted({ orderId, commandId })
-                    }}
-                    onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
-                />
-            </div>
-
-            {/* Bottom Panel */}
-            <div
-                style={{ gridColumn: '2 / 4', gridRow: '4' }}
-                className="border-t border-line overflow-hidden"
+                style={{ gridColumn: '2', gridRow: '3' }}
+                className="border-t border-line overflow-hidden bg-panel"
             >
                 <BottomPanel
                     config={config}
                     openOrders={openOrders.openOrders}
                     selectedMarket={selectedMarket}
                 />
+            </div>
+
+            {/* Right Sidebar: Orderbook & Trade Form */}
+            <div
+                style={{ gridColumn: '3', gridRow: '2 / 4' }}
+                className="border-l border-line flex flex-col min-h-0 overflow-hidden bg-panel scrollbar-hide"
+            >
+                {/* Top Half: Order Book (Takes flex-1 to maximize height) */}
+                <div className="flex-1 flex flex-col min-h-0 border-b border-line">
+                    <div className="flex items-center gap-1 px-2 border-b border-line flex-shrink-0 bg-base h-[38px]">
+                        {(['BOOK', 'TRADES'] as const).map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setBookTab(tab)}
+                                className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all active:scale-[0.98]
+                                    ${bookTab === tab ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
+                            >
+                                {tab === 'BOOK' ? 'Order Book' : 'Recent Trades'}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex-1 min-h-0 relative bg-panel">
+                        <div className={`absolute inset-0 ${bookTab === 'BOOK' ? 'block' : 'hidden'}`}>
+                            <OrderBook bids={bids} asks={asks} config={config} />
+                        </div>
+                        <div className={`absolute inset-0 ${bookTab === 'TRADES' ? 'block' : 'hidden'}`}>
+                            <TradeFeed trades={trades} config={config} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Half: Order Form (Fixed shrink) - Scrollbar removed */}
+                <div className="flex-shrink-0 bg-panel border-t border-line">
+                    <div className="border-b border-line bg-panel flex items-center px-4 h-[38px] flex-shrink-0">
+                        <span className="text-[11px] font-bold text-hi uppercase tracking-widest">
+                            Trade
+                        </span>
+                    </div>
+                    {/* Overflow removed entirely. The compact OrderForm will fit perfectly. */}
+                    <div>
+                        <OrderForm
+                            config={config}
+                            bestBidPrice={bestBidPrice}
+                            bestAskPrice={bestAskPrice}
+                            onPlaceSubmitted={(draft) => openOrders.addOptimistic(draft)}
+                            onPlaceAccepted={({ orderId, commandId }) => {
+                                registerCommandId(commandId)
+                                openOrders.ackAccepted({ orderId, commandId })
+                            }}
+                            onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     )
