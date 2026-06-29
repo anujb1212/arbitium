@@ -4,6 +4,7 @@
 
 body {
     -webkit-font-smoothing: antialiased;
+    background-color: #05070B;
 }
 
 @layer utilities {
@@ -20,7 +21,7 @@ body {
     }
 
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background: #252d3d;
+        background: #1c222b;
         border-radius: 2px;
     }
 }

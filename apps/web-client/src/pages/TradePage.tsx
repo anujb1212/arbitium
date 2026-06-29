@@ -29,7 +29,7 @@ export default function TradePage(): React.JSX.Element {
     const [eventCount, setEventCount] = useState(0)
     const [bookTab, setBookTab] = useState<'BOOK' | 'TRADES'>('BOOK')
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
     const { bids, asks, dispatchDelta, resetBook, seedBook } = useOrderBook()
     const { trades, dispatchTrade, resetFeed, seedFeed } = useTradeFeed()
@@ -67,6 +67,7 @@ export default function TradePage(): React.JSX.Element {
     function handleMarketChange(market: string): void {
         setSelectedMarket(market)
         setEventCount(0)
+        setIsSidebarOpen(false)
         resetBook(); resetFeed(); resetStats(); openOrders.reset()
         navigate(`/trade/${market}`, { replace: true })
     }
@@ -82,20 +83,21 @@ export default function TradePage(): React.JSX.Element {
             className="bg-base text-hi font-sans text-[13px]"
             style={{
                 display: 'grid',
-                gridTemplateColumns: isSidebarOpen ? '250px 1fr 320px' : '0px 1fr 320px',
-                gridTemplateRows: '56px 1fr 280px',
+                gridTemplateColumns: isSidebarOpen ? '250px 1fr 272px 300px' : '0px 1fr 272px 300px',
+                gridTemplateRows: '64px 1fr 280px 32px',
                 transition: 'grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                 height: '100dvh',
                 overflow: 'hidden',
             }}
         >
-            {/* Global Header */}
+            {/* Global Unified Header */}
             <header
                 style={{ gridColumn: '1 / -1', gridRow: '1' }}
                 className="flex items-center justify-between border-b border-line bg-panel flex-shrink-0 z-30"
             >
                 <div className="flex items-center h-full">
-                    <div className="w-[250px] flex items-center px-5 h-full border-r border-line flex-shrink-0">
+                    {/* Fixed width container aligns perfectly with the sidebar */}
+                    <div className="w-[250px] flex items-center justify-between px-5 h-full border-r border-line flex-shrink-0">
                         <button
                             onClick={() => navigate('/')}
                             className="flex items-center gap-3 group active:scale-[0.98] transition-all"
@@ -103,11 +105,14 @@ export default function TradePage(): React.JSX.Element {
                             <img
                                 src="/logo.png"
                                 alt="Arbitium"
-                                className="w-7 h-7 object-cover object-left mix-blend-lighten invert contrast-125 grayscale"
+                                className="w-6 h-6 object-cover object-left mix-blend-lighten invert contrast-125 grayscale"
                             />
-                            <span className="text-[16px] font-black tracking-tighter text-hi uppercase group-hover:text-mid transition-colors">
+                            <span className="text-[15px] font-black tracking-tighter text-hi uppercase group-hover:text-mid transition-colors">
                                 ARBITIUM
                             </span>
+                        </button>
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-lo hover:text-hi transition-colors">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                         </button>
                     </div>
 
@@ -116,21 +121,23 @@ export default function TradePage(): React.JSX.Element {
                         stats={stats}
                         bestBidPrice={bestBidPrice}
                         bestAskPrice={bestAskPrice}
-                        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                        onToggleSidebar={() => {}}
                     />
                 </div>
 
                 <div className="flex items-center gap-5 px-5">
-                    <div className={`flex items-center gap-2 text-[11px] font-mono font-bold ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${eventCount > 0 ? 'bg-bull animate-pulse shadow-[0_0_8px_rgba(0,194,120,0.6)]' : 'bg-lo'}`} />
-                        {eventCount > 0 ? `WS LIVE` : 'CONNECTING...'}
+                    <div className={`flex items-center gap-2 text-[10px] font-mono font-medium tracking-wide ${eventCount > 0 ? 'text-bull' : 'text-lo'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${eventCount > 0 ? 'bg-bull' : 'bg-lo'}`} />
+                        {eventCount > 0 ? `CONNECTED` : 'CONNECTING...'}
                     </div>
-                    <div className="w-px h-4 bg-line" />
-                    <WalletButton onBonusGranted={() => addToast('success', 'Bonus Credited', 'INR 500 added to your account')} />
+                    <div className="flex items-center gap-3 border border-line rounded-full pl-3 pr-1 py-1 bg-base">
+                        <span className="font-mono tabular-nums text-[12px] font-bold text-hi">-</span>
+                        <WalletButton onBonusGranted={() => addToast('success', 'Bonus Credited', 'INR 500 added to your account')} />
+                    </div>
                 </div>
             </header>
 
-            {/* Left Sidebar (Markets) */}
+            {/* Sidebar */}
             <div
                 style={{ gridColumn: '1', gridRow: '2 / 4' }}
                 className={`flex flex-col min-h-0 overflow-hidden bg-panel transition-colors z-20 ${isSidebarOpen ? 'border-r border-line' : ''}`}
@@ -140,7 +147,7 @@ export default function TradePage(): React.JSX.Element {
                 </div>
             </div>
 
-            {/* Center Main Area: Chart (Top) */}
+            {/* Chart Area */}
             <div
                 style={{ gridColumn: '2', gridRow: '2' }}
                 className="flex flex-col min-h-0 overflow-hidden bg-base"
@@ -148,9 +155,61 @@ export default function TradePage(): React.JSX.Element {
                 <Chart trades={trades} lastTradePrice={stats.lastPrice} config={config} />
             </div>
 
-            {/* Center Main Area: Balances / Bottom Panel (Bottom) */}
+            {/* Orderbook / Trades Area */}
             <div
-                style={{ gridColumn: '2', gridRow: '3' }}
+                style={{ gridColumn: '3', gridRow: '2' }}
+                className="border-l border-line flex flex-col min-h-0 overflow-hidden bg-panel"
+            >
+                <div className="flex items-center gap-1 px-2 border-b border-line flex-shrink-0 bg-base h-[45px]">
+                    {(['BOOK', 'TRADES'] as const).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setBookTab(tab)}
+                            className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all active:scale-[0.98]
+                                ${bookTab === tab ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
+                        >
+                            {tab === 'BOOK' ? 'Order Book' : 'Recent Trades'}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden relative">
+                    <div className={`absolute inset-0 ${bookTab === 'BOOK' ? 'block' : 'hidden'}`}>
+                        <OrderBook bids={bids} asks={asks} config={config} />
+                    </div>
+                    <div className={`absolute inset-0 ${bookTab === 'TRADES' ? 'block' : 'hidden'}`}>
+                        <TradeFeed trades={trades} config={config} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Order Form Area */}
+            <div
+                style={{ gridColumn: '4', gridRow: '2 / 4' }}
+                className="border-l border-line flex flex-col bg-panel overflow-hidden"
+            >
+                <div className="border-b border-line bg-panel flex items-center px-5 h-[45px] flex-shrink-0">
+                    <span className="text-[12px] font-bold text-hi uppercase tracking-widest">
+                        Trade
+                    </span>
+                </div>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <OrderForm
+                        config={config}
+                        bestBidPrice={bestBidPrice}
+                        bestAskPrice={bestAskPrice}
+                        onPlaceSubmitted={(draft) => openOrders.addOptimistic(draft)}
+                        onPlaceAccepted={({ orderId, commandId }) => {
+                            registerCommandId(commandId)
+                            openOrders.ackAccepted({ orderId, commandId })
+                        }}
+                        onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Panel */}
+            <div
+                style={{ gridColumn: '2 / 4', gridRow: '3' }}
                 className="border-t border-line overflow-hidden bg-panel"
             >
                 <BottomPanel
@@ -160,55 +219,25 @@ export default function TradePage(): React.JSX.Element {
                 />
             </div>
 
-            {/* Right Sidebar: Orderbook & Trade Form */}
+            {/* Footer */}
             <div
-                style={{ gridColumn: '3', gridRow: '2 / 4' }}
-                className="border-l border-line flex flex-col min-h-0 overflow-hidden bg-panel scrollbar-hide"
+                style={{ gridColumn: '1 / -1', gridRow: '4' }}
+                className="border-t border-line bg-[#090D14] flex items-center justify-between px-4 text-[10px] text-lo font-mono flex-shrink-0 z-30"
             >
-                {/* Top Half: Order Book (Takes flex-1 to maximize height) */}
-                <div className="flex-1 flex flex-col min-h-0 border-b border-line">
-                    <div className="flex items-center gap-1 px-2 border-b border-line flex-shrink-0 bg-base h-[38px]">
-                        {(['BOOK', 'TRADES'] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setBookTab(tab)}
-                                className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all active:scale-[0.98]
-                                    ${bookTab === tab ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
-                            >
-                                {tab === 'BOOK' ? 'Order Book' : 'Recent Trades'}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-1 min-h-0 relative bg-panel">
-                        <div className={`absolute inset-0 ${bookTab === 'BOOK' ? 'block' : 'hidden'}`}>
-                            <OrderBook bids={bids} asks={asks} config={config} />
-                        </div>
-                        <div className={`absolute inset-0 ${bookTab === 'TRADES' ? 'block' : 'hidden'}`}>
-                            <TradeFeed trades={trades} config={config} />
-                        </div>
+                <div className="flex items-center gap-3">
+                    <span>MARKET STATUS</span>
+                    <div className="flex items-center gap-1.5 text-bull font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-bull" />
+                        OPEN
                     </div>
                 </div>
-
-                {/* Bottom Half: Order Form (Fixed shrink) - Scrollbar removed */}
-                <div className="flex-shrink-0 bg-panel border-t border-line">
-                    <div className="border-b border-line bg-panel flex items-center px-4 h-[38px] flex-shrink-0">
-                        <span className="text-[11px] font-bold text-hi uppercase tracking-widest">
-                            Trade
-                        </span>
-                    </div>
-                    {/* Overflow removed entirely. The compact OrderForm will fit perfectly. */}
-                    <div>
-                        <OrderForm
-                            config={config}
-                            bestBidPrice={bestBidPrice}
-                            bestAskPrice={bestAskPrice}
-                            onPlaceSubmitted={(draft) => openOrders.addOptimistic(draft)}
-                            onPlaceAccepted={({ orderId, commandId }) => {
-                                registerCommandId(commandId)
-                                openOrders.ackAccepted({ orderId, commandId })
-                            }}
-                            onPlaceFailed={({ orderId }) => openOrders.removeByOrderId(orderId)}
-                        />
+                <div className="flex items-center gap-6">
+                    <span>16:49:23 (UTC+5:30)</span>
+                    <div className="flex items-center gap-3">
+                        <span className="cursor-pointer hover:text-hi">%</span>
+                        <span className="cursor-pointer hover:text-hi">log</span>
+                        <span className="cursor-pointer hover:text-hi">auto</span>
+                        <svg className="cursor-pointer hover:text-hi" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </div>
                 </div>
             </div>

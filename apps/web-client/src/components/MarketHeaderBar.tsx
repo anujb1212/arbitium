@@ -22,61 +22,57 @@ export function computeSpread(bid: string | null, ask: string | null): string | 
 
 function StatCell({ label, value, valueClass = "text-hi" }: { label: string; value: string; valueClass?: string }): React.JSX.Element {
     return (
-        <div className="flex flex-col gap-1 px-5 border-r border-line last:border-r-0">
-            <span className="text-[10px] text-lo font-medium tracking-wide uppercase">{label}</span>
-            <span className={`text-[13px] font-mono tabular-nums font-medium leading-none ${valueClass}`}>{value}</span>
+        <div className="flex flex-col gap-0.5">
+            <span className={`text-[12px] font-mono tabular-nums font-bold leading-none ${valueClass}`}>{value}</span>
+            <span className="text-[10px] text-lo font-medium tracking-wide uppercase leading-none">{label}</span>
+        </div>
+    )
+}
+
+function ReversedStatCell({ label, value, valueClass = "text-hi" }: { label: string; value: string; valueClass?: string }): React.JSX.Element {
+    return (
+        <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-lo font-medium tracking-wide uppercase leading-none">{label}</span>
+            <span className={`text-[12px] font-mono tabular-nums font-bold leading-none ${valueClass}`}>{value}</span>
         </div>
     )
 }
 
 export function MarketHeaderBar(props: Props): React.JSX.Element {
-    const { config, stats, bestBidPrice, bestAskPrice, onToggleSidebar } = props
+    const { config, stats, bestBidPrice, bestAskPrice } = props
 
-    const lastPriceText = stats.lastPrice ? `${formatPrice(stats.lastPrice, config.priceScale)}` : "-"
-    const lastPriceColor = stats.direction === "UP" ? "text-bull" : stats.direction === "DOWN" ? "text-bear" : "text-hi"
+    const lastPriceText = stats.lastPrice ? `₹${formatPrice(stats.lastPrice, config.priceScale)}` : "-"
 
-    const changeText = stats.changeBps !== null ? formatBpsAsPercent(stats.changeBps) : "-"
+    const changeText = stats.changeBps !== null ? (stats.changeBps > 0n ? "+" : "") + formatBpsAsPercent(stats.changeBps) + "%" : "-"
     const changeColor = stats.changeBps === null ? "text-mid" : stats.changeBps > 0n ? "text-bull" : stats.changeBps < 0n ? "text-bear" : "text-mid"
 
     const volumeText = stats.windowQtySum ? formatQty(stats.windowQtySum, config.qtyScale) : "-"
     const spreadRaw = computeSpread(bestBidPrice, bestAskPrice)
-    const spreadText = spreadRaw ? `${formatPrice(spreadRaw, config.priceScale)}` : "-"
+    const spreadText = spreadRaw ? `₹${formatPrice(spreadRaw, config.priceScale)}` : "-"
 
     return (
-        <div className="flex items-center h-full px-4 gap-6 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-3 flex-shrink-0">
-                <button
-                    onClick={onToggleSidebar}
-                    className="p-1.5 rounded-md hover:bg-raised text-lo hover:text-hi transition-colors active:scale-[0.98]"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                </button>
-
-                <div className="flex items-center gap-2 cursor-pointer group active:scale-[0.98] transition-transform" onClick={onToggleSidebar}>
-                    <div className="w-7 h-7 rounded-full bg-base border border-line flex items-center justify-center text-[11px] font-bold text-hi shadow-sm group-hover:border-mid transition-colors">
-                        {config.market.slice(0, 1)}
-                    </div>
-                    <span className="text-[16px] font-bold text-hi leading-none tracking-tight group-hover:text-accent transition-colors">{config.displayName}</span>
-                    <span className="text-[12px] font-mono text-lo mt-0.5">{config.market}</span>
+        <div className="flex items-center h-full pl-5 gap-8 overflow-x-auto scrollbar-hide">
+            
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-base border border-line flex items-center justify-center text-[12px] font-bold text-hi shadow-[inset_0_0_10px_rgba(255,255,255,0.02)]">
+                    {config.market.slice(0, 1)}
+                </div>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-[16px] font-bold text-hi leading-none tracking-tight">{config.displayName.split(' ')[0] || config.displayName} {config.displayName.split(' ')[1] || ''}</span>
+                    <span className="text-[11px] font-mono font-medium text-lo">{config.market}</span>
                 </div>
             </div>
 
-            <div className="w-px h-6 bg-line flex-shrink-0" />
-
             <div className="flex items-center flex-shrink-0 min-w-[100px]">
-                <span className={`text-[18px] font-mono tabular-nums font-bold tracking-tight ${lastPriceColor}`}>
+                <span className="text-[20px] font-mono tabular-nums font-bold tracking-tight text-hi">
                     {lastPriceText}
                 </span>
             </div>
 
-            <div className="flex items-center gap-1">
-                <StatCell label="24h Change" value={changeText} valueClass={changeColor} />
-                <StatCell label="24h Volume" value={volumeText} />
-                <StatCell label="Spread" value={spreadText} />
+            <div className="flex items-center gap-8">
+                <StatCell label="24H CHANGE" value={changeText} valueClass={changeColor} />
+                <ReversedStatCell label="VOLUME" value={volumeText} />
+                <ReversedStatCell label="SPREAD" value={spreadText} />
             </div>
         </div>
     )

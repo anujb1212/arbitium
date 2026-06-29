@@ -1,6 +1,7 @@
 import React, { useState, useId } from 'react'
 import type { MarketConfig } from '../types/market'
 import { placeLimitOrder, placeMarketOrder } from '../lib/apiClient'
+import { Eye, Plus, Minus, Download, Upload } from 'lucide-react'
 
 type Side = 'BUY' | 'SELL'
 type OrderType = 'LIMIT' | 'MARKET'
@@ -9,10 +10,6 @@ type Status =
     | { tag: 'submitting' }
     | { tag: 'success'; commandId: string }
     | { tag: 'error'; message: string }
-
-const inputCls =
-    'w-full bg-base border border-line rounded-md px-3 py-2 font-mono text-[12px] text-hi ' +
-    'outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all placeholder:text-lo disabled:opacity-50'
 
 type Props = {
     config: MarketConfig
@@ -72,9 +69,6 @@ export function OrderForm({
     config, bestBidPrice, bestAskPrice,
     onPlaceSubmitted, onPlaceAccepted, onPlaceFailed
 }: Props): React.JSX.Element {
-    const priceId = useId()
-    const qtyId = useId()
-
     const [orderType, setOrderType] = useState<OrderType>('LIMIT')
     const [side, setSide] = useState<Side>('BUY')
     const [price, setPrice] = useState('')
@@ -87,7 +81,7 @@ export function OrderForm({
         ? (side === 'BUY' ? bestAskPrice : bestBidPrice) ?? null
         : null
 
-    const canSubmit = !placing && qty !== '' && (orderType === 'MARKET' || price !== '')
+    const canSubmit = !placing && qty !== '' && qty !== '0' && (orderType === 'MARKET' || price !== '')
 
     async function handlePlace(e: React.FormEvent): Promise<void> {
         e.preventDefault()
@@ -113,8 +107,6 @@ export function OrderForm({
                 setStatus({ tag: 'success', commandId: res.commandId })
                 onPlaceAccepted?.({ orderId, commandId: res.commandId })
             }
-            setPrice('')
-            setQty('')
             setTimeout(() => setStatus({ tag: 'idle' }), 3000)
         } catch (err) {
             const message = parseApiError((err as Error).message)
@@ -123,110 +115,126 @@ export function OrderForm({
         }
     }
 
+    const orderValue = parseFloat(price || '0') * parseInt(qty || '0', 10)
+
     return (
-        <div className="px-4 py-4 bg-panel flex flex-col gap-4 h-full">
-            {/* Order Type Tabs */}
-            <div className="flex bg-base p-1 rounded-md border border-line">
-                {(['LIMIT', 'MARKET'] as OrderType[]).map((t) => (
+        <div className="flex flex-col h-full bg-panel">
+            
+            <form onSubmit={handlePlace} className="p-4 flex flex-col gap-5 border-b border-line pb-6">
+                
+                {/* Buy/Sell Toggles */}
+                <div className="flex gap-2">
                     <button
-                        key={t}
                         type="button"
-                        onClick={() => { setOrderType(t); setStatus({ tag: 'idle' }) }}
-                        className={`flex-1 py-1 text-[11px] font-semibold rounded transition-all active:scale-[0.98]
-                            ${orderType === t ? 'bg-raised text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
+                        onClick={() => setSide('BUY')}
+                        className={`flex-1 py-2.5 text-[12px] font-bold rounded-[4px] transition-all
+                            ${side === 'BUY' ? 'bg-[#188B52] text-white shadow-sm' : 'bg-base border border-line text-lo hover:text-hi'}`}
                     >
-                        {t === 'LIMIT' ? 'Limit' : 'Market'}
+                        BUY
                     </button>
-                ))}
-            </div>
-
-            {/* Buy/Sell Tabs */}
-            <div className="flex bg-base p-1 rounded-md border border-line">
-                {(['BUY', 'SELL'] as Side[]).map((s) => (
                     <button
-                        key={s}
                         type="button"
-                        onClick={() => setSide(s)}
-                        className={`flex-1 py-1.5 text-[12px] font-bold rounded transition-all active:scale-[0.98]
-                            ${side === s
-                                ? s === 'BUY' ? 'bg-bull/20 text-bull shadow-sm' : 'bg-bear/20 text-bear shadow-sm'
-                                : 'text-lo hover:text-mid'}`}
+                        onClick={() => setSide('SELL')}
+                        className={`flex-1 py-2.5 text-[12px] font-bold rounded-[4px] transition-all
+                            ${side === 'SELL' ? 'bg-bear text-white shadow-sm' : 'bg-base border border-line text-lo hover:text-hi'}`}
                     >
-                        {s === 'BUY' ? 'Buy' : 'Sell'}
+                        SELL
                     </button>
-                ))}
-            </div>
-
-            <form onSubmit={handlePlace} className="flex flex-col gap-3">
-                {orderType === 'LIMIT' && (
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor={priceId} className="text-[11px] font-medium text-mid flex justify-between">
-                            <span>Price</span>
-                            <span className="text-lo font-mono">{config.currency}</span>
-                        </label>
-                        <input
-                            id={priceId}
-                            className={inputCls}
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={price}
-                            disabled={placing}
-                            autoComplete="off"
-                            onChange={(e) => {
-                                if (/^\d*\.?\d*$/.test(e.target.value)) setPrice(e.target.value)
-                            }}
-                        />
-                    </div>
-                )}
-
-                {orderType === 'MARKET' && (
-                    <div className="flex items-center justify-between px-3 py-2 bg-base rounded-md border border-line">
-                        <span className="text-[11px] font-medium text-mid">Est. Price</span>
-                        <span className="font-mono tabular-nums text-[12px] text-hi font-bold">
-                            {estimatedPrice
-                                ? `₹${(Number(estimatedPrice) / Math.pow(10, config.priceScale)).toFixed(config.priceScale)}`
-                                : '—'}
-                        </span>
-                    </div>
-                )}
-
-                <div className="flex flex-col gap-1">
-                    <label htmlFor={qtyId} className="text-[11px] font-medium text-mid flex justify-between">
-                        <span>Quantity</span>
-                        <span className="text-lo font-mono">Shares</span>
-                    </label>
-                    <input
-                        id={qtyId}
-                        className={inputCls}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="0"
-                        value={qty}
-                        disabled={placing}
-                        autoComplete="off"
-                        onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))}
-                    />
                 </div>
 
-                {orderType === 'LIMIT' && price && qty && (
-                    <div className="text-[11px] font-mono tabular-nums text-mid text-right mt-[-4px]">
-                        ≈ ₹{(parseFloat(price) * parseInt(qty, 10)).toFixed(2)} total
-                    </div>
-                )}
+                {/* Limit/Market Toggles */}
+                <div className="flex bg-base rounded-[4px] p-1 border border-line">
+                    <button
+                        type="button"
+                        onClick={() => { setOrderType('LIMIT'); setStatus({ tag: 'idle' }) }}
+                        className={`flex-1 py-1.5 text-[11px] font-bold rounded-[3px] transition-all tracking-wider
+                            ${orderType === 'LIMIT' ? 'bg-panel text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
+                    >
+                        LIMIT
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setOrderType('MARKET'); setStatus({ tag: 'idle' }) }}
+                        className={`flex-1 py-1.5 text-[11px] font-bold rounded-[3px] transition-all tracking-wider
+                            ${orderType === 'MARKET' ? 'bg-panel text-hi shadow-sm' : 'text-lo hover:text-mid'}`}
+                    >
+                        MARKET
+                    </button>
+                </div>
 
-                <div className="pt-1 flex flex-col gap-2">
-                    {/* Compact Button */}
+                <div className="flex flex-col gap-4">
+                    {orderType === 'LIMIT' && (
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-medium text-lo">
+                                Price ({config.currency})
+                            </label>
+                            <div className="relative flex items-center bg-base border border-line rounded-[4px] overflow-hidden focus-within:border-mid transition-colors">
+                                <input
+                                    className="w-full bg-transparent px-3 py-2.5 font-mono text-[13px] font-bold text-hi outline-none"
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={price}
+                                    disabled={placing}
+                                    onChange={(e) => {
+                                        if (/^\d*\.?\d*$/.test(e.target.value)) setPrice(e.target.value)
+                                    }}
+                                />
+                                <div className="flex items-center self-stretch border-l border-line">
+                                    <button type="button" className="px-3 hover:bg-raised text-lo hover:text-hi transition-colors border-r border-line" onClick={() => setPrice(p => (parseFloat(p || '0') - 0.05).toFixed(2))}><Minus size={14} /></button>
+                                    <button type="button" className="px-3 hover:bg-raised text-lo hover:text-hi transition-colors" onClick={() => setPrice(p => (parseFloat(p || '0') + 0.05).toFixed(2))}><Plus size={14} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {orderType === 'MARKET' && (
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-medium text-lo">
+                                Est. Price ({config.currency})
+                            </label>
+                            <div className="flex items-center px-3 py-2.5 bg-base border border-line rounded-[4px]">
+                                <span className="font-mono tabular-nums text-[13px] font-bold text-hi">
+                                    {estimatedPrice ? `₹${(Number(estimatedPrice) / Math.pow(10, config.priceScale)).toFixed(config.priceScale)}` : 'Market Price'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-medium text-lo">
+                            Quantity (Shares)
+                        </label>
+                        <div className="relative flex items-center bg-base border border-line rounded-[4px] overflow-hidden focus-within:border-mid transition-colors">
+                            <input
+                                className="w-full bg-transparent px-3 py-2.5 font-mono text-[13px] font-bold text-hi outline-none"
+                                type="text"
+                                inputMode="numeric"
+                                value={qty}
+                                disabled={placing}
+                                onChange={(e) => setQty(e.target.value.replace(/\D/g, ''))}
+                            />
+                            <div className="flex items-center self-stretch border-l border-line">
+                                <button type="button" className="px-3 hover:bg-raised text-lo hover:text-hi transition-colors border-r border-line" onClick={() => setQty(q => Math.max(0, parseInt(q || '0') - 1).toString())}><Minus size={14} /></button>
+                                <button type="button" className="px-3 hover:bg-raised text-lo hover:text-hi transition-colors" onClick={() => setQty(q => (parseInt(q || '0') + 1).toString())}><Plus size={14} /></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[11px] mt-1">
+                        <span className="text-lo font-medium">Order Value</span>
+                        <span className="text-lo font-mono">₹{orderValue.toFixed(2)}</span>
+                    </div>
+
                     <button
                         type="submit"
                         disabled={!canSubmit}
-                        className={`w-full py-2.5 rounded-md text-[13px] font-bold transition-all
+                        className={`w-full py-3.5 mt-2 rounded-[4px] text-[13px] font-bold transition-all uppercase tracking-wide
                             disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]
                             ${side === 'BUY'
-                                ? 'bg-bull/10 text-bull hover:bg-bull hover:text-base border border-bull/30 hover:border-bull shadow-[0_0_8px_rgba(0,194,120,0.1)]'
-                                : 'bg-bear/10 text-bear hover:bg-bear hover:text-base border border-bear/30 hover:border-bear shadow-[0_0_8px_rgba(255,59,105,0.1)]'}`}
+                                ? 'bg-[#188B52] text-white hover:bg-[#157a48]'
+                                : 'bg-bear text-white hover:bg-[#ff2a5f]'}`}
                     >
-                        {placing ? 'Placing…' : `${side === 'BUY' ? 'Buy' : 'Sell'} ${config.market.split('_')[0]}`}
+                        {placing ? 'Placing…' : `PLACE ${side} ORDER`}
                     </button>
 
                     {status.tag === 'success' && (
@@ -237,7 +245,7 @@ export function OrderForm({
                     )}
 
                     {status.tag === 'error' && (
-                        <div className="flex flex-col items-start gap-1 bg-bear/10 border border-bear/20 px-2 py-2 rounded-md animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex flex-col items-start gap-1 bg-bear/10 border border-bear/20 px-2 py-2 rounded-[4px] animate-in slide-in-from-top-2 fade-in duration-200">
                             <div className="flex items-start gap-1.5 text-[11px] font-mono text-bear">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0">
                                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
@@ -248,6 +256,42 @@ export function OrderForm({
                     )}
                 </div>
             </form>
+
+            <div className="p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between text-[11px] font-bold text-hi tracking-widest uppercase">
+                    <span>BALANCE</span>
+                    <Eye className="w-3.5 h-3.5 text-lo hover:text-hi cursor-pointer transition-colors" />
+                </div>
+                
+                <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-lo font-medium">Available Balance</span>
+                        <span className="font-mono text-hi font-medium">-</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-lo font-medium">Used Balance</span>
+                        <span className="font-mono text-hi font-medium">-</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] pt-1 mt-1 border-t border-line border-dashed">
+                        <span className="text-lo font-medium">Total Balance</span>
+                        <span className="font-mono text-hi font-medium">-</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-lo font-medium">Buying Power</span>
+                        <span className="font-mono text-hi font-medium">-</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                    <button className="flex items-center justify-center gap-2 py-2.5 border border-line rounded-[4px] text-[11px] font-bold text-hi hover:bg-raised transition-colors active:scale-[0.98]">
+                        <Download className="w-3.5 h-3.5 text-lo" /> DEPOSIT
+                    </button>
+                    <button className="flex items-center justify-center gap-2 py-2.5 border border-line rounded-[4px] text-[11px] font-bold text-hi hover:bg-raised transition-colors active:scale-[0.98]">
+                        <Upload className="w-3.5 h-3.5 text-lo" /> WITHDRAW
+                    </button>
+                </div>
+            </div>
+
         </div>
     )
 }

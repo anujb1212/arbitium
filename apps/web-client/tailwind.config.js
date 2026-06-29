@@ -4,19 +4,19 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                base: '#0e1015',
-                panel: '#14151b',
-                raised: '#1c1d25',
-                line: '#282a36',
-                hi: '#f3f4f6',
+                base: '#05070B',
+                panel: '#090D14',
+                raised: '#0B111A',
+                line: '#1c222b',
+                hi: '#ffffff',
                 mid: '#9ca3af',
                 lo: '#6b7280',
                 bull: '#00c278',
-                bear: '#ff3b69',
-                accent: '#3b82f6',
+                bear: '#FF4D4F',
+                accent: '#FF4D4F',
             },
             fontFamily: {
-                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                sans: ['Geist', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
                 mono: ['"JetBrains Mono"', 'SF Mono', 'ui-monospace', 'monospace'],
             },
         },

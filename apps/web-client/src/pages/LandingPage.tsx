@@ -1,76 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MARKETS, getMarketConfig } from '../types/market'
+import { ArrowRight, ChevronRight } from 'lucide-react'
+
+
+import { RealisticChart } from '../components/RealisticChart'
+import { MetricsRow } from '../components/MetricsRow'
+import { MarketOverviewTable } from '../components/MarketOverviewTable'
+import { fetchRecentTrades, fetchTicker, RecentTrade, TickerSnapshot } from '../lib/apiClient'
 import { clearToken, isLoggedIn, redirectToVaultlyLogin } from '../lib/auth'
-import { fetchTicker, fetchRecentTrades } from '../lib/apiClient'
-import { formatPrice, formatQty } from '../lib/format'
-import type { TickerSnapshot, RecentTrade } from '../lib/apiClient'
+import { MARKETS } from '../types/market'
 
-const SPARK_W = 96
-const SPARK_H = 32
-
-function buildSparkPath(prices: number[]): string {
-    if (prices.length < 2) return ''
-    const min = Math.min(...prices)
-    const max = Math.max(...prices)
-    const range = max - min || 1
-    return prices
-        .map((p, i) => {
-            const x = ((i / (prices.length - 1)) * SPARK_W).toFixed(1)
-            const y = (SPARK_H - ((p - min) / range) * SPARK_H).toFixed(1)
-            return `${i === 0 ? 'M' : 'L'}${x} ${y}`
-        })
-        .join(' ')
-}
-
-type SparklineProps = { trades: RecentTrade[]; positive: boolean }
-
-function Sparkline({ trades, positive }: SparklineProps): React.JSX.Element | null {
-    if (trades.length < 2) return (
-        <div style={{ width: SPARK_W, height: SPARK_H }} className="flex items-center justify-center">
-            <span className="text-[10px] text-lo">-</span>
-        </div>
-    )
-
-    const prices = trades.map((t) => Number(t.price))
-    const path = buildSparkPath(prices)
-    const color = positive ? '#00c278' : '#ff3b69'
-    const shadowColor = positive ? 'rgba(0, 194, 120, 0.4)' : 'rgba(255, 59, 105, 0.4)'
-
-    return (
-        <svg
-            width={SPARK_W}
-            height={SPARK_H}
-            viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-            className="overflow-visible"
-            style={{ filter: `drop-shadow(0px 6px 6px ${shadowColor})` }}
-        >
-            <path
-                d={path}
-                fill="none"
-                stroke={color}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity="0.9"
-            />
-        </svg>
-    )
-}
-
-function ChangeCell({ pct }: { pct: string | undefined }): React.JSX.Element {
-    if (!pct) return <span className="text-lo font-mono text-[13px]">-</span>
-    const numeric = parseFloat(pct)
-    const color = numeric > 0 ? 'text-bull' : numeric < 0 ? 'text-bear' : 'text-mid'
-    const prefix = numeric > 0 ? '+' : ''
-    return (
-        <span className={`font-mono text-[13px] font-bold ${color}`}>
-            {prefix}{pct}%
-        </span>
-    )
-}
-
-type MarketData = { ticker: TickerSnapshot | null; trades: RecentTrade[] }
+export type MarketData = { ticker: TickerSnapshot | null; trades: RecentTrade[] }
 
 export default function LandingPage(): React.JSX.Element {
     const navigate = useNavigate()
@@ -91,120 +31,69 @@ export default function LandingPage(): React.JSX.Element {
 
     return (
         <div className="min-h-screen bg-base text-hi font-sans selection:bg-accent/30 flex flex-col">
-            <header className="w-full h-16 flex items-center justify-between px-8 border-b border-line bg-panel/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="flex items-center gap-3">
-                    <img
-                        src="/logo.png"
-                        alt="Arbitium Logo"
-                        className="w-8 h-8 object-contain drop-shadow-lg"
-                    />
-                    <span className="text-[18px] font-black tracking-tighter text-hi uppercase">
-                        Arbitium
+            <header className="w-full h-[72px] flex items-center justify-between px-8 bg-base sticky top-0 z-50">
+                <div className="flex items-center gap-2">
+                    <span className="text-[20px] font-black tracking-tight text-hi uppercase flex items-center gap-1">
+                        <span className="text-accent text-[22px]">AR</span>BITIUM
                     </span>
                 </div>
-                <nav className="flex items-center gap-4">
+                <nav className="hidden md:flex items-center gap-8 text-[13px] font-bold text-lo">
+                    <button className="text-hi transition-colors">Trading</button>
+                    <button className="hover:text-hi transition-colors">Markets</button>
+                    <button className="hover:text-hi transition-colors">Pricing</button>
+                    <button className="hover:text-hi transition-colors flex items-center gap-1">Resources <ChevronRight size={14} className="rotate-90 opacity-70" /></button>
+                    <button className="hover:text-hi transition-colors">About</button>
+                </nav>
+                <div className="flex items-center gap-4">
                     {loggedIn ? (
-                        <button onClick={() => { clearToken(); window.location.reload() }} className="text-[12px] font-bold text-mid hover:text-hi transition-colors">
-                            Sign out
+                        <button onClick={() => { clearToken(); window.location.reload() }} className="text-[13px] font-bold text-lo hover:text-hi transition-colors px-4 py-2 border border-line rounded-[4px]">
+                            Log out
                         </button>
                     ) : (
-                        <button onClick={redirectToVaultlyLogin} className="text-[12px] font-bold text-hi hover:text-mid transition-colors px-3 py-1.5 rounded-md hover:bg-raised">
-                            Sign in
+                        <button onClick={redirectToVaultlyLogin} className="text-[13px] font-bold text-lo hover:text-hi transition-colors px-4 py-2 rounded-[4px] border border-line">
+                            Log in
                         </button>
                     )}
-                    <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="text-[12px] font-bold bg-hi text-base hover:bg-mid px-5 py-2 rounded-md transition-colors shadow-sm">
-                        Trade Now
+                    <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="text-[13px] font-bold bg-accent text-white hover:bg-accent/90 px-5 py-2 rounded-[4px] transition-colors flex items-center gap-2">
+                        Launch Terminal <ArrowRight size={14} />
                     </button>
-                </nav>
+                </div>
             </header>
 
-            <main className="flex-1 flex flex-col items-center justify-start pt-24 pb-20 px-6 max-w-5xl mx-auto w-full">
-                <div className="text-center mb-16 max-w-3xl">
-                    <div className="inline-block mb-6 px-3 py-1 border border-line bg-panel rounded-full text-[11px] font-bold text-accent tracking-wide uppercase">
-                        V1 Engine Live
+            <main className="flex-1 flex flex-col items-center justify-start pt-20 pb-24 px-6 max-w-[1500px] mx-auto w-full">
+
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-20 items-center mb-24">
+                    <div className="flex flex-col items-start pr-4">
+                        <div className="flex items-center gap-2 mb-8 px-4 py-1.5 border border-line bg-raised rounded-sm text-[11px] font-bold text-mid tracking-wider uppercase">
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                            BUILT FOR PROFESSIONALS
+                        </div>
+                        <h1 className="text-[64px] xl:text-[84px] font-black tracking-tight leading-[1] mb-8 text-hi">
+                            High-Frequency <br /> Trading <br />
+                            <span className="text-accent">Made Accessible.</span>
+                        </h1>
+                        <p className="text-[18px] xl:text-[20px] text-lo font-medium leading-relaxed mb-12 max-w-[480px]">
+                            A deterministic matching engine. Experience millisecond execution with institutional-grade tools.
+                        </p>
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="bg-accent text-white font-bold text-[15px] px-8 py-4 rounded-[4px] transition-all hover:bg-accent/90 flex items-center gap-2 shadow-lg shadow-accent/20">
+                                Launch Terminal <ArrowRight size={18} />
+                            </button>
+                            <button className="bg-transparent text-hi font-bold text-[15px] px-4 py-4 transition-all flex items-center gap-2 group">
+                                Explore features <ChevronRight size={18} className="text-lo group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
                     </div>
-                    <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-[1.1] mb-6 text-hi">
-                        High-Frequency Trading <br />
-                        <span className="text-mid">Made Accessible.</span>
-                    </h1>
-                    <p className="text-base md:text-lg text-lo font-medium leading-relaxed mb-8 max-w-xl mx-auto">
-                        A deterministic matching engine. Experience millisecond execution.
-                    </p>
-                    <button onClick={() => navigate(`/trade/${MARKETS[0].market}`)} className="bg-transparent border border-accent/50 hover:bg-accent/10 text-accent font-bold text-[15px] px-8 py-3.5 rounded-full transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
-                        Launch Terminal
-                    </button>
-                </div>
 
-                <div className="w-full">
-                    <div className="flex items-center justify-between mb-4 px-2">
-                        <p className="text-[13px] font-bold text-hi tracking-wide">Market Overview</p>
-                        <span className="text-[12px] text-mid font-medium">{MARKETS.length} Assets Listed</span>
-                    </div>
-
-                    <div className="rounded-xl border border-line overflow-hidden bg-panel shadow-2xl">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-base border-b border-line">
-                                <tr>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-lo uppercase tracking-wider">Asset</th>
-                                    <th className="text-right px-6 py-4 text-[11px] font-bold text-lo uppercase tracking-wider">Last Price</th>
-                                    <th className="text-right px-6 py-4 text-[11px] font-bold text-lo uppercase tracking-wider">24h Change</th>
-                                    <th className="text-right px-6 py-4 text-[11px] font-bold text-lo uppercase tracking-wider">24h Volume</th>
-                                    <th className="text-right px-6 py-4 text-[11px] font-bold text-lo uppercase tracking-wider">Last 7 Trades</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-line/50">
-                                {MARKETS.map((m) => {
-                                    const config = getMarketConfig(m.market)!
-                                    const data = marketData.get(m.market)
-                                    const ticker = data?.ticker ?? null
-                                    const trades = data?.trades ?? []
-                                    const pctNumeric = ticker ? parseFloat(ticker.priceChangePct24h) : 0
-
-                                    return (
-                                        <tr key={m.market} onClick={() => navigate(`/trade/${m.market}`)} className="group cursor-pointer hover:bg-raised transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-base border border-line flex items-center justify-center text-[14px] font-bold text-hi group-hover:border-mid transition-colors shadow-sm">
-                                                        {m.market.slice(0, 1)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[15px] font-bold text-hi">{m.displayName}</div>
-                                                        <div className="text-[12px] font-mono text-lo mt-0.5">{m.market}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                {ticker?.lastPrice ? (
-                                                    <span className="font-mono tabular-nums text-[15px] font-bold text-hi">
-                                                        {formatPrice(ticker.lastPrice, config.priceScale)}
-                                                    </span>
-                                                ) : <span className="text-lo">-</span>}
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <ChangeCell pct={ticker?.priceChangePct24h} />
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                {ticker?.volume24h ? (
-                                                    <span className="font-mono tabular-nums text-[14px] font-medium text-mid">
-                                                        {formatQty(ticker.volume24h, config.qtyScale)}
-                                                    </span>
-                                                ) : <span className="text-lo">-</span>}
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex justify-end">
-                                                    <Sparkline
-                                                        trades={trades.slice(0, 30)}
-                                                        positive={pctNumeric >= 0}
-                                                    />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
+                    <div className="w-full flex items-center justify-center lg:pl-12">
+                        <RealisticChart />
                     </div>
                 </div>
+
+                <MetricsRow />
+
+                <MarketOverviewTable marketData={marketData} />
+
             </main>
         </div>
     )
