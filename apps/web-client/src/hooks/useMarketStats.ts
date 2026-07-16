@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import type { WireTradePayload } from "../types/wire";
 import { parseBigIntDecimal } from "../lib/bigint";
 import { TickerSnapshot } from "../lib/apiClient";
@@ -152,13 +152,13 @@ export function useMarketStats(): UseMarketStatsResult {
             ? state.samples[state.startIndex].price
             : state.seededOpenPrice;
 
-    const stats: MarketStats = {
+    const stats: MarketStats = useMemo(() => ({
         lastPrice: state.lastPrice,
         direction: computeDirection(state.lastPrice, state.prevPrice),
         windowOpenPrice,
         changeBps: computeChangeBps(state.lastPrice, windowOpenPrice),
         windowQtySum: state.windowQtySum.toString(),
-    };
+    }), [state.lastPrice, state.prevPrice, windowOpenPrice, state.windowQtySum]);
 
     return {
         stats,

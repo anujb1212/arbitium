@@ -38,7 +38,7 @@ function ReversedStatCell({ label, value, valueClass = "text-hi" }: { label: str
     )
 }
 
-export function MarketHeaderBar(props: Props): React.JSX.Element {
+export const MarketHeaderBar = React.memo(function MarketHeaderBar(props: Props): React.JSX.Element {
     const { config, stats, bestBidPrice, bestAskPrice } = props
 
     const lastPriceText = stats.lastPrice ? `₹${formatPrice(stats.lastPrice, config.priceScale)}` : "-"
@@ -76,4 +76,4 @@ export function MarketHeaderBar(props: Props): React.JSX.Element {
             </div>
         </div>
     )
-}
+})

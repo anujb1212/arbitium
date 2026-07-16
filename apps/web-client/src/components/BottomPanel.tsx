@@ -13,7 +13,7 @@ type Props = {
     selectedMarket: string
 }
 
-export function BottomPanel({ config, openOrders, selectedMarket }: Props): React.JSX.Element {
+export const BottomPanel = React.memo(function BottomPanel({ config, openOrders, selectedMarket }: Props): React.JSX.Element {
     const [activeTab, setActiveTab] = useState<Tab>("POSITIONS")
 
     return (
@@ -62,4 +62,4 @@ export function BottomPanel({ config, openOrders, selectedMarket }: Props): Reac
             
         </div>
     )
-}
+})

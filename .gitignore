@@ -1,3 +1,7 @@
 node_modules
 .env
 **/snapshots/*
+
+DESIGN.md
+ANIMATIONS.md
+.commandcode

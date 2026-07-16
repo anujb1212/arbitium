@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 import { MARKETS, getMarketConfig } from "../types/market"
 import { fetchTicker } from "../lib/apiClient"
 import { formatPrice } from "../lib/format"
@@ -11,7 +11,54 @@ type Props = {
     onMarketChange: (market: string) => void
 }
 
-export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.JSX.Element {
+type MarketItemProps = {
+    market: { market: string; displayName: string }
+    ticker: MiniTicker | undefined
+    isActive: boolean
+    onSelect: (market: string) => void
+}
+
+const MarketItem = React.memo(function MarketItem({ market: m, ticker: t, isActive, onSelect }: MarketItemProps): React.JSX.Element {
+    const config = getMarketConfig(m.market)!
+    const pct = t?.changePct ? parseFloat(t.changePct) : null
+    const pctColor = pct === null ? "text-mid" : pct > 0 ? "text-bull" : pct < 0 ? "text-bear" : "text-mid"
+
+    const handleClick = React.useCallback(() => onSelect(m.market), [onSelect, m.market])
+
+    return (
+        <button
+            onClick={handleClick}
+            className={`w-full flex items-center justify-between px-5 py-2.5 hover:bg-raised transition-all group
+                ${isActive ? "bg-raised border-l-2 border-accent pl-[18px]" : "border-l-2 border-transparent"}`}
+        >
+            <div className="flex items-center gap-3">
+                <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-[inset_0_0_10px_rgba(255,255,255,0.1)]" style={{ backgroundColor: m.market.length % 2 === 0 ? '#F7931A' : '#627EEA' }}>
+                    {m.market.slice(0, 1)}
+                </div>
+                <div className="text-left">
+                    <div className={`text-[12px] font-bold leading-none ${isActive ? 'text-hi' : 'text-mid group-hover:text-hi'}`}>{m.displayName}</div>
+                    <div className="text-[9px] font-mono font-medium text-lo mt-1 uppercase">{config.market}</div>
+                </div>
+            </div>
+            <div className="text-right">
+                {t?.lastPrice ? (
+                    <div className="font-mono tabular-nums text-[12px] font-bold text-hi leading-none tracking-tight">
+                        ₹{formatPrice(t.lastPrice, config.priceScale)}
+                    </div>
+                ) : (
+                    <div className="text-lo text-[12px] leading-none">-</div>
+                )}
+                {t?.changePct && (
+                    <div className={`font-mono tabular-nums text-[10px] font-bold mt-1 tracking-tight ${pctColor}`}>
+                        {pct! > 0 ? "+" : ""}{t.changePct}%
+                    </div>
+                )}
+            </div>
+        </button>
+    )
+})
+
+export const MarketSidebar = React.memo(function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.JSX.Element {
     const [tickers, setTickers] = useState<Map<string, MiniTicker>>(new Map())
     const [search, setSearch] = useState("")
 
@@ -29,58 +76,17 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
         return () => { active = false }
     }, [])
 
-    const filteredMarkets = MARKETS.filter(m => m.displayName.toLowerCase().includes(search.toLowerCase()) || m.market.toLowerCase().includes(search.toLowerCase()))
-    
-    // Split markets for visual grouping
-    const favorites = filteredMarkets.slice(0, 3)
-    const indices = filteredMarkets.filter(m => m.market.includes('INDEX'))
-    const equities = filteredMarkets.filter(m => !m.market.includes('INDEX')).slice(3) // Exclude favorites for demo
+    const filteredMarkets = useMemo(
+        () => MARKETS.filter(m => m.displayName.toLowerCase().includes(search.toLowerCase()) || m.market.toLowerCase().includes(search.toLowerCase())),
+        [search]
+    )
 
-    const renderMarketItem = (m: typeof MARKETS[0]) => {
-        const t = tickers.get(m.market)
-        const config = getMarketConfig(m.market)!
-        const pct = t?.changePct ? parseFloat(t.changePct) : null
-        const pctColor = pct === null ? "text-mid" : pct > 0 ? "text-bull" : pct < 0 ? "text-bear" : "text-mid"
-        const isActive = m.market === selectedMarket
-
-        return (
-            <button
-                key={m.market}
-                onClick={() => onMarketChange(m.market)}
-                className={`w-full flex items-center justify-between px-5 py-2.5 hover:bg-raised transition-all group
-                    ${isActive ? "bg-raised border-l-2 border-accent pl-[18px]" : "border-l-2 border-transparent"}`}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-[inset_0_0_10px_rgba(255,255,255,0.1)]" style={{ backgroundColor: m.market.length % 2 === 0 ? '#F7931A' : '#627EEA' }}>
-                        {m.market.slice(0, 1)}
-                    </div>
-                    <div className="text-left">
-                        <div className={`text-[12px] font-bold leading-none ${isActive ? 'text-hi' : 'text-mid group-hover:text-hi'}`}>{m.displayName}</div>
-                        <div className="text-[9px] font-mono font-medium text-lo mt-1 uppercase">{config.market}</div>
-                    </div>
-                </div>
-                <div className="text-right">
-                    {t?.lastPrice ? (
-                        <div className="font-mono tabular-nums text-[12px] font-bold text-hi leading-none tracking-tight">
-                            ₹{formatPrice(t.lastPrice, config.priceScale)}
-                        </div>
-                    ) : (
-                        <div className="text-lo text-[12px] leading-none">-</div>
-                    )}
-                    {t?.changePct && (
-                        <div className={`font-mono tabular-nums text-[10px] font-bold mt-1 tracking-tight ${pctColor}`}>
-                            {pct! > 0 ? "+" : ""}{t.changePct}%
-                        </div>
-                    )}
-                </div>
-            </button>
-        )
-    }
+    const favorites = useMemo(() => filteredMarkets.slice(0, 3), [filteredMarkets])
+    const indices = useMemo(() => filteredMarkets.filter(m => m.market.includes('INDEX')), [filteredMarkets])
+    const equities = useMemo(() => filteredMarkets.filter(m => !m.market.includes('INDEX')).slice(3), [filteredMarkets])
 
     return (
         <div className="flex flex-col h-full bg-panel overflow-hidden border-r border-line">
-            
-            {/* Search Input */}
             <div className="px-3 py-3 border-b border-line flex-shrink-0">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-lo w-4 h-4" />
@@ -104,7 +110,15 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
                         <div className="flex items-center gap-2 px-5 pb-1.5 text-[10px] font-bold text-lo tracking-widest uppercase">
                             <Star className="w-3.5 h-3.5" /> FAVORITES
                         </div>
-                        {favorites.map(renderMarketItem)}
+                        {favorites.map((m) => (
+                            <MarketItem
+                                key={m.market}
+                                market={m}
+                                ticker={tickers.get(m.market)}
+                                isActive={m.market === selectedMarket}
+                                onSelect={onMarketChange}
+                            />
+                        ))}
                     </div>
                 )}
 
@@ -116,7 +130,15 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
                             </div>
                             <span className="bg-raised px-1.5 py-0.5 rounded-[3px] text-hi">{indices.length}</span>
                         </div>
-                        {indices.map(renderMarketItem)}
+                        {indices.map((m) => (
+                            <MarketItem
+                                key={m.market}
+                                market={m}
+                                ticker={tickers.get(m.market)}
+                                isActive={m.market === selectedMarket}
+                                onSelect={onMarketChange}
+                            />
+                        ))}
                     </div>
                 )}
 
@@ -128,7 +150,15 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
                             </div>
                             <span className="bg-raised px-1.5 py-0.5 rounded-[3px] text-hi">{equities.length}</span>
                         </div>
-                        {equities.map(renderMarketItem)}
+                        {equities.map((m) => (
+                            <MarketItem
+                                key={m.market}
+                                market={m}
+                                ticker={tickers.get(m.market)}
+                                isActive={m.market === selectedMarket}
+                                onSelect={onMarketChange}
+                            />
+                        ))}
                     </div>
                 )}
                 
@@ -149,4 +179,4 @@ export function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.
             
         </div>
     )
-}
+})

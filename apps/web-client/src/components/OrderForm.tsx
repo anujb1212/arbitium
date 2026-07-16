@@ -65,7 +65,7 @@ function parseApiError(raw: string): string {
     }
 }
 
-export function OrderForm({
+export const OrderForm = React.memo(function OrderForm({
     config, bestBidPrice, bestAskPrice,
     onPlaceSubmitted, onPlaceAccepted, onPlaceFailed
 }: Props): React.JSX.Element {
@@ -294,4 +294,4 @@ export function OrderForm({
 
         </div>
     )
-}
+})

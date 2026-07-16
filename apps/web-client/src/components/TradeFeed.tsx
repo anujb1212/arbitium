@@ -11,7 +11,7 @@ function formatTime(ts: number): string {
 
 type Props = { trades: TradeEntry[]; config: MarketConfig }
 
-export function TradeFeed({ trades, config }: Props): React.JSX.Element {
+const TradeFeed = React.memo(function TradeFeed({ trades, config }: Props): React.JSX.Element {
     return (
         <div className="flex flex-col h-full bg-panel overflow-hidden">
             <div className="grid grid-cols-3 px-4 py-2 text-[11px] font-medium text-lo flex-shrink-0 border-b border-line uppercase tracking-wider">
@@ -44,4 +44,6 @@ export function TradeFeed({ trades, config }: Props): React.JSX.Element {
             </div>
         </div>
     )
-}
+})
+
+export { TradeFeed }

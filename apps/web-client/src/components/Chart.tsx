@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
     createChart, ColorType, CrosshairMode,
     type IChartApi, type ISeriesApi,
@@ -36,38 +36,14 @@ const INTERVAL_GROUPS = [
 ]
 
 const QUICK_INTERVALS = [
-    INTERVAL_GROUPS[0].options[0], // 1m
-    INTERVAL_GROUPS[0].options[2], // 15m
-    INTERVAL_GROUPS[1].options[0], // 1H
-    INTERVAL_GROUPS[2].options[0] // 1D
+    INTERVAL_GROUPS[0].options[0],
+    INTERVAL_GROUPS[0].options[2],
+    INTERVAL_GROUPS[1].options[0],
+    INTERVAL_GROUPS[2].options[0]
 ]
 
 function toScaledPrice(rawPrice: string, priceScale: number): number {
     return Number(rawPrice) / Math.pow(10, priceScale)
-}
-
-function buildCandlesFromTrades(trades: TradeEntry[], priceScale: number, intervalMinutes: number): CandlestickData[] {
-    const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp)
-    const candles = new Map<number, CandlestickData>()
-    const msPerInterval = intervalMinutes * 60_000
-
-    for (const trade of sorted) {
-        const intervalTs = Math.floor(trade.timestamp / msPerInterval) * (intervalMinutes * 60) as Time
-        const price = toScaledPrice(trade.price, priceScale)
-        const existing = candles.get(Number(intervalTs))
-
-        if (!existing) {
-            candles.set(Number(intervalTs), { time: intervalTs, open: price, high: price, low: price, close: price })
-        } else {
-            candles.set(Number(intervalTs), {
-                ...existing,
-                high: Math.max(existing.high, price),
-                low: Math.min(existing.low, price),
-                close: price,
-            })
-        }
-    }
-    return Array.from(candles.values())
 }
 
 export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Element {
@@ -76,16 +52,10 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
     const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    const hasSeededServerBarsRef = useRef(false)
     const lastCandleRef = useRef<CandlestickData | null>(null)
 
     const [selectedInterval, setSelectedInterval] = useState<IntervalOption>(QUICK_INTERVALS[0]!)
     const [dropdownOpen, setDropdownOpen] = useState(false)
-
-    const tradeCandles = useMemo(
-        () => buildCandlesFromTrades(trades, config.priceScale, selectedInterval.minutes),
-        [trades, config.priceScale, selectedInterval.minutes]
-    )
 
     useEffect(() => {
         function onOutside(e: MouseEvent): void { if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false) }
@@ -97,14 +67,15 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
         if (!containerRef.current) return
 
         const chart = createChart(containerRef.current, {
-            layout: { background: { type: ColorType.Solid, color: '#0e1015' }, textColor: '#6b7280' },
-            grid: { vertLines: { color: '#282a36' }, horzLines: { color: '#282a36' } },
-            crosshair: { mode: CrosshairMode.Normal, vertLine: { color: '#6b7280' }, horzLine: { color: '#6b7280' } },
-            rightPriceScale: { borderColor: '#282a36' },
+            layout: { background: { type: ColorType.Solid, color: '#090D14' }, textColor: '#4b5563' },
+            grid: { vertLines: { color: '#1a1f2e' }, horzLines: { color: '#1a1f2e' } },
+            crosshair: { mode: CrosshairMode.Normal, vertLine: { color: '#4b5563', style: 2 }, horzLine: { color: '#4b5563', style: 2 } },
+            rightPriceScale: { borderColor: '#1a1f2e', scaleMargins: { top: 0.1, bottom: 0.1 } },
             timeScale: {
-                borderColor: '#282a36',
+                borderColor: '#1a1f2e',
                 timeVisible: true,
-                secondsVisible: false
+                secondsVisible: false,
+                tickMarkFormatter: () => '',
             },
             width: containerRef.current.clientWidth || 800,
             height: containerRef.current.clientHeight || 400,
@@ -125,7 +96,7 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
 
         return () => {
             observer.disconnect(); chart.remove(); chartRef.current = null; seriesRef.current = null;
-            hasSeededServerBarsRef.current = false; lastCandleRef.current = null;
+            lastCandleRef.current = null;
         }
     }, [])
 
@@ -139,7 +110,6 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
         })
 
         let cancelled = false
-        hasSeededServerBarsRef.current = false
         lastCandleRef.current = null
         series.setData([])
 
@@ -161,14 +131,13 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
                         close: Number(b.close) / Math.pow(10, config.priceScale),
                     }))
                     s.setData(candleData)
-                    hasSeededServerBarsRef.current = true
                     lastCandleRef.current = candleData.at(-1) ?? null
                 }
             })
             .catch((err) => console.error("Chart Fetch Error:", err))
 
         return () => { cancelled = true }
-    }, [config.market, config.priceScale, selectedInterval, tradeCandles])
+    }, [config.market, selectedInterval])
 
     useEffect(() => {
         if (!seriesRef.current || trades.length === 0) return
@@ -187,17 +156,10 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
         lastCandleRef.current = nextCandle
     }, [trades, config.priceScale, selectedInterval])
 
-    const displayPrice = lastTradePrice ? formatPrice(lastTradePrice, config.priceScale) : null
-
     return (
         <div className="flex flex-col h-full overflow-hidden bg-base relative">
             <div className="flex items-center justify-between px-5 h-12 border-b border-line flex-shrink-0 z-10">
                 <div className="flex items-center gap-4">
-                    <span className="font-mono tabular-nums font-bold text-hi text-[16px]">
-                        {displayPrice ?? '-'}
-                    </span>
-                    <div className="w-px h-5 bg-line" />
-
                     <div className="flex items-center gap-0.5 bg-panel p-1 rounded-lg border border-line">
                         {QUICK_INTERVALS.map((opt) => (
                             <button

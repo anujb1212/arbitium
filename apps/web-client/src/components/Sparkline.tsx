@@ -1,7 +1,6 @@
 import React from 'react'
 import { RecentTrade } from '../lib/apiClient'
 
-
 const SPARK_W = 96
 const SPARK_H = 32
 
@@ -21,7 +20,7 @@ function buildSparkPath(prices: number[]): string {
 
 export type SparklineProps = { trades: RecentTrade[]; positive: boolean }
 
-export function Sparkline({ trades, positive }: SparklineProps): React.JSX.Element | null {
+const Sparkline = React.memo(function Sparkline({ trades, positive }: SparklineProps): React.JSX.Element | null {
     if (trades.length < 2) return (
         <div style={{ width: SPARK_W, height: SPARK_H }} className="flex items-center justify-center">
             <span className="text-[10px] text-lo">-</span>
@@ -52,4 +51,6 @@ export function Sparkline({ trades, positive }: SparklineProps): React.JSX.Eleme
             />
         </svg>
     )
-}
+})
+
+export { Sparkline }

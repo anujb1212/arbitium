@@ -1,4 +1,4 @@
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useMemo } from "react";
 import type { WireBookDeltaPayload, Side } from "../types/wire";
 import { DepthSnapshot } from "../lib/apiClient";
 
@@ -187,9 +187,12 @@ export function useOrderBook(): UseOrderBookResult {
         dispatch({ type: "RESET" });
     }, []);
 
+    const bids = useMemo(() => toDisplayLevels(state.bids, "BUY", DISPLAY_LEVELS), [state.bids]);
+    const asks = useMemo(() => toDisplayLevels(state.asks, "SELL", DISPLAY_LEVELS), [state.asks]);
+
     return {
-        bids: toDisplayLevels(state.bids, "BUY", DISPLAY_LEVELS),
-        asks: toDisplayLevels(state.asks, "SELL", DISPLAY_LEVELS),
+        bids,
+        asks,
         dispatchDelta,
         resetBook,
         seedBook

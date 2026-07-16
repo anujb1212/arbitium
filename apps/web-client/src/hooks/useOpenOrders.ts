@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import type { Side, WireBookDeltaPayload } from "../types/wire";
 import { clampMinBigInt, parseBigIntDecimal } from "../lib/bigint";
 import { OpenOrderDTO } from "../lib/apiClient";
@@ -225,7 +225,7 @@ export function useOpenOrders(): UseOpenOrdersResult {
         dispatch({ type: "SEED", orders: dtos.map(dbOrderToOpenOrder) })
     }, [])
 
-    return {
+    return useMemo(() => ({
         openOrders: state.orders,
         addOptimistic,
         ackAccepted,
@@ -234,5 +234,5 @@ export function useOpenOrders(): UseOpenOrdersResult {
         applyDelta,
         seedFromDB,
         reset,
-    };
+    }), [state.orders, addOptimistic, ackAccepted, removeByOrderId, removeByCommandId, applyDelta, seedFromDB, reset]);
 }

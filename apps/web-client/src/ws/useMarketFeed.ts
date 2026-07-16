@@ -8,7 +8,7 @@ const MAX_DELAY_MS = 30_000
 export type FeedCallback = (event: WireEventEnvelope) => void
 
 export function useMarketFeed(
-    market: string,
+    market: string | string[],
     onEvent: FeedCallback,
     resumeFromEventId?: string): {
         registerCommandId: (commandId: string) => void
@@ -35,22 +35,23 @@ export function useMarketFeed(
         if (shouldStopRef.current) return
 
         const token = getStoredToken()
-        if (!token) {
-            reconnectTimerRef.current = setTimeout(connect, BASE_DELAY_MS)
-            return
-        }
-        const wsUrl = `${import.meta.env.VITE_WS_URL}?token=${encodeURIComponent(token)}`
+        const wsUrl = token 
+            ? `${import.meta.env.VITE_WS_URL}?token=${encodeURIComponent(token)}` 
+            : import.meta.env.VITE_WS_URL
         const ws = new WebSocket(wsUrl)
 
         wsRef.current = ws
 
         ws.onopen = (): void => {
             reconnectDelayRef.current = BASE_DELAY_MS
-            ws.send(JSON.stringify({
-                type: "subscribe",
-                market,
-                fromEventId: lastSeenEventIdRef.current
-            }))
+            const markets = Array.isArray(market) ? market : [market]
+            markets.forEach(m => {
+                ws.send(JSON.stringify({
+                    type: "subscribe",
+                    market: m,
+                    fromEventId: lastSeenEventIdRef.current
+                }))
+            })
         }
 
         ws.onmessage = (event: MessageEvent): void => {
@@ -99,10 +100,13 @@ export function useMarketFeed(
             const ws = wsRef.current
             if (ws !== null) {
                 if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({
-                        type: "unsubscribe",
-                        market
-                    }))
+                    const markets = Array.isArray(market) ? market : [market]
+                    markets.forEach(m => {
+                        ws.send(JSON.stringify({
+                            type: "unsubscribe",
+                            market: m
+                        }))
+                    })
                 }
                 ws.close()
                 wsRef.current = null
