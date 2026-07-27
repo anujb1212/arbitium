@@ -1,0 +1,128 @@
+services:
+  # ── Redis ──────────────────────────────────────────────────────
+  arbitium-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    command:
+      - redis-server
+      - --appendonly yes
+      - --appendfsync everysec
+      - --save ""
+      - --maxmemory 256mb
+      - --maxmemory-policy noeviction
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ── Web Client ────────────────────────────────────────────────
+  web-client:
+    image: arbitium-web-client:latest
+    restart: unless-stopped
+    mem_limit: 128m
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ── API Gateway ───────────────────────────────────────────────
+  api-gateway:
+    image: arbitium-api-gateway:latest
+    restart: unless-stopped
+    mem_limit: 512m
+    expose:
+      - "8080"
+    environment:
+      PORT: "8080"
+      REDIS_URL: redis://arbitium-redis:6379
+      MARKETS: ${MARKETS:-NVDA-INR,GOOGL-INR,AAPL-INR}
+      JWT_SECRET: ${JWT_SECRET}
+      VAULTLY_URL: ${VAULTLY_URL:-http://vaultly:3001}
+      BRIDGE_SECRET: ${BRIDGE_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── WS Gateway ────────────────────────────────────────────────
+  ws-gateway:
+    image: arbitium-ws-gateway:latest
+    restart: unless-stopped
+    mem_limit: 512m
+    expose:
+      - "8080"
+      - "8081"
+    environment:
+      WS_PORT: "8080"
+      HEALTH_PORT: "8081"
+      REDIS_URL: redis://arbitium-redis:6379
+      API_URL: http://api-gateway:8080
+      MARKETS: ${MARKETS:-NVDA-INR,GOOGL-INR,AAPL-INR}
+      JWT_SECRET: ${JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Matching Engine ──────────────────────────────────────────
+  engine:
+    image: arbitium-engine:latest
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      REDIS_URL: redis://arbitium-redis:6379
+      MARKETS: ${MARKETS:-NVDA-INR,GOOGL-INR,AAPL-INR}
+      SNAPSHOT_DIR: /data/snapshots
+      SNAPSHOT_EVERY_N_COMMANDS: "500"
+    volumes:
+      - engine-snapshots:/data/snapshots
+
+  # ── Data Service ──────────────────────────────────────────────
+  data-service:
+    image: arbitium-data-service:latest
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      REDIS_URL: redis://arbitium-redis:6379
+      MARKETS: ${MARKETS:-NVDA-INR,GOOGL-INR,AAPL-INR}
+      DATABASE_URL: ${DATABASE_URL}
+      HEALTH_PORT: "8082"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Market Maker ──────────────────────────────────────────────
+  market-maker:
+    image: arbitium-market-maker:latest
+    restart: unless-stopped
+    mem_limit: 256m
+    deploy:
+      replicas: 1
+    environment:
+      API_URL: http://api-gateway:8080
+      MARKETS: ${MARKETS:-NVDA-INR,GOOGL-INR,AAPL-INR}
+      MM_JWT_TOKEN: ${MM_JWT_TOKEN}
+      HALF_SPREAD: ${HALF_SPREAD:-5}
+      SPREAD_TICKS: ${SPREAD_TICKS:-5}
+      LEVELS: ${LEVELS:-8}
+      QTY_PER_LEVEL: ${QTY_PER_LEVEL:-200}
+      REFRESH_INTERVAL_MS: ${REFRESH_INTERVAL_MS:-5000}
+      BATCH_SIZE: ${BATCH_SIZE:-5}
+
+volumes:
+  redis-data:
+  engine-snapshots:

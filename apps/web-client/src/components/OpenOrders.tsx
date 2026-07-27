@@ -55,7 +55,7 @@ export function OpenOrders({ config, openOrders }: Props): React.JSX.Element {
                 <tbody className="divide-y divide-line/40">
                     {openOrders.map((order) => {
                         const canceling = cancelingIds.has(order.orderId)
-                        const canCancel = order.status === "OPEN" && !canceling
+                        const canCancel = (order.status === "OPEN" || order.status === "PARTIALLY_FILLED") && !canceling
                         return (
                             <tr key={order.orderId} className="hover:bg-raised/40 transition-colors group">
                                 <td className="px-5 py-2.5 font-mono text-[12px] text-mid group-hover:text-hi transition-colors">
@@ -76,8 +76,8 @@ export function OpenOrders({ config, openOrders }: Props): React.JSX.Element {
                                 </td>
                                 <td className="px-5 py-2.5">
                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm
-                                        ${order.status === "OPEN" ? "bg-bull/10 text-bull" : "bg-line text-mid"}`}>
-                                        {order.status === "OPEN" ? "Open" : "Pending"}
+                                        ${order.status === "OPEN" ? "bg-bull/10 text-bull" : order.status === "PARTIALLY_FILLED" ? "bg-accent/10 text-accent" : "bg-line text-mid"}`}>
+                                        {order.status === "OPEN" ? "Open" : order.status === "PARTIALLY_FILLED" ? "Part Filled" : "Pending"}
                                     </span>
                                 </td>
                                 <td className="px-5 py-2.5 text-right">

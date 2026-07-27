@@ -74,13 +74,17 @@ export async function handleMessage(
         return
     }
 
-    //register-command
+    //register-command — only authenticated users
     if (message.type === "register_command") {
+        if (session.userId === null) {
+            session.sendError("UNAUTHORIZED");
+            return;
+        }
         session.registerCommandId(message.commandId)
         return
     }
 
-    //unsubscribe
+    //unsubscribe — anonymous or authenticated, both allowed
     if (!session.isSubscribed(message.market)) return
 
     session.removeSubscription(message.market)
@@ -89,7 +93,7 @@ export async function handleMessage(
 
 export function parseKnownMarkets(rawMarkets: string | undefined): Set<string> {
     return new Set(
-        (rawMarkets ?? "TATA-INR,RELIANCE-INR,INFY-INR")
+        (rawMarkets ?? "NVDA-INR,GOOGL-INR,AAPL-INR,MSFT-INR,AMZN-INR,TSM-INR,AVGO-INR,META-INR")
             .split(",")
             .map((market) => market.trim())
             .filter((market) => market.length > 0)

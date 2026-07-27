@@ -1,7 +1,7 @@
+import "dotenv/config"
 import { RedisManager } from "@arbitium/ts-engine-client";
 import { runEngineForMarket } from "./runtime/runEngineForMarket";
 import type { MarketConfig } from "./runtime/types";
-import "dotenv/config"
 import {
     acquireMarketLock,
     generateInstanceId,
@@ -10,7 +10,7 @@ import {
 } from "./distributed/marketLock";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
-const MARKET_IDS = (process.env.MARKETS ?? "TATA-INR").split(",").map((m) => m.trim());
+const MARKET_IDS = (process.env.MARKETS ?? "NVDA-INR,GOOGL-INR,AAPL-INR,MSFT-INR,AMZN-INR,TSM-INR,AVGO-INR,META-INR").split(",").map((m) => m.trim());
 
 async function main(): Promise<void> {
     const redisManagers: RedisManager[] = []

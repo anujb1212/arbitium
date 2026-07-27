@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { isLoggedIn, redirectToVaultlyLogin, clearToken } from '../lib/auth'
+import { isLoggedIn, connectVaultly, clearToken } from '../lib/auth'
 import { fetchTradingBalance } from '../lib/apiClient'
 import { ConnectWalletModal } from './ConnectWalletModal'
+import { TransferModal } from './TransferModal'
 
 type WalletState =
     | { tag: 'disconnected' }
@@ -12,6 +13,8 @@ type Props = { onBonusGranted: () => void }
 export const WalletButton = React.memo(function WalletButton({ onBonusGranted }: Props): React.JSX.Element {
     const [walletState, setWalletState] = useState<WalletState>({ tag: 'disconnected' })
     const [modalOpen, setModalOpen] = useState(false)
+    const [transferOpen, setTransferOpen] = useState(false)
+    const [transferTab, setTransferTab] = useState<'deposit' | 'withdraw'>('deposit')
     const ref = useRef<HTMLDivElement>(null)
 
     const loadBalance = useCallback(async (isSilent = false) => {
@@ -33,16 +36,16 @@ export const WalletButton = React.memo(function WalletButton({ onBonusGranted }:
     useEffect(() => { loadBalance() }, [loadBalance])
 
     useEffect(() => {
-        const onFocus = () => loadBalance(true)
-        window.addEventListener('focus', onFocus)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') onFocus()
-        })
-        return () => {
-            window.removeEventListener('focus', onFocus)
-            document.removeEventListener('visibilitychange', onFocus)
-        }
-    }, [loadBalance])
+        const handleAuth = () => {
+            if (isLoggedIn()) {
+                loadBalance(true);
+            } else {
+                setWalletState({ tag: 'disconnected' });
+            }
+        };
+        window.addEventListener('arbitium:auth', handleAuth);
+        return () => window.removeEventListener('arbitium:auth', handleAuth);
+    }, [loadBalance]);
 
     useEffect(() => {
         function onOutside(e: MouseEvent): void { if (ref.current && !ref.current.contains(e.target as Node)) setWalletState(prev => prev.tag === 'connected' ? { ...prev, dropdownOpen: false } : prev) }
@@ -62,7 +65,7 @@ export const WalletButton = React.memo(function WalletButton({ onBonusGranted }:
                 {modalOpen && (
                     <ConnectWalletModal
                         onClose={() => setModalOpen(false)}
-                        onConnect={() => { setModalOpen(false); redirectToVaultlyLogin() }}
+                        onConnect={() => { setModalOpen(false); connectVaultly() }}
                     />
                 )}
             </div>
@@ -100,12 +103,31 @@ export const WalletButton = React.memo(function WalletButton({ onBonusGranted }:
                         </p>
                     </div>
                     <button
+                        onClick={() => { setWalletState(prev => prev.tag === 'connected' ? { ...prev, dropdownOpen: false } : prev); setTransferTab('deposit'); setTransferOpen(true); }}
+                        className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-bull hover:bg-bull/10 transition-colors"
+                    >
+                        Deposit
+                    </button>
+                    <button
+                        onClick={() => { setWalletState(prev => prev.tag === 'connected' ? { ...prev, dropdownOpen: false } : prev); setTransferTab('withdraw'); setTransferOpen(true); }}
+                        className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-bear hover:bg-bear/10 transition-colors"
+                    >
+                        Withdraw
+                    </button>
+                    <button
                         onClick={() => { clearToken(); setWalletState({ tag: 'disconnected' }) }}
                         className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-bear hover:bg-bear/10 transition-colors"
                     >
                         Disconnect
                     </button>
                 </div>
+            )}
+            {transferOpen && (
+                <TransferModal
+                    onClose={() => setTransferOpen(false)}
+                    initialTab={transferTab}
+                    availableBalance={walletState.tag === 'connected' ? walletState.availableBalance : 0n}
+                />
             )}
         </div>
     )

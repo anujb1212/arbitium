@@ -14,7 +14,7 @@ import type { CommandEnvelope } from "@arbitium/ts-shared/engine/types.js";
 import { requireAuth } from "../middleware/auth.js";
 import { resolveArbitiumUser } from "../middleware/resolveArbitiumUser.js";
 import type { ArbitriumUserRequest } from "../middleware/resolveArbitiumUser.js";
-import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, queryHoldingsByUser, releaseLockForOrder } from "@arbitium/db";
+import { prisma, lockBalanceForOrder, InsufficientBalanceError, queryOrderHistoryByUserAndMarket, queryFillsByUserAndMarket, lockBalanceForMarketOrder, releaseLockForOrder } from "@arbitium/db";
 import { createUserRateLimiter } from "../middleware/rateLimiter";
 
 export const ordersRouter = Router()
@@ -26,29 +26,11 @@ const cancelRateLimiter = createUserRateLimiter(40);
 const STREAM_PREFIX = "arbitium:cmd:"
 
 const KNOWN_MARKETS: Set<string> = new Set(
-    (process.env.MARKETS ?? "TATA-INR,RELIANCE-INR,INFY-INR")
+    (process.env.MARKETS ?? "NVDA-INR,GOOGL-INR,AAPL-INR,MSFT-INR,AMZN-INR,TSM-INR,AVGO-INR,META-INR")
         .split(",")
         .map((m) => m.trim())
         .filter((m) => m.length > 0)
 )
-
-async function fetchBestAskFromDepthCache(
-    market: string
-): Promise<bigint | null> {
-    try {
-        const depthJson = await getRedisClient().sendCommand([
-            "GET", `arbitium:depth:${market}`
-        ]) as string | null
-        if (!depthJson) return null;
-        const depth = JSON.parse(depthJson) as {
-            asks: Array<{ price: string; qty: string }>
-        };
-        const bestAsk = depth.asks[0]?.price;
-        return bestAsk ? BigInt(bestAsk) : null
-    } catch {
-        return null
-    }
-}
 
 ordersRouter.get("/", requireAuth, resolveArbitiumUser, async (req: Request, res: Response) => {
     const market = req.query["market"]
@@ -175,20 +157,6 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, placeMarketRateLi
         return
     }
 
-    let maxLockAmount: bigint | undefined = undefined;
-    if (side === "BUY") {
-        const bestAsk = await fetchBestAskFromDepthCache(market);
-        if (bestAsk !== null) {
-            const estimatedCost = bestAsk * qty;
-            const balance = await prisma.tradingBalance.findUnique({
-                where: { userId: arbitiumUserId },
-                select: { available: true }
-            });
-            const available = balance?.available ?? 0n;
-            maxLockAmount = estimatedCost < available ? estimatedCost : available;
-        }
-    }
-
     try {
         await lockBalanceForMarketOrder({
             prisma,
@@ -198,9 +166,7 @@ ordersRouter.post("/market", requireAuth, resolveArbitiumUser, placeMarketRateLi
             market,
             side,
             qty,
-            maxLockAmount
         });
-
     } catch (error) {
         if (error instanceof InsufficientBalanceError) {
             res.status(422).json({ error: (error as Error).message });

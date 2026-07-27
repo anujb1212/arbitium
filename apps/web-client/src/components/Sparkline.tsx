@@ -1,5 +1,5 @@
 import React from 'react'
-import { RecentTrade } from '../lib/apiClient'
+import type { SparklineCandle } from '../lib/apiClient'
 
 const SPARK_W = 96
 const SPARK_H = 32
@@ -18,16 +18,18 @@ function buildSparkPath(prices: number[]): string {
         .join(' ')
 }
 
-export type SparklineProps = { trades: RecentTrade[]; positive: boolean }
+export type SparklineProps = { candles: SparklineCandle[] | null; positive: boolean }
 
-const Sparkline = React.memo(function Sparkline({ trades, positive }: SparklineProps): React.JSX.Element | null {
-    if (trades.length < 2) return (
+const Sparkline = React.memo(function Sparkline({ candles, positive }: SparklineProps): React.JSX.Element | null {
+    const prices = candles?.map((c) => Number(c.close)) ?? []
+    if (prices.length < 2) return (
         <div style={{ width: SPARK_W, height: SPARK_H }} className="flex items-center justify-center">
-            <span className="text-[10px] text-lo">-</span>
+            <svg width={SPARK_W} height={SPARK_H} viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} className="opacity-20">
+                <line x1="12" y1={SPARK_H / 2} x2={SPARK_W - 12} y2={SPARK_H / 2} stroke="#6b7280" strokeWidth="1" strokeDasharray="3 3" />
+            </svg>
         </div>
     )
 
-    const prices = trades.map((t) => Number(t.price))
     const path = buildSparkPath(prices)
     const color = positive ? '#00c278' : '#FF4D4F'
     const shadowColor = positive ? 'rgba(0, 194, 120, 0.4)' : 'rgba(255, 77, 79, 0.4)'

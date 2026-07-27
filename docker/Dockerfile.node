@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+# Build args:
+#   APP - service name (api-gateway | engine-ts | ws-gateway | data-service | market-maker)
+# Example: docker build -f docker/Dockerfile.node --build-arg APP=api-gateway -t arbitium-api-gateway .
+#
+# Services and their workspace deps:
+#   api-gateway  → db, ts-engine-client, ts-shared
+#   engine-ts   → ts-engine-client, ts-shared
+#   ws-gateway  → ts-engine-client, ts-shared
+#   data-service → db, ts-engine-client, ts-shared
+#   market-maker → (none)
+
+FROM node:22-slim AS builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY apps apps/
+COPY libs libs/
+COPY services services/
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @arbitium/db exec prisma generate
+
+FROM builder AS runtime
+ARG APP
+ENV NODE_ENV=production
+CMD pnpm --filter "@arbitium/${APP}" exec tsx src/index.ts

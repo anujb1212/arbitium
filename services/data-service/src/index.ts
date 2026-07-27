@@ -9,7 +9,7 @@ import { createServer } from "http";
 import { prisma } from "@arbitium/db";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
-const MARKETS = (process.env.MARKETS ?? "TATA-INR,RELIANCE-INR,INFY-INR").split(",");
+const MARKETS = (process.env.MARKETS ?? "NVDA-INR,GOOGL-INR,AAPL-INR,MSFT-INR,AMZN-INR,TSM-INR,AVGO-INR,META-INR").split(",");
 const CONSUMER_GROUP = "db";
 const CONSUMER_NAME = `data-service-${process.pid}`;
 const STREAM_PREFIX = "arbitium:evt:";

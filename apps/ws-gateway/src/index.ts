@@ -48,18 +48,18 @@ async function main(): Promise<void> {
         const requestUrl = new URL(request.url ?? "", `http://localhost`);
         const token = requestUrl.searchParams.get("token");
 
-        if (!token) {
-            socket.close(4001, "Unauthorized");
-            return;
+        let userId: string | null = null;
+
+        if (token) {
+            const verified = verifyConnectionToken(token);
+            if (!verified) {
+                socket.close(4001, "Unauthorized");
+                return;
+            }
+            userId = verified.userId;
         }
 
-        const verified = verifyConnectionToken(token);
-        if (!verified) {
-            socket.close(4001, "Unauthorized");
-            return;
-        }
-
-        const session = new ClientSession(socket, verified.userId);
+        const session = new ClientSession(socket, userId);
         socket.on("message", (data) => {
             handleMessage(data.toString(), session, feedManager).catch((err) => {
                 console.error("[WS] handleMessage error:", err)

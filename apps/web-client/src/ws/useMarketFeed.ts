@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { WireEventEnvelope, WsServerMessage } from "../types/wire";
-import { getStoredToken } from "../lib/auth";
+import { getStoredToken, clearToken } from "../lib/auth";
 
 const BASE_DELAY_MS = 500
 const MAX_DELAY_MS = 30_000
@@ -74,8 +74,12 @@ export function useMarketFeed(
 
         ws.onclose = (event: CloseEvent): void => {
             if (event.code === 4001) {
-                console.error("[ws] auth rejected — token invalid or expired")
-                return
+                console.warn("[ws] auth rejected — token invalid or expired, reconnecting anonymously");
+                clearToken();
+                window.dispatchEvent(new Event("arbitium:auth"));
+                reconnectDelayRef.current = BASE_DELAY_MS;
+                reconnectTimerRef.current = setTimeout(connect, BASE_DELAY_MS);
+                return;
             }
             if (shouldStopRef.current) return
             const delay = reconnectDelayRef.current

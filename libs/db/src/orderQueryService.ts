@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "../generated/prisma";
+import { queryAssetBalancesByUser } from "./assetBalanceService";
 
 export interface FillDTO {
     id: string;
@@ -24,6 +25,8 @@ export interface OrderHistoryDTO {
 export interface HoldingDTO {
     asset: string;
     market: string;
+    availableQty: string;
+    lockedQty: string;
     netQty: string;
     avgBuyPrice: string;
 }
@@ -35,8 +38,15 @@ export async function queryHoldingsByUser({
     prisma: PrismaClient | Prisma.TransactionClient;
     userId: string;
 }): Promise<HoldingDTO[]> {
+    const balances = await queryAssetBalancesByUser(prisma, userId);
+
+    if (balances.length === 0) return [];
+
+    const markets = balances.map((b) => b.market);
+
     const trades = await prisma.trade.findMany({
         where: {
+            market: { in: markets },
             OR: [
                 { makerOrder: { userId } },
                 { takerOrder: { userId } },
@@ -48,8 +58,8 @@ export async function queryHoldingsByUser({
         },
     });
 
-    type Accumulator = { netQty: bigint; totalBuyCost: bigint; totalBuyQty: bigint };
-    const byMarket = new Map<string, Accumulator>();
+    type Acc = { totalBuyCost: bigint; totalBuyQty: bigint };
+    const buyStats = new Map<string, Acc>();
 
     for (const trade of trades) {
         const isTaker = trade.takerOrder.userId === userId;
@@ -57,33 +67,27 @@ export async function queryHoldingsByUser({
             ? trade.takerSide
             : trade.takerSide === "BUY" ? "SELL" : "BUY";
 
-        const acc = byMarket.get(trade.market) ?? { netQty: 0n, totalBuyCost: 0n, totalBuyQty: 0n };
-
         if (userSide === "BUY") {
-            acc.netQty += trade.qty;
+            const acc = buyStats.get(trade.market) ?? { totalBuyCost: 0n, totalBuyQty: 0n };
             acc.totalBuyCost += trade.price * trade.qty;
             acc.totalBuyQty += trade.qty;
-        } else {
-            acc.netQty -= trade.qty;
+            buyStats.set(trade.market, acc);
         }
-
-        byMarket.set(trade.market, acc);
     }
 
-    const holdings: HoldingDTO[] = [];
-    for (const [market, acc] of byMarket.entries()) {
-        if (acc.netQty <= 0n) continue;
-        holdings.push({
-            asset: market.split("-")[0] ?? market,
-            market,
-            netQty: acc.netQty.toString(),
-            avgBuyPrice: acc.totalBuyQty > 0n
-                ? (acc.totalBuyCost / acc.totalBuyQty).toString()
+    return balances.map((b) => {
+        const stats = buyStats.get(b.market);
+        return {
+            asset: b.asset,
+            market: b.market,
+            availableQty: b.available.toString(),
+            lockedQty: b.locked.toString(),
+            netQty: (b.available + b.locked).toString(),
+            avgBuyPrice: stats && stats.totalBuyQty > 0n
+                ? (stats.totalBuyCost / stats.totalBuyQty).toString()
                 : "0",
-        });
-    }
-
-    return holdings;
+        };
+    });
 }
 
 export async function queryFillsByUserAndMarket({

@@ -36,7 +36,7 @@ const DEFAULT_MID_PRICE_BY_MARKET: Record<string, string> = {
     "ADI-INR": "22500",
 };
 
-export const MARKETS = (process.env.MARKETS ?? "NVDA-INR,GOOGL-INR,AAPL-INR").split(",").map((m) => m.trim()).filter(Boolean);
+export const MARKETS = (process.env.MARKETS ?? "NVDA-INR,GOOGL-INR,AAPL-INR,MSFT-INR,AMZN-INR,TSM-INR,AVGO-INR,META-INR").split(",").map((m) => m.trim()).filter(Boolean);
 
 export function getMidPrice(market: string): bigint {
     const envKey = midPriceEnvKey(market);

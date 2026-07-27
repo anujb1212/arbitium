@@ -148,9 +148,13 @@ export function Chart({ trades, lastTradePrice, config }: Props): React.JSX.Elem
         const price = toScaledPrice(latestTrade.price, config.priceScale)
         const previous = lastCandleRef.current
 
-        const nextCandle: CandlestickData = previous === null || previous.time !== intervalTs
-            ? { time: intervalTs, open: price, high: price, low: price, close: price }
-            : { ...previous, high: Math.max(previous.high, price), low: Math.min(previous.low, price), close: price }
+        let nextCandle: CandlestickData
+        if (previous === null || previous.time !== intervalTs) {
+            const openPrice = previous?.close ?? price
+            nextCandle = { time: intervalTs, open: openPrice, high: Math.max(openPrice, price), low: Math.min(openPrice, price), close: price }
+        } else {
+            nextCandle = { ...previous, high: Math.max(previous.high, price), low: Math.min(previous.low, price), close: price }
+        }
 
         seriesRef.current.update(nextCandle)
         lastCandleRef.current = nextCandle

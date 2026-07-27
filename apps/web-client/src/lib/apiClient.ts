@@ -9,6 +9,14 @@ export type KlineBar = {
     volume: string; tradeCount: number;
 };
 
+export type SparklineCandle = {
+    time: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+};
+
 export type DepthSnapshot = {
     bids: Array<{ price: string; qty: string }>;
     asks: Array<{ price: string; qty: string }>;
@@ -65,6 +73,8 @@ export type OrderHistoryDTO = {
 export type HoldingDTO = {
     asset: string;
     market: string;
+    availableQty: string;
+    lockedQty: string;
     netQty: string;
     avgBuyPrice: string;
 }
@@ -96,6 +106,33 @@ export async function fetchKlines(params: {
     });
     const res = await fetch(`${API_URL}/market/klines?${qs}`);
     return handleResponse<KlineBar[]>(res);
+}
+
+export async function fetchSparkline(params: {
+    market: string;
+    from: number;
+    to: number;
+}): Promise<{ market: string; resolution: string; candles: SparklineCandle[] }> {
+    const qs = new URLSearchParams({
+        market: params.market,
+        from: String(params.from),
+        to: String(params.to),
+    });
+    const res = await fetch(`${API_URL}/market/sparkline?${qs}`);
+    return handleResponse<{ market: string; resolution: string; candles: SparklineCandle[] }>(res);
+}
+
+export async function fetchBatchSparklines(params: {
+    markets: string[];
+    from: number;
+    to: number;
+}): Promise<{ sparklines: Record<string, SparklineCandle[]> }> {
+    const res = await fetch(`${API_URL}/market/sparklines`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+    });
+    return handleResponse<{ sparklines: Record<string, SparklineCandle[]> }>(res);
 }
 
 export async function fetchRecentTrades(market: string): Promise<RecentTrade[]> {
@@ -147,30 +184,6 @@ export async function cancelOrder(params: {
     return handleResponse<{ commandId: string }>(res);
 }
 
-export async function depositFunds(params: {
-    amountInPaise: string;
-    idempotencyKey: string;
-}): Promise<{ transferId: string; status: string }> {
-    const res = await fetch(`${API_URL}/transfers/deposit`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(params),
-    });
-    return handleResponse<{ transferId: string; status: string }>(res);
-}
-
-export async function withdrawFunds(params: {
-    amountInPaise: string;
-    idempotencyKey: string;
-}): Promise<{ transferId: string; status: string }> {
-    const res = await fetch(`${API_URL}/transfers/withdraw`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(params),
-    });
-    return handleResponse<{ transferId: string; status: string }>(res);
-}
-
 export async function fetchTradingBalance(): Promise<{
     available: string;
     locked: string;
@@ -218,4 +231,53 @@ export async function placeMarketOrder(params: {
         body: JSON.stringify(params),
     })
     return handleResponse<{ commandId: string }>(res)
+}
+
+export type TransferResult = {
+    transferId: string
+    status: "PENDING" | "COMPLETED" | "FAILED" | "ROLLBACK_PENDING"
+}
+
+export type TransferHistoryRow = {
+    id: string
+    direction: "DEPOSIT" | "WITHDRAW"
+    amountInPaise: string
+    status: string
+    createdAt: string
+}
+
+export async function depositFunds(params: {
+    amountInPaise: string
+    idempotencyKey: string
+}): Promise<TransferResult> {
+    const res = await fetch(`${API_URL}/transfers/deposit`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(params),
+    })
+    const data = await handleResponse<any>(res)
+    if (res.status === 202) return data as TransferResult
+    return data as TransferResult
+}
+
+export async function withdrawFunds(params: {
+    amountInPaise: string
+    idempotencyKey: string
+}): Promise<TransferResult> {
+    const res = await fetch(`${API_URL}/transfers/withdraw`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(params),
+    })
+    const data = await handleResponse<any>(res)
+    if (res.status === 202) return data as TransferResult
+    return data as TransferResult
+}
+
+export async function fetchTransferHistory(): Promise<TransferHistoryRow[]> {
+    const res = await fetch(`${API_URL}/transfers/history`, {
+        headers: getAuthHeaders(),
+    })
+    const data = await handleResponse<{ transfers: TransferHistoryRow[] }>(res)
+    return data.transfers
 }

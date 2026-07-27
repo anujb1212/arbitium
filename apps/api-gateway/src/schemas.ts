@@ -67,6 +67,18 @@ export const PlaceMarketBodySchema = z.object({
     qty: decimalBigintString,
 });
 
+export const SparklineQuerySchema = z.object({
+    market: z.string().min(1),
+    from: z.coerce.number().int().positive(),
+    to: z.coerce.number().int().positive(),
+});
+
+export const BatchSparklineBodySchema = z.object({
+    markets: z.array(z.string().min(1)).min(1).max(30),
+    from: z.number().int().positive(),
+    to: z.number().int().positive(),
+});
+
 export type PlaceLimitBody = z.infer<typeof PlaceLimitBodySchema>
 export type CancelParams = z.infer<typeof CancelParamsSchema>
 export type CancelBody = z.infer<typeof CancelBodySchema>

@@ -56,6 +56,7 @@ model User {
     welcomeBonusCredited Boolean  @default(false)
 
     tradingBalance TradingBalance?
+    assetBalances  AssetBalance[]
     orders         Order[]
     transfers      BalanceTransfer[]
 
@@ -73,6 +74,24 @@ model TradingBalance {
     updatedAt DateTime @updatedAt
 
     @@index([userId])
+}
+
+model AssetBalance {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    market String
+    asset  String
+
+    available BigInt @default(0)
+    locked    BigInt @default(0)
+
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, market])
+    @@index([userId])
+    @@index([market])
 }
 
 model Order {
@@ -137,33 +156,45 @@ model BalanceTransfer {
 
     idempotencyKey String  @unique
     vaultlyRef     String?
+    attempts       Int      @default(0)
+    lastAttemptAt  DateTime?
 
     createdAt  DateTime  @default(now())
     resolvedAt DateTime?
 
     @@index([userId, direction])
     @@index([idempotencyKey])
+    @@index([status, attempts])
 }
 
 model Kline {
-    id       String        @id @default(cuid())
-    market   String
-    interval KlineInterval
-
-    openTime  DateTime
-    closeTime DateTime
-
-    open   BigInt
-    high   BigInt
-    low    BigInt
-    close  BigInt
-    volume BigInt
-
+    market     String
+    interval   KlineInterval
+    openTime   DateTime
+    closeTime  DateTime
+    open       BigInt
+    high       BigInt
+    low        BigInt
+    close      BigInt
+    volume     BigInt
     tradeCount Int @default(0)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([market, interval, openTime])
+    @@id([market, interval, openTime])
     @@index([market, interval, openTime])
+}
+
+model Candle {
+    market     String
+    resolution String   // '1m', '5m', '15m', '1h'
+    openTime   DateTime
+    closeTime  DateTime
+    open       BigInt
+    high       BigInt
+    low        BigInt
+    close      BigInt
+    volume     BigInt   @default(0)
+    tradeCount Int      @default(0)
+
+    @@id([market, resolution, openTime])
+    @@index([market, resolution, openTime])
 }

@@ -9,7 +9,12 @@ const BookRow = React.memo(function BookRow({ level, side, config }: RowProps): 
     return (
         <div className="relative grid grid-cols-3 h-[22px] px-4 items-center hover:bg-raised transition-colors cursor-default group">
             <div
-                className={`absolute inset-y-0 right-0 pointer-events-none transition-all duration-200
+                className={`absolute inset-y-0 right-0 pointer-events-none
+                    ${side === 'BUY' ? 'bg-bull/5' : 'bg-bear/5'}`}
+                style={{ width: `${level.actualPct}%` }}
+            />
+            <div
+                className={`absolute inset-y-0 right-0 pointer-events-none
                     ${side === 'BUY' ? 'bg-bull/10' : 'bg-bear/10'}`}
                 style={{ width: `${level.depthPct}%` }}
             />

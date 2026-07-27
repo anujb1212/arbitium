@@ -24,6 +24,11 @@ export type User = $Result.DefaultSelection<Prisma.$UserPayload>
  */
 export type TradingBalance = $Result.DefaultSelection<Prisma.$TradingBalancePayload>
 /**
+ * Model AssetBalance
+ * 
+ */
+export type AssetBalance = $Result.DefaultSelection<Prisma.$AssetBalancePayload>
+/**
  * Model Order
  * 
  */
@@ -43,6 +48,11 @@ export type BalanceTransfer = $Result.DefaultSelection<Prisma.$BalanceTransferPa
  * 
  */
 export type Kline = $Result.DefaultSelection<Prisma.$KlinePayload>
+/**
+ * Model Candle
+ * 
+ */
+export type Candle = $Result.DefaultSelection<Prisma.$CandlePayload>
 
 /**
  * Enums
@@ -269,6 +279,16 @@ export class PrismaClient<
   get tradingBalance(): Prisma.TradingBalanceDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.assetBalance`: Exposes CRUD operations for the **AssetBalance** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AssetBalances
+    * const assetBalances = await prisma.assetBalance.findMany()
+    * ```
+    */
+  get assetBalance(): Prisma.AssetBalanceDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.order`: Exposes CRUD operations for the **Order** model.
     * Example usage:
     * ```ts
@@ -307,6 +327,16 @@ export class PrismaClient<
     * ```
     */
   get kline(): Prisma.KlineDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.candle`: Exposes CRUD operations for the **Candle** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Candles
+    * const candles = await prisma.candle.findMany()
+    * ```
+    */
+  get candle(): Prisma.CandleDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -750,10 +780,12 @@ export namespace Prisma {
   export const ModelName: {
     User: 'User',
     TradingBalance: 'TradingBalance',
+    AssetBalance: 'AssetBalance',
     Order: 'Order',
     Trade: 'Trade',
     BalanceTransfer: 'BalanceTransfer',
-    Kline: 'Kline'
+    Kline: 'Kline',
+    Candle: 'Candle'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -772,7 +804,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "tradingBalance" | "order" | "trade" | "balanceTransfer" | "kline"
+      modelProps: "user" | "tradingBalance" | "assetBalance" | "order" | "trade" | "balanceTransfer" | "kline" | "candle"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -921,6 +953,80 @@ export namespace Prisma {
           count: {
             args: Prisma.TradingBalanceCountArgs<ExtArgs>
             result: $Utils.Optional<TradingBalanceCountAggregateOutputType> | number
+          }
+        }
+      }
+      AssetBalance: {
+        payload: Prisma.$AssetBalancePayload<ExtArgs>
+        fields: Prisma.AssetBalanceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AssetBalanceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AssetBalanceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          findFirst: {
+            args: Prisma.AssetBalanceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AssetBalanceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          findMany: {
+            args: Prisma.AssetBalanceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>[]
+          }
+          create: {
+            args: Prisma.AssetBalanceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          createMany: {
+            args: Prisma.AssetBalanceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.AssetBalanceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>[]
+          }
+          delete: {
+            args: Prisma.AssetBalanceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          update: {
+            args: Prisma.AssetBalanceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          deleteMany: {
+            args: Prisma.AssetBalanceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AssetBalanceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.AssetBalanceUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>[]
+          }
+          upsert: {
+            args: Prisma.AssetBalanceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AssetBalancePayload>
+          }
+          aggregate: {
+            args: Prisma.AssetBalanceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAssetBalance>
+          }
+          groupBy: {
+            args: Prisma.AssetBalanceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AssetBalanceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AssetBalanceCountArgs<ExtArgs>
+            result: $Utils.Optional<AssetBalanceCountAggregateOutputType> | number
           }
         }
       }
@@ -1220,6 +1326,80 @@ export namespace Prisma {
           }
         }
       }
+      Candle: {
+        payload: Prisma.$CandlePayload<ExtArgs>
+        fields: Prisma.CandleFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CandleFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CandleFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          findFirst: {
+            args: Prisma.CandleFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CandleFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          findMany: {
+            args: Prisma.CandleFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>[]
+          }
+          create: {
+            args: Prisma.CandleCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          createMany: {
+            args: Prisma.CandleCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CandleCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>[]
+          }
+          delete: {
+            args: Prisma.CandleDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          update: {
+            args: Prisma.CandleUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          deleteMany: {
+            args: Prisma.CandleDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CandleUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.CandleUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>[]
+          }
+          upsert: {
+            args: Prisma.CandleUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CandlePayload>
+          }
+          aggregate: {
+            args: Prisma.CandleAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCandle>
+          }
+          groupBy: {
+            args: Prisma.CandleGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CandleGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CandleCountArgs<ExtArgs>
+            result: $Utils.Optional<CandleCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1318,10 +1498,12 @@ export namespace Prisma {
   export type GlobalOmitConfig = {
     user?: UserOmit
     tradingBalance?: TradingBalanceOmit
+    assetBalance?: AssetBalanceOmit
     order?: OrderOmit
     trade?: TradeOmit
     balanceTransfer?: BalanceTransferOmit
     kline?: KlineOmit
+    candle?: CandleOmit
   }
 
   /* Types for Logging */
@@ -1402,11 +1584,13 @@ export namespace Prisma {
    */
 
   export type UserCountOutputType = {
+    assetBalances: number
     orders: number
     transfers: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    assetBalances?: boolean | UserCountOutputTypeCountAssetBalancesArgs
     orders?: boolean | UserCountOutputTypeCountOrdersArgs
     transfers?: boolean | UserCountOutputTypeCountTransfersArgs
   }
@@ -1420,6 +1604,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the UserCountOutputType
      */
     select?: UserCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountAssetBalancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AssetBalanceWhereInput
   }
 
   /**
@@ -1654,6 +1845,7 @@ export namespace Prisma {
     updatedAt?: boolean
     welcomeBonusCredited?: boolean
     tradingBalance?: boolean | User$tradingBalanceArgs<ExtArgs>
+    assetBalances?: boolean | User$assetBalancesArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     transfers?: boolean | User$transfersArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -1689,6 +1881,7 @@ export namespace Prisma {
   export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vaultlyUserId" | "email" | "createdAt" | "updatedAt" | "welcomeBonusCredited", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tradingBalance?: boolean | User$tradingBalanceArgs<ExtArgs>
+    assetBalances?: boolean | User$assetBalancesArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     transfers?: boolean | User$transfersArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -1700,6 +1893,7 @@ export namespace Prisma {
     name: "User"
     objects: {
       tradingBalance: Prisma.$TradingBalancePayload<ExtArgs> | null
+      assetBalances: Prisma.$AssetBalancePayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
       transfers: Prisma.$BalanceTransferPayload<ExtArgs>[]
     }
@@ -2105,6 +2299,7 @@ export namespace Prisma {
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     tradingBalance<T extends User$tradingBalanceArgs<ExtArgs> = {}>(args?: Subset<T, User$tradingBalanceArgs<ExtArgs>>): Prisma__TradingBalanceClient<$Result.GetResult<Prisma.$TradingBalancePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    assetBalances<T extends User$assetBalancesArgs<ExtArgs> = {}>(args?: Subset<T, User$assetBalancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends User$ordersArgs<ExtArgs> = {}>(args?: Subset<T, User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     transfers<T extends User$transfersArgs<ExtArgs> = {}>(args?: Subset<T, User$transfersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BalanceTransferPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -2546,6 +2741,30 @@ export namespace Prisma {
      */
     include?: TradingBalanceInclude<ExtArgs> | null
     where?: TradingBalanceWhereInput
+  }
+
+  /**
+   * User.assetBalances
+   */
+  export type User$assetBalancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    where?: AssetBalanceWhereInput
+    orderBy?: AssetBalanceOrderByWithRelationInput | AssetBalanceOrderByWithRelationInput[]
+    cursor?: AssetBalanceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AssetBalanceScalarFieldEnum | AssetBalanceScalarFieldEnum[]
   }
 
   /**
@@ -3708,6 +3927,1128 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: TradingBalanceInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model AssetBalance
+   */
+
+  export type AggregateAssetBalance = {
+    _count: AssetBalanceCountAggregateOutputType | null
+    _avg: AssetBalanceAvgAggregateOutputType | null
+    _sum: AssetBalanceSumAggregateOutputType | null
+    _min: AssetBalanceMinAggregateOutputType | null
+    _max: AssetBalanceMaxAggregateOutputType | null
+  }
+
+  export type AssetBalanceAvgAggregateOutputType = {
+    available: number | null
+    locked: number | null
+  }
+
+  export type AssetBalanceSumAggregateOutputType = {
+    available: bigint | null
+    locked: bigint | null
+  }
+
+  export type AssetBalanceMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    market: string | null
+    asset: string | null
+    available: bigint | null
+    locked: bigint | null
+    updatedAt: Date | null
+  }
+
+  export type AssetBalanceMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    market: string | null
+    asset: string | null
+    available: bigint | null
+    locked: bigint | null
+    updatedAt: Date | null
+  }
+
+  export type AssetBalanceCountAggregateOutputType = {
+    id: number
+    userId: number
+    market: number
+    asset: number
+    available: number
+    locked: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type AssetBalanceAvgAggregateInputType = {
+    available?: true
+    locked?: true
+  }
+
+  export type AssetBalanceSumAggregateInputType = {
+    available?: true
+    locked?: true
+  }
+
+  export type AssetBalanceMinAggregateInputType = {
+    id?: true
+    userId?: true
+    market?: true
+    asset?: true
+    available?: true
+    locked?: true
+    updatedAt?: true
+  }
+
+  export type AssetBalanceMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    market?: true
+    asset?: true
+    available?: true
+    locked?: true
+    updatedAt?: true
+  }
+
+  export type AssetBalanceCountAggregateInputType = {
+    id?: true
+    userId?: true
+    market?: true
+    asset?: true
+    available?: true
+    locked?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type AssetBalanceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AssetBalance to aggregate.
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AssetBalances to fetch.
+     */
+    orderBy?: AssetBalanceOrderByWithRelationInput | AssetBalanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AssetBalanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AssetBalances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AssetBalances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AssetBalances
+    **/
+    _count?: true | AssetBalanceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AssetBalanceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AssetBalanceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AssetBalanceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AssetBalanceMaxAggregateInputType
+  }
+
+  export type GetAssetBalanceAggregateType<T extends AssetBalanceAggregateArgs> = {
+        [P in keyof T & keyof AggregateAssetBalance]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAssetBalance[P]>
+      : GetScalarType<T[P], AggregateAssetBalance[P]>
+  }
+
+
+
+
+  export type AssetBalanceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AssetBalanceWhereInput
+    orderBy?: AssetBalanceOrderByWithAggregationInput | AssetBalanceOrderByWithAggregationInput[]
+    by: AssetBalanceScalarFieldEnum[] | AssetBalanceScalarFieldEnum
+    having?: AssetBalanceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AssetBalanceCountAggregateInputType | true
+    _avg?: AssetBalanceAvgAggregateInputType
+    _sum?: AssetBalanceSumAggregateInputType
+    _min?: AssetBalanceMinAggregateInputType
+    _max?: AssetBalanceMaxAggregateInputType
+  }
+
+  export type AssetBalanceGroupByOutputType = {
+    id: string
+    userId: string
+    market: string
+    asset: string
+    available: bigint
+    locked: bigint
+    updatedAt: Date
+    _count: AssetBalanceCountAggregateOutputType | null
+    _avg: AssetBalanceAvgAggregateOutputType | null
+    _sum: AssetBalanceSumAggregateOutputType | null
+    _min: AssetBalanceMinAggregateOutputType | null
+    _max: AssetBalanceMaxAggregateOutputType | null
+  }
+
+  type GetAssetBalanceGroupByPayload<T extends AssetBalanceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AssetBalanceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AssetBalanceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AssetBalanceGroupByOutputType[P]>
+            : GetScalarType<T[P], AssetBalanceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AssetBalanceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    market?: boolean
+    asset?: boolean
+    available?: boolean
+    locked?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["assetBalance"]>
+
+  export type AssetBalanceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    market?: boolean
+    asset?: boolean
+    available?: boolean
+    locked?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["assetBalance"]>
+
+  export type AssetBalanceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    market?: boolean
+    asset?: boolean
+    available?: boolean
+    locked?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["assetBalance"]>
+
+  export type AssetBalanceSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    market?: boolean
+    asset?: boolean
+    available?: boolean
+    locked?: boolean
+    updatedAt?: boolean
+  }
+
+  export type AssetBalanceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "market" | "asset" | "available" | "locked" | "updatedAt", ExtArgs["result"]["assetBalance"]>
+  export type AssetBalanceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type AssetBalanceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type AssetBalanceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $AssetBalancePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AssetBalance"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      market: string
+      asset: string
+      available: bigint
+      locked: bigint
+      updatedAt: Date
+    }, ExtArgs["result"]["assetBalance"]>
+    composites: {}
+  }
+
+  type AssetBalanceGetPayload<S extends boolean | null | undefined | AssetBalanceDefaultArgs> = $Result.GetResult<Prisma.$AssetBalancePayload, S>
+
+  type AssetBalanceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AssetBalanceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AssetBalanceCountAggregateInputType | true
+    }
+
+  export interface AssetBalanceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AssetBalance'], meta: { name: 'AssetBalance' } }
+    /**
+     * Find zero or one AssetBalance that matches the filter.
+     * @param {AssetBalanceFindUniqueArgs} args - Arguments to find a AssetBalance
+     * @example
+     * // Get one AssetBalance
+     * const assetBalance = await prisma.assetBalance.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AssetBalanceFindUniqueArgs>(args: SelectSubset<T, AssetBalanceFindUniqueArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one AssetBalance that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AssetBalanceFindUniqueOrThrowArgs} args - Arguments to find a AssetBalance
+     * @example
+     * // Get one AssetBalance
+     * const assetBalance = await prisma.assetBalance.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AssetBalanceFindUniqueOrThrowArgs>(args: SelectSubset<T, AssetBalanceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AssetBalance that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceFindFirstArgs} args - Arguments to find a AssetBalance
+     * @example
+     * // Get one AssetBalance
+     * const assetBalance = await prisma.assetBalance.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AssetBalanceFindFirstArgs>(args?: SelectSubset<T, AssetBalanceFindFirstArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AssetBalance that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceFindFirstOrThrowArgs} args - Arguments to find a AssetBalance
+     * @example
+     * // Get one AssetBalance
+     * const assetBalance = await prisma.assetBalance.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AssetBalanceFindFirstOrThrowArgs>(args?: SelectSubset<T, AssetBalanceFindFirstOrThrowArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more AssetBalances that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AssetBalances
+     * const assetBalances = await prisma.assetBalance.findMany()
+     * 
+     * // Get first 10 AssetBalances
+     * const assetBalances = await prisma.assetBalance.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const assetBalanceWithIdOnly = await prisma.assetBalance.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AssetBalanceFindManyArgs>(args?: SelectSubset<T, AssetBalanceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a AssetBalance.
+     * @param {AssetBalanceCreateArgs} args - Arguments to create a AssetBalance.
+     * @example
+     * // Create one AssetBalance
+     * const AssetBalance = await prisma.assetBalance.create({
+     *   data: {
+     *     // ... data to create a AssetBalance
+     *   }
+     * })
+     * 
+     */
+    create<T extends AssetBalanceCreateArgs>(args: SelectSubset<T, AssetBalanceCreateArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many AssetBalances.
+     * @param {AssetBalanceCreateManyArgs} args - Arguments to create many AssetBalances.
+     * @example
+     * // Create many AssetBalances
+     * const assetBalance = await prisma.assetBalance.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AssetBalanceCreateManyArgs>(args?: SelectSubset<T, AssetBalanceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many AssetBalances and returns the data saved in the database.
+     * @param {AssetBalanceCreateManyAndReturnArgs} args - Arguments to create many AssetBalances.
+     * @example
+     * // Create many AssetBalances
+     * const assetBalance = await prisma.assetBalance.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many AssetBalances and only return the `id`
+     * const assetBalanceWithIdOnly = await prisma.assetBalance.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends AssetBalanceCreateManyAndReturnArgs>(args?: SelectSubset<T, AssetBalanceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a AssetBalance.
+     * @param {AssetBalanceDeleteArgs} args - Arguments to delete one AssetBalance.
+     * @example
+     * // Delete one AssetBalance
+     * const AssetBalance = await prisma.assetBalance.delete({
+     *   where: {
+     *     // ... filter to delete one AssetBalance
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AssetBalanceDeleteArgs>(args: SelectSubset<T, AssetBalanceDeleteArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one AssetBalance.
+     * @param {AssetBalanceUpdateArgs} args - Arguments to update one AssetBalance.
+     * @example
+     * // Update one AssetBalance
+     * const assetBalance = await prisma.assetBalance.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AssetBalanceUpdateArgs>(args: SelectSubset<T, AssetBalanceUpdateArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more AssetBalances.
+     * @param {AssetBalanceDeleteManyArgs} args - Arguments to filter AssetBalances to delete.
+     * @example
+     * // Delete a few AssetBalances
+     * const { count } = await prisma.assetBalance.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AssetBalanceDeleteManyArgs>(args?: SelectSubset<T, AssetBalanceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AssetBalances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AssetBalances
+     * const assetBalance = await prisma.assetBalance.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AssetBalanceUpdateManyArgs>(args: SelectSubset<T, AssetBalanceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AssetBalances and returns the data updated in the database.
+     * @param {AssetBalanceUpdateManyAndReturnArgs} args - Arguments to update many AssetBalances.
+     * @example
+     * // Update many AssetBalances
+     * const assetBalance = await prisma.assetBalance.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more AssetBalances and only return the `id`
+     * const assetBalanceWithIdOnly = await prisma.assetBalance.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends AssetBalanceUpdateManyAndReturnArgs>(args: SelectSubset<T, AssetBalanceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one AssetBalance.
+     * @param {AssetBalanceUpsertArgs} args - Arguments to update or create a AssetBalance.
+     * @example
+     * // Update or create a AssetBalance
+     * const assetBalance = await prisma.assetBalance.upsert({
+     *   create: {
+     *     // ... data to create a AssetBalance
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AssetBalance we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AssetBalanceUpsertArgs>(args: SelectSubset<T, AssetBalanceUpsertArgs<ExtArgs>>): Prisma__AssetBalanceClient<$Result.GetResult<Prisma.$AssetBalancePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of AssetBalances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceCountArgs} args - Arguments to filter AssetBalances to count.
+     * @example
+     * // Count the number of AssetBalances
+     * const count = await prisma.assetBalance.count({
+     *   where: {
+     *     // ... the filter for the AssetBalances we want to count
+     *   }
+     * })
+    **/
+    count<T extends AssetBalanceCountArgs>(
+      args?: Subset<T, AssetBalanceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AssetBalanceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AssetBalance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AssetBalanceAggregateArgs>(args: Subset<T, AssetBalanceAggregateArgs>): Prisma.PrismaPromise<GetAssetBalanceAggregateType<T>>
+
+    /**
+     * Group by AssetBalance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AssetBalanceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AssetBalanceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AssetBalanceGroupByArgs['orderBy'] }
+        : { orderBy?: AssetBalanceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AssetBalanceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAssetBalanceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AssetBalance model
+   */
+  readonly fields: AssetBalanceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AssetBalance.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AssetBalanceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AssetBalance model
+   */
+  interface AssetBalanceFieldRefs {
+    readonly id: FieldRef<"AssetBalance", 'String'>
+    readonly userId: FieldRef<"AssetBalance", 'String'>
+    readonly market: FieldRef<"AssetBalance", 'String'>
+    readonly asset: FieldRef<"AssetBalance", 'String'>
+    readonly available: FieldRef<"AssetBalance", 'BigInt'>
+    readonly locked: FieldRef<"AssetBalance", 'BigInt'>
+    readonly updatedAt: FieldRef<"AssetBalance", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AssetBalance findUnique
+   */
+  export type AssetBalanceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter, which AssetBalance to fetch.
+     */
+    where: AssetBalanceWhereUniqueInput
+  }
+
+  /**
+   * AssetBalance findUniqueOrThrow
+   */
+  export type AssetBalanceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter, which AssetBalance to fetch.
+     */
+    where: AssetBalanceWhereUniqueInput
+  }
+
+  /**
+   * AssetBalance findFirst
+   */
+  export type AssetBalanceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter, which AssetBalance to fetch.
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AssetBalances to fetch.
+     */
+    orderBy?: AssetBalanceOrderByWithRelationInput | AssetBalanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AssetBalances.
+     */
+    cursor?: AssetBalanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AssetBalances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AssetBalances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AssetBalances.
+     */
+    distinct?: AssetBalanceScalarFieldEnum | AssetBalanceScalarFieldEnum[]
+  }
+
+  /**
+   * AssetBalance findFirstOrThrow
+   */
+  export type AssetBalanceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter, which AssetBalance to fetch.
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AssetBalances to fetch.
+     */
+    orderBy?: AssetBalanceOrderByWithRelationInput | AssetBalanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AssetBalances.
+     */
+    cursor?: AssetBalanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AssetBalances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AssetBalances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AssetBalances.
+     */
+    distinct?: AssetBalanceScalarFieldEnum | AssetBalanceScalarFieldEnum[]
+  }
+
+  /**
+   * AssetBalance findMany
+   */
+  export type AssetBalanceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter, which AssetBalances to fetch.
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AssetBalances to fetch.
+     */
+    orderBy?: AssetBalanceOrderByWithRelationInput | AssetBalanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AssetBalances.
+     */
+    cursor?: AssetBalanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AssetBalances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AssetBalances.
+     */
+    skip?: number
+    distinct?: AssetBalanceScalarFieldEnum | AssetBalanceScalarFieldEnum[]
+  }
+
+  /**
+   * AssetBalance create
+   */
+  export type AssetBalanceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a AssetBalance.
+     */
+    data: XOR<AssetBalanceCreateInput, AssetBalanceUncheckedCreateInput>
+  }
+
+  /**
+   * AssetBalance createMany
+   */
+  export type AssetBalanceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AssetBalances.
+     */
+    data: AssetBalanceCreateManyInput | AssetBalanceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AssetBalance createManyAndReturn
+   */
+  export type AssetBalanceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * The data used to create many AssetBalances.
+     */
+    data: AssetBalanceCreateManyInput | AssetBalanceCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * AssetBalance update
+   */
+  export type AssetBalanceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a AssetBalance.
+     */
+    data: XOR<AssetBalanceUpdateInput, AssetBalanceUncheckedUpdateInput>
+    /**
+     * Choose, which AssetBalance to update.
+     */
+    where: AssetBalanceWhereUniqueInput
+  }
+
+  /**
+   * AssetBalance updateMany
+   */
+  export type AssetBalanceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AssetBalances.
+     */
+    data: XOR<AssetBalanceUpdateManyMutationInput, AssetBalanceUncheckedUpdateManyInput>
+    /**
+     * Filter which AssetBalances to update
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * Limit how many AssetBalances to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * AssetBalance updateManyAndReturn
+   */
+  export type AssetBalanceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * The data used to update AssetBalances.
+     */
+    data: XOR<AssetBalanceUpdateManyMutationInput, AssetBalanceUncheckedUpdateManyInput>
+    /**
+     * Filter which AssetBalances to update
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * Limit how many AssetBalances to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * AssetBalance upsert
+   */
+  export type AssetBalanceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the AssetBalance to update in case it exists.
+     */
+    where: AssetBalanceWhereUniqueInput
+    /**
+     * In case the AssetBalance found by the `where` argument doesn't exist, create a new AssetBalance with this data.
+     */
+    create: XOR<AssetBalanceCreateInput, AssetBalanceUncheckedCreateInput>
+    /**
+     * In case the AssetBalance was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AssetBalanceUpdateInput, AssetBalanceUncheckedUpdateInput>
+  }
+
+  /**
+   * AssetBalance delete
+   */
+  export type AssetBalanceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
+    /**
+     * Filter which AssetBalance to delete.
+     */
+    where: AssetBalanceWhereUniqueInput
+  }
+
+  /**
+   * AssetBalance deleteMany
+   */
+  export type AssetBalanceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AssetBalances to delete
+     */
+    where?: AssetBalanceWhereInput
+    /**
+     * Limit how many AssetBalances to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * AssetBalance without action
+   */
+  export type AssetBalanceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssetBalance
+     */
+    select?: AssetBalanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssetBalance
+     */
+    omit?: AssetBalanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetBalanceInclude<ExtArgs> | null
   }
 
 
@@ -6151,10 +7492,12 @@ export namespace Prisma {
 
   export type BalanceTransferAvgAggregateOutputType = {
     amountInPaise: number | null
+    attempts: number | null
   }
 
   export type BalanceTransferSumAggregateOutputType = {
     amountInPaise: bigint | null
+    attempts: number | null
   }
 
   export type BalanceTransferMinAggregateOutputType = {
@@ -6165,6 +7508,8 @@ export namespace Prisma {
     status: $Enums.TransferStatus | null
     idempotencyKey: string | null
     vaultlyRef: string | null
+    attempts: number | null
+    lastAttemptAt: Date | null
     createdAt: Date | null
     resolvedAt: Date | null
   }
@@ -6177,6 +7522,8 @@ export namespace Prisma {
     status: $Enums.TransferStatus | null
     idempotencyKey: string | null
     vaultlyRef: string | null
+    attempts: number | null
+    lastAttemptAt: Date | null
     createdAt: Date | null
     resolvedAt: Date | null
   }
@@ -6189,6 +7536,8 @@ export namespace Prisma {
     status: number
     idempotencyKey: number
     vaultlyRef: number
+    attempts: number
+    lastAttemptAt: number
     createdAt: number
     resolvedAt: number
     _all: number
@@ -6197,10 +7546,12 @@ export namespace Prisma {
 
   export type BalanceTransferAvgAggregateInputType = {
     amountInPaise?: true
+    attempts?: true
   }
 
   export type BalanceTransferSumAggregateInputType = {
     amountInPaise?: true
+    attempts?: true
   }
 
   export type BalanceTransferMinAggregateInputType = {
@@ -6211,6 +7562,8 @@ export namespace Prisma {
     status?: true
     idempotencyKey?: true
     vaultlyRef?: true
+    attempts?: true
+    lastAttemptAt?: true
     createdAt?: true
     resolvedAt?: true
   }
@@ -6223,6 +7576,8 @@ export namespace Prisma {
     status?: true
     idempotencyKey?: true
     vaultlyRef?: true
+    attempts?: true
+    lastAttemptAt?: true
     createdAt?: true
     resolvedAt?: true
   }
@@ -6235,6 +7590,8 @@ export namespace Prisma {
     status?: true
     idempotencyKey?: true
     vaultlyRef?: true
+    attempts?: true
+    lastAttemptAt?: true
     createdAt?: true
     resolvedAt?: true
     _all?: true
@@ -6334,6 +7691,8 @@ export namespace Prisma {
     status: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef: string | null
+    attempts: number
+    lastAttemptAt: Date | null
     createdAt: Date
     resolvedAt: Date | null
     _count: BalanceTransferCountAggregateOutputType | null
@@ -6365,6 +7724,8 @@ export namespace Prisma {
     status?: boolean
     idempotencyKey?: boolean
     vaultlyRef?: boolean
+    attempts?: boolean
+    lastAttemptAt?: boolean
     createdAt?: boolean
     resolvedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -6378,6 +7739,8 @@ export namespace Prisma {
     status?: boolean
     idempotencyKey?: boolean
     vaultlyRef?: boolean
+    attempts?: boolean
+    lastAttemptAt?: boolean
     createdAt?: boolean
     resolvedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -6391,6 +7754,8 @@ export namespace Prisma {
     status?: boolean
     idempotencyKey?: boolean
     vaultlyRef?: boolean
+    attempts?: boolean
+    lastAttemptAt?: boolean
     createdAt?: boolean
     resolvedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -6404,11 +7769,13 @@ export namespace Prisma {
     status?: boolean
     idempotencyKey?: boolean
     vaultlyRef?: boolean
+    attempts?: boolean
+    lastAttemptAt?: boolean
     createdAt?: boolean
     resolvedAt?: boolean
   }
 
-  export type BalanceTransferOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "direction" | "amountInPaise" | "status" | "idempotencyKey" | "vaultlyRef" | "createdAt" | "resolvedAt", ExtArgs["result"]["balanceTransfer"]>
+  export type BalanceTransferOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "direction" | "amountInPaise" | "status" | "idempotencyKey" | "vaultlyRef" | "attempts" | "lastAttemptAt" | "createdAt" | "resolvedAt", ExtArgs["result"]["balanceTransfer"]>
   export type BalanceTransferInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -6432,6 +7799,8 @@ export namespace Prisma {
       status: $Enums.TransferStatus
       idempotencyKey: string
       vaultlyRef: string | null
+      attempts: number
+      lastAttemptAt: Date | null
       createdAt: Date
       resolvedAt: Date | null
     }, ExtArgs["result"]["balanceTransfer"]>
@@ -6865,6 +8234,8 @@ export namespace Prisma {
     readonly status: FieldRef<"BalanceTransfer", 'TransferStatus'>
     readonly idempotencyKey: FieldRef<"BalanceTransfer", 'String'>
     readonly vaultlyRef: FieldRef<"BalanceTransfer", 'String'>
+    readonly attempts: FieldRef<"BalanceTransfer", 'Int'>
+    readonly lastAttemptAt: FieldRef<"BalanceTransfer", 'DateTime'>
     readonly createdAt: FieldRef<"BalanceTransfer", 'DateTime'>
     readonly resolvedAt: FieldRef<"BalanceTransfer", 'DateTime'>
   }
@@ -7312,7 +8683,6 @@ export namespace Prisma {
   }
 
   export type KlineMinAggregateOutputType = {
-    id: string | null
     market: string | null
     interval: $Enums.KlineInterval | null
     openTime: Date | null
@@ -7323,12 +8693,9 @@ export namespace Prisma {
     close: bigint | null
     volume: bigint | null
     tradeCount: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type KlineMaxAggregateOutputType = {
-    id: string | null
     market: string | null
     interval: $Enums.KlineInterval | null
     openTime: Date | null
@@ -7339,12 +8706,9 @@ export namespace Prisma {
     close: bigint | null
     volume: bigint | null
     tradeCount: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
   }
 
   export type KlineCountAggregateOutputType = {
-    id: number
     market: number
     interval: number
     openTime: number
@@ -7355,8 +8719,6 @@ export namespace Prisma {
     close: number
     volume: number
     tradeCount: number
-    createdAt: number
-    updatedAt: number
     _all: number
   }
 
@@ -7380,7 +8742,6 @@ export namespace Prisma {
   }
 
   export type KlineMinAggregateInputType = {
-    id?: true
     market?: true
     interval?: true
     openTime?: true
@@ -7391,12 +8752,9 @@ export namespace Prisma {
     close?: true
     volume?: true
     tradeCount?: true
-    createdAt?: true
-    updatedAt?: true
   }
 
   export type KlineMaxAggregateInputType = {
-    id?: true
     market?: true
     interval?: true
     openTime?: true
@@ -7407,12 +8765,9 @@ export namespace Prisma {
     close?: true
     volume?: true
     tradeCount?: true
-    createdAt?: true
-    updatedAt?: true
   }
 
   export type KlineCountAggregateInputType = {
-    id?: true
     market?: true
     interval?: true
     openTime?: true
@@ -7423,8 +8778,6 @@ export namespace Prisma {
     close?: true
     volume?: true
     tradeCount?: true
-    createdAt?: true
-    updatedAt?: true
     _all?: true
   }
 
@@ -7515,7 +8868,6 @@ export namespace Prisma {
   }
 
   export type KlineGroupByOutputType = {
-    id: string
     market: string
     interval: $Enums.KlineInterval
     openTime: Date
@@ -7526,8 +8878,6 @@ export namespace Prisma {
     close: bigint
     volume: bigint
     tradeCount: number
-    createdAt: Date
-    updatedAt: Date
     _count: KlineCountAggregateOutputType | null
     _avg: KlineAvgAggregateOutputType | null
     _sum: KlineSumAggregateOutputType | null
@@ -7550,7 +8900,6 @@ export namespace Prisma {
 
 
   export type KlineSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     market?: boolean
     interval?: boolean
     openTime?: boolean
@@ -7561,12 +8910,9 @@ export namespace Prisma {
     close?: boolean
     volume?: boolean
     tradeCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
   }, ExtArgs["result"]["kline"]>
 
   export type KlineSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     market?: boolean
     interval?: boolean
     openTime?: boolean
@@ -7577,12 +8923,9 @@ export namespace Prisma {
     close?: boolean
     volume?: boolean
     tradeCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
   }, ExtArgs["result"]["kline"]>
 
   export type KlineSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
     market?: boolean
     interval?: boolean
     openTime?: boolean
@@ -7593,12 +8936,9 @@ export namespace Prisma {
     close?: boolean
     volume?: boolean
     tradeCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
   }, ExtArgs["result"]["kline"]>
 
   export type KlineSelectScalar = {
-    id?: boolean
     market?: boolean
     interval?: boolean
     openTime?: boolean
@@ -7609,17 +8949,14 @@ export namespace Prisma {
     close?: boolean
     volume?: boolean
     tradeCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
   }
 
-  export type KlineOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "market" | "interval" | "openTime" | "closeTime" | "open" | "high" | "low" | "close" | "volume" | "tradeCount" | "createdAt" | "updatedAt", ExtArgs["result"]["kline"]>
+  export type KlineOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"market" | "interval" | "openTime" | "closeTime" | "open" | "high" | "low" | "close" | "volume" | "tradeCount", ExtArgs["result"]["kline"]>
 
   export type $KlinePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Kline"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
-      id: string
       market: string
       interval: $Enums.KlineInterval
       openTime: Date
@@ -7630,8 +8967,6 @@ export namespace Prisma {
       close: bigint
       volume: bigint
       tradeCount: number
-      createdAt: Date
-      updatedAt: Date
     }, ExtArgs["result"]["kline"]>
     composites: {}
   }
@@ -7715,8 +9050,8 @@ export namespace Prisma {
      * // Get first 10 Klines
      * const klines = await prisma.kline.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const klineWithIdOnly = await prisma.kline.findMany({ select: { id: true } })
+     * // Only select the `market`
+     * const klineWithMarketOnly = await prisma.kline.findMany({ select: { market: true } })
      * 
      */
     findMany<T extends KlineFindManyArgs>(args?: SelectSubset<T, KlineFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$KlinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -7760,9 +9095,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Create many Klines and only return the `id`
-     * const klineWithIdOnly = await prisma.kline.createManyAndReturn({
-     *   select: { id: true },
+     * // Create many Klines and only return the `market`
+     * const klineWithMarketOnly = await prisma.kline.createManyAndReturn({
+     *   select: { market: true },
      *   data: [
      *     // ... provide data here
      *   ]
@@ -7851,9 +9186,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Klines and only return the `id`
-     * const klineWithIdOnly = await prisma.kline.updateManyAndReturn({
-     *   select: { id: true },
+     * // Update zero or more Klines and only return the `market`
+     * const klineWithMarketOnly = await prisma.kline.updateManyAndReturn({
+     *   select: { market: true },
      *   where: {
      *     // ... provide filter here
      *   },
@@ -8055,7 +9390,6 @@ export namespace Prisma {
    * Fields of the Kline model
    */
   interface KlineFieldRefs {
-    readonly id: FieldRef<"Kline", 'String'>
     readonly market: FieldRef<"Kline", 'String'>
     readonly interval: FieldRef<"Kline", 'KlineInterval'>
     readonly openTime: FieldRef<"Kline", 'DateTime'>
@@ -8066,8 +9400,6 @@ export namespace Prisma {
     readonly close: FieldRef<"Kline", 'BigInt'>
     readonly volume: FieldRef<"Kline", 'BigInt'>
     readonly tradeCount: FieldRef<"Kline", 'Int'>
-    readonly createdAt: FieldRef<"Kline", 'DateTime'>
-    readonly updatedAt: FieldRef<"Kline", 'DateTime'>
   }
     
 
@@ -8435,6 +9767,1120 @@ export namespace Prisma {
 
 
   /**
+   * Model Candle
+   */
+
+  export type AggregateCandle = {
+    _count: CandleCountAggregateOutputType | null
+    _avg: CandleAvgAggregateOutputType | null
+    _sum: CandleSumAggregateOutputType | null
+    _min: CandleMinAggregateOutputType | null
+    _max: CandleMaxAggregateOutputType | null
+  }
+
+  export type CandleAvgAggregateOutputType = {
+    open: number | null
+    high: number | null
+    low: number | null
+    close: number | null
+    volume: number | null
+    tradeCount: number | null
+  }
+
+  export type CandleSumAggregateOutputType = {
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+  }
+
+  export type CandleMinAggregateOutputType = {
+    market: string | null
+    resolution: string | null
+    openTime: Date | null
+    closeTime: Date | null
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+  }
+
+  export type CandleMaxAggregateOutputType = {
+    market: string | null
+    resolution: string | null
+    openTime: Date | null
+    closeTime: Date | null
+    open: bigint | null
+    high: bigint | null
+    low: bigint | null
+    close: bigint | null
+    volume: bigint | null
+    tradeCount: number | null
+  }
+
+  export type CandleCountAggregateOutputType = {
+    market: number
+    resolution: number
+    openTime: number
+    closeTime: number
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+    tradeCount: number
+    _all: number
+  }
+
+
+  export type CandleAvgAggregateInputType = {
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type CandleSumAggregateInputType = {
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type CandleMinAggregateInputType = {
+    market?: true
+    resolution?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type CandleMaxAggregateInputType = {
+    market?: true
+    resolution?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+  }
+
+  export type CandleCountAggregateInputType = {
+    market?: true
+    resolution?: true
+    openTime?: true
+    closeTime?: true
+    open?: true
+    high?: true
+    low?: true
+    close?: true
+    volume?: true
+    tradeCount?: true
+    _all?: true
+  }
+
+  export type CandleAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Candle to aggregate.
+     */
+    where?: CandleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Candles to fetch.
+     */
+    orderBy?: CandleOrderByWithRelationInput | CandleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CandleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Candles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Candles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Candles
+    **/
+    _count?: true | CandleCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CandleAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CandleSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CandleMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CandleMaxAggregateInputType
+  }
+
+  export type GetCandleAggregateType<T extends CandleAggregateArgs> = {
+        [P in keyof T & keyof AggregateCandle]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCandle[P]>
+      : GetScalarType<T[P], AggregateCandle[P]>
+  }
+
+
+
+
+  export type CandleGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CandleWhereInput
+    orderBy?: CandleOrderByWithAggregationInput | CandleOrderByWithAggregationInput[]
+    by: CandleScalarFieldEnum[] | CandleScalarFieldEnum
+    having?: CandleScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CandleCountAggregateInputType | true
+    _avg?: CandleAvgAggregateInputType
+    _sum?: CandleSumAggregateInputType
+    _min?: CandleMinAggregateInputType
+    _max?: CandleMaxAggregateInputType
+  }
+
+  export type CandleGroupByOutputType = {
+    market: string
+    resolution: string
+    openTime: Date
+    closeTime: Date
+    open: bigint
+    high: bigint
+    low: bigint
+    close: bigint
+    volume: bigint
+    tradeCount: number
+    _count: CandleCountAggregateOutputType | null
+    _avg: CandleAvgAggregateOutputType | null
+    _sum: CandleSumAggregateOutputType | null
+    _min: CandleMinAggregateOutputType | null
+    _max: CandleMaxAggregateOutputType | null
+  }
+
+  type GetCandleGroupByPayload<T extends CandleGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CandleGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CandleGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CandleGroupByOutputType[P]>
+            : GetScalarType<T[P], CandleGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CandleSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    market?: boolean
+    resolution?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+  }, ExtArgs["result"]["candle"]>
+
+  export type CandleSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    market?: boolean
+    resolution?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+  }, ExtArgs["result"]["candle"]>
+
+  export type CandleSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    market?: boolean
+    resolution?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+  }, ExtArgs["result"]["candle"]>
+
+  export type CandleSelectScalar = {
+    market?: boolean
+    resolution?: boolean
+    openTime?: boolean
+    closeTime?: boolean
+    open?: boolean
+    high?: boolean
+    low?: boolean
+    close?: boolean
+    volume?: boolean
+    tradeCount?: boolean
+  }
+
+  export type CandleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"market" | "resolution" | "openTime" | "closeTime" | "open" | "high" | "low" | "close" | "volume" | "tradeCount", ExtArgs["result"]["candle"]>
+
+  export type $CandlePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Candle"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      market: string
+      resolution: string
+      openTime: Date
+      closeTime: Date
+      open: bigint
+      high: bigint
+      low: bigint
+      close: bigint
+      volume: bigint
+      tradeCount: number
+    }, ExtArgs["result"]["candle"]>
+    composites: {}
+  }
+
+  type CandleGetPayload<S extends boolean | null | undefined | CandleDefaultArgs> = $Result.GetResult<Prisma.$CandlePayload, S>
+
+  type CandleCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<CandleFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: CandleCountAggregateInputType | true
+    }
+
+  export interface CandleDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Candle'], meta: { name: 'Candle' } }
+    /**
+     * Find zero or one Candle that matches the filter.
+     * @param {CandleFindUniqueArgs} args - Arguments to find a Candle
+     * @example
+     * // Get one Candle
+     * const candle = await prisma.candle.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CandleFindUniqueArgs>(args: SelectSubset<T, CandleFindUniqueArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Candle that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {CandleFindUniqueOrThrowArgs} args - Arguments to find a Candle
+     * @example
+     * // Get one Candle
+     * const candle = await prisma.candle.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CandleFindUniqueOrThrowArgs>(args: SelectSubset<T, CandleFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Candle that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleFindFirstArgs} args - Arguments to find a Candle
+     * @example
+     * // Get one Candle
+     * const candle = await prisma.candle.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CandleFindFirstArgs>(args?: SelectSubset<T, CandleFindFirstArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Candle that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleFindFirstOrThrowArgs} args - Arguments to find a Candle
+     * @example
+     * // Get one Candle
+     * const candle = await prisma.candle.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CandleFindFirstOrThrowArgs>(args?: SelectSubset<T, CandleFindFirstOrThrowArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Candles that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Candles
+     * const candles = await prisma.candle.findMany()
+     * 
+     * // Get first 10 Candles
+     * const candles = await prisma.candle.findMany({ take: 10 })
+     * 
+     * // Only select the `market`
+     * const candleWithMarketOnly = await prisma.candle.findMany({ select: { market: true } })
+     * 
+     */
+    findMany<T extends CandleFindManyArgs>(args?: SelectSubset<T, CandleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Candle.
+     * @param {CandleCreateArgs} args - Arguments to create a Candle.
+     * @example
+     * // Create one Candle
+     * const Candle = await prisma.candle.create({
+     *   data: {
+     *     // ... data to create a Candle
+     *   }
+     * })
+     * 
+     */
+    create<T extends CandleCreateArgs>(args: SelectSubset<T, CandleCreateArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Candles.
+     * @param {CandleCreateManyArgs} args - Arguments to create many Candles.
+     * @example
+     * // Create many Candles
+     * const candle = await prisma.candle.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CandleCreateManyArgs>(args?: SelectSubset<T, CandleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Candles and returns the data saved in the database.
+     * @param {CandleCreateManyAndReturnArgs} args - Arguments to create many Candles.
+     * @example
+     * // Create many Candles
+     * const candle = await prisma.candle.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Candles and only return the `market`
+     * const candleWithMarketOnly = await prisma.candle.createManyAndReturn({
+     *   select: { market: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CandleCreateManyAndReturnArgs>(args?: SelectSubset<T, CandleCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Candle.
+     * @param {CandleDeleteArgs} args - Arguments to delete one Candle.
+     * @example
+     * // Delete one Candle
+     * const Candle = await prisma.candle.delete({
+     *   where: {
+     *     // ... filter to delete one Candle
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CandleDeleteArgs>(args: SelectSubset<T, CandleDeleteArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Candle.
+     * @param {CandleUpdateArgs} args - Arguments to update one Candle.
+     * @example
+     * // Update one Candle
+     * const candle = await prisma.candle.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CandleUpdateArgs>(args: SelectSubset<T, CandleUpdateArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Candles.
+     * @param {CandleDeleteManyArgs} args - Arguments to filter Candles to delete.
+     * @example
+     * // Delete a few Candles
+     * const { count } = await prisma.candle.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CandleDeleteManyArgs>(args?: SelectSubset<T, CandleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Candles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Candles
+     * const candle = await prisma.candle.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CandleUpdateManyArgs>(args: SelectSubset<T, CandleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Candles and returns the data updated in the database.
+     * @param {CandleUpdateManyAndReturnArgs} args - Arguments to update many Candles.
+     * @example
+     * // Update many Candles
+     * const candle = await prisma.candle.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Candles and only return the `market`
+     * const candleWithMarketOnly = await prisma.candle.updateManyAndReturn({
+     *   select: { market: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends CandleUpdateManyAndReturnArgs>(args: SelectSubset<T, CandleUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Candle.
+     * @param {CandleUpsertArgs} args - Arguments to update or create a Candle.
+     * @example
+     * // Update or create a Candle
+     * const candle = await prisma.candle.upsert({
+     *   create: {
+     *     // ... data to create a Candle
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Candle we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CandleUpsertArgs>(args: SelectSubset<T, CandleUpsertArgs<ExtArgs>>): Prisma__CandleClient<$Result.GetResult<Prisma.$CandlePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Candles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleCountArgs} args - Arguments to filter Candles to count.
+     * @example
+     * // Count the number of Candles
+     * const count = await prisma.candle.count({
+     *   where: {
+     *     // ... the filter for the Candles we want to count
+     *   }
+     * })
+    **/
+    count<T extends CandleCountArgs>(
+      args?: Subset<T, CandleCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CandleCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Candle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CandleAggregateArgs>(args: Subset<T, CandleAggregateArgs>): Prisma.PrismaPromise<GetCandleAggregateType<T>>
+
+    /**
+     * Group by Candle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CandleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CandleGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CandleGroupByArgs['orderBy'] }
+        : { orderBy?: CandleGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CandleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCandleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Candle model
+   */
+  readonly fields: CandleFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Candle.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CandleClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Candle model
+   */
+  interface CandleFieldRefs {
+    readonly market: FieldRef<"Candle", 'String'>
+    readonly resolution: FieldRef<"Candle", 'String'>
+    readonly openTime: FieldRef<"Candle", 'DateTime'>
+    readonly closeTime: FieldRef<"Candle", 'DateTime'>
+    readonly open: FieldRef<"Candle", 'BigInt'>
+    readonly high: FieldRef<"Candle", 'BigInt'>
+    readonly low: FieldRef<"Candle", 'BigInt'>
+    readonly close: FieldRef<"Candle", 'BigInt'>
+    readonly volume: FieldRef<"Candle", 'BigInt'>
+    readonly tradeCount: FieldRef<"Candle", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Candle findUnique
+   */
+  export type CandleFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter, which Candle to fetch.
+     */
+    where: CandleWhereUniqueInput
+  }
+
+  /**
+   * Candle findUniqueOrThrow
+   */
+  export type CandleFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter, which Candle to fetch.
+     */
+    where: CandleWhereUniqueInput
+  }
+
+  /**
+   * Candle findFirst
+   */
+  export type CandleFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter, which Candle to fetch.
+     */
+    where?: CandleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Candles to fetch.
+     */
+    orderBy?: CandleOrderByWithRelationInput | CandleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Candles.
+     */
+    cursor?: CandleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Candles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Candles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Candles.
+     */
+    distinct?: CandleScalarFieldEnum | CandleScalarFieldEnum[]
+  }
+
+  /**
+   * Candle findFirstOrThrow
+   */
+  export type CandleFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter, which Candle to fetch.
+     */
+    where?: CandleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Candles to fetch.
+     */
+    orderBy?: CandleOrderByWithRelationInput | CandleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Candles.
+     */
+    cursor?: CandleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Candles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Candles.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Candles.
+     */
+    distinct?: CandleScalarFieldEnum | CandleScalarFieldEnum[]
+  }
+
+  /**
+   * Candle findMany
+   */
+  export type CandleFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter, which Candles to fetch.
+     */
+    where?: CandleWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Candles to fetch.
+     */
+    orderBy?: CandleOrderByWithRelationInput | CandleOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Candles.
+     */
+    cursor?: CandleWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Candles from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Candles.
+     */
+    skip?: number
+    distinct?: CandleScalarFieldEnum | CandleScalarFieldEnum[]
+  }
+
+  /**
+   * Candle create
+   */
+  export type CandleCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * The data needed to create a Candle.
+     */
+    data: XOR<CandleCreateInput, CandleUncheckedCreateInput>
+  }
+
+  /**
+   * Candle createMany
+   */
+  export type CandleCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Candles.
+     */
+    data: CandleCreateManyInput | CandleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Candle createManyAndReturn
+   */
+  export type CandleCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * The data used to create many Candles.
+     */
+    data: CandleCreateManyInput | CandleCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Candle update
+   */
+  export type CandleUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * The data needed to update a Candle.
+     */
+    data: XOR<CandleUpdateInput, CandleUncheckedUpdateInput>
+    /**
+     * Choose, which Candle to update.
+     */
+    where: CandleWhereUniqueInput
+  }
+
+  /**
+   * Candle updateMany
+   */
+  export type CandleUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Candles.
+     */
+    data: XOR<CandleUpdateManyMutationInput, CandleUncheckedUpdateManyInput>
+    /**
+     * Filter which Candles to update
+     */
+    where?: CandleWhereInput
+    /**
+     * Limit how many Candles to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Candle updateManyAndReturn
+   */
+  export type CandleUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * The data used to update Candles.
+     */
+    data: XOR<CandleUpdateManyMutationInput, CandleUncheckedUpdateManyInput>
+    /**
+     * Filter which Candles to update
+     */
+    where?: CandleWhereInput
+    /**
+     * Limit how many Candles to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Candle upsert
+   */
+  export type CandleUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * The filter to search for the Candle to update in case it exists.
+     */
+    where: CandleWhereUniqueInput
+    /**
+     * In case the Candle found by the `where` argument doesn't exist, create a new Candle with this data.
+     */
+    create: XOR<CandleCreateInput, CandleUncheckedCreateInput>
+    /**
+     * In case the Candle was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CandleUpdateInput, CandleUncheckedUpdateInput>
+  }
+
+  /**
+   * Candle delete
+   */
+  export type CandleDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+    /**
+     * Filter which Candle to delete.
+     */
+    where: CandleWhereUniqueInput
+  }
+
+  /**
+   * Candle deleteMany
+   */
+  export type CandleDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Candles to delete
+     */
+    where?: CandleWhereInput
+    /**
+     * Limit how many Candles to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Candle without action
+   */
+  export type CandleDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Candle
+     */
+    select?: CandleSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Candle
+     */
+    omit?: CandleOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -8469,6 +10915,19 @@ export namespace Prisma {
   };
 
   export type TradingBalanceScalarFieldEnum = (typeof TradingBalanceScalarFieldEnum)[keyof typeof TradingBalanceScalarFieldEnum]
+
+
+  export const AssetBalanceScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    market: 'market',
+    asset: 'asset',
+    available: 'available',
+    locked: 'locked',
+    updatedAt: 'updatedAt'
+  };
+
+  export type AssetBalanceScalarFieldEnum = (typeof AssetBalanceScalarFieldEnum)[keyof typeof AssetBalanceScalarFieldEnum]
 
 
   export const OrderScalarFieldEnum: {
@@ -8513,6 +10972,8 @@ export namespace Prisma {
     status: 'status',
     idempotencyKey: 'idempotencyKey',
     vaultlyRef: 'vaultlyRef',
+    attempts: 'attempts',
+    lastAttemptAt: 'lastAttemptAt',
     createdAt: 'createdAt',
     resolvedAt: 'resolvedAt'
   };
@@ -8521,7 +10982,6 @@ export namespace Prisma {
 
 
   export const KlineScalarFieldEnum: {
-    id: 'id',
     market: 'market',
     interval: 'interval',
     openTime: 'openTime',
@@ -8531,12 +10991,26 @@ export namespace Prisma {
     low: 'low',
     close: 'close',
     volume: 'volume',
-    tradeCount: 'tradeCount',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    tradeCount: 'tradeCount'
   };
 
   export type KlineScalarFieldEnum = (typeof KlineScalarFieldEnum)[keyof typeof KlineScalarFieldEnum]
+
+
+  export const CandleScalarFieldEnum: {
+    market: 'market',
+    resolution: 'resolution',
+    openTime: 'openTime',
+    closeTime: 'closeTime',
+    open: 'open',
+    high: 'high',
+    low: 'low',
+    close: 'close',
+    volume: 'volume',
+    tradeCount: 'tradeCount'
+  };
+
+  export type CandleScalarFieldEnum = (typeof CandleScalarFieldEnum)[keyof typeof CandleScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -8688,20 +11162,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'KlineInterval'
-   */
-  export type EnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval'>
-    
-
-
-  /**
-   * Reference to a field of type 'KlineInterval[]'
-   */
-  export type ListEnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -8712,6 +11172,20 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'KlineInterval'
+   */
+  export type EnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval'>
+    
+
+
+  /**
+   * Reference to a field of type 'KlineInterval[]'
+   */
+  export type ListEnumKlineIntervalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KlineInterval[]'>
     
 
 
@@ -8743,6 +11217,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     welcomeBonusCredited?: BoolFilter<"User"> | boolean
     tradingBalance?: XOR<TradingBalanceNullableScalarRelationFilter, TradingBalanceWhereInput> | null
+    assetBalances?: AssetBalanceListRelationFilter
     orders?: OrderListRelationFilter
     transfers?: BalanceTransferListRelationFilter
   }
@@ -8755,6 +11230,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     welcomeBonusCredited?: SortOrder
     tradingBalance?: TradingBalanceOrderByWithRelationInput
+    assetBalances?: AssetBalanceOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
     transfers?: BalanceTransferOrderByRelationAggregateInput
   }
@@ -8770,6 +11246,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     welcomeBonusCredited?: BoolFilter<"User"> | boolean
     tradingBalance?: XOR<TradingBalanceNullableScalarRelationFilter, TradingBalanceWhereInput> | null
+    assetBalances?: AssetBalanceListRelationFilter
     orders?: OrderListRelationFilter
     transfers?: BalanceTransferListRelationFilter
   }, "id" | "vaultlyUserId">
@@ -8853,6 +11330,74 @@ export namespace Prisma {
     available?: BigIntWithAggregatesFilter<"TradingBalance"> | bigint | number
     locked?: BigIntWithAggregatesFilter<"TradingBalance"> | bigint | number
     updatedAt?: DateTimeWithAggregatesFilter<"TradingBalance"> | Date | string
+  }
+
+  export type AssetBalanceWhereInput = {
+    AND?: AssetBalanceWhereInput | AssetBalanceWhereInput[]
+    OR?: AssetBalanceWhereInput[]
+    NOT?: AssetBalanceWhereInput | AssetBalanceWhereInput[]
+    id?: StringFilter<"AssetBalance"> | string
+    userId?: StringFilter<"AssetBalance"> | string
+    market?: StringFilter<"AssetBalance"> | string
+    asset?: StringFilter<"AssetBalance"> | string
+    available?: BigIntFilter<"AssetBalance"> | bigint | number
+    locked?: BigIntFilter<"AssetBalance"> | bigint | number
+    updatedAt?: DateTimeFilter<"AssetBalance"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type AssetBalanceOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    market?: SortOrder
+    asset?: SortOrder
+    available?: SortOrder
+    locked?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type AssetBalanceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_market?: AssetBalanceUserIdMarketCompoundUniqueInput
+    AND?: AssetBalanceWhereInput | AssetBalanceWhereInput[]
+    OR?: AssetBalanceWhereInput[]
+    NOT?: AssetBalanceWhereInput | AssetBalanceWhereInput[]
+    userId?: StringFilter<"AssetBalance"> | string
+    market?: StringFilter<"AssetBalance"> | string
+    asset?: StringFilter<"AssetBalance"> | string
+    available?: BigIntFilter<"AssetBalance"> | bigint | number
+    locked?: BigIntFilter<"AssetBalance"> | bigint | number
+    updatedAt?: DateTimeFilter<"AssetBalance"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "userId_market">
+
+  export type AssetBalanceOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    market?: SortOrder
+    asset?: SortOrder
+    available?: SortOrder
+    locked?: SortOrder
+    updatedAt?: SortOrder
+    _count?: AssetBalanceCountOrderByAggregateInput
+    _avg?: AssetBalanceAvgOrderByAggregateInput
+    _max?: AssetBalanceMaxOrderByAggregateInput
+    _min?: AssetBalanceMinOrderByAggregateInput
+    _sum?: AssetBalanceSumOrderByAggregateInput
+  }
+
+  export type AssetBalanceScalarWhereWithAggregatesInput = {
+    AND?: AssetBalanceScalarWhereWithAggregatesInput | AssetBalanceScalarWhereWithAggregatesInput[]
+    OR?: AssetBalanceScalarWhereWithAggregatesInput[]
+    NOT?: AssetBalanceScalarWhereWithAggregatesInput | AssetBalanceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"AssetBalance"> | string
+    userId?: StringWithAggregatesFilter<"AssetBalance"> | string
+    market?: StringWithAggregatesFilter<"AssetBalance"> | string
+    asset?: StringWithAggregatesFilter<"AssetBalance"> | string
+    available?: BigIntWithAggregatesFilter<"AssetBalance"> | bigint | number
+    locked?: BigIntWithAggregatesFilter<"AssetBalance"> | bigint | number
+    updatedAt?: DateTimeWithAggregatesFilter<"AssetBalance"> | Date | string
   }
 
   export type OrderWhereInput = {
@@ -9050,6 +11595,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFilter<"BalanceTransfer"> | $Enums.TransferStatus
     idempotencyKey?: StringFilter<"BalanceTransfer"> | string
     vaultlyRef?: StringNullableFilter<"BalanceTransfer"> | string | null
+    attempts?: IntFilter<"BalanceTransfer"> | number
+    lastAttemptAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
     createdAt?: DateTimeFilter<"BalanceTransfer"> | Date | string
     resolvedAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -9063,6 +11610,8 @@ export namespace Prisma {
     status?: SortOrder
     idempotencyKey?: SortOrder
     vaultlyRef?: SortOrderInput | SortOrder
+    attempts?: SortOrder
+    lastAttemptAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     resolvedAt?: SortOrderInput | SortOrder
     user?: UserOrderByWithRelationInput
@@ -9079,6 +11628,8 @@ export namespace Prisma {
     amountInPaise?: BigIntFilter<"BalanceTransfer"> | bigint | number
     status?: EnumTransferStatusFilter<"BalanceTransfer"> | $Enums.TransferStatus
     vaultlyRef?: StringNullableFilter<"BalanceTransfer"> | string | null
+    attempts?: IntFilter<"BalanceTransfer"> | number
+    lastAttemptAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
     createdAt?: DateTimeFilter<"BalanceTransfer"> | Date | string
     resolvedAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -9092,6 +11643,8 @@ export namespace Prisma {
     status?: SortOrder
     idempotencyKey?: SortOrder
     vaultlyRef?: SortOrderInput | SortOrder
+    attempts?: SortOrder
+    lastAttemptAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     resolvedAt?: SortOrderInput | SortOrder
     _count?: BalanceTransferCountOrderByAggregateInput
@@ -9112,6 +11665,8 @@ export namespace Prisma {
     status?: EnumTransferStatusWithAggregatesFilter<"BalanceTransfer"> | $Enums.TransferStatus
     idempotencyKey?: StringWithAggregatesFilter<"BalanceTransfer"> | string
     vaultlyRef?: StringNullableWithAggregatesFilter<"BalanceTransfer"> | string | null
+    attempts?: IntWithAggregatesFilter<"BalanceTransfer"> | number
+    lastAttemptAt?: DateTimeNullableWithAggregatesFilter<"BalanceTransfer"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"BalanceTransfer"> | Date | string
     resolvedAt?: DateTimeNullableWithAggregatesFilter<"BalanceTransfer"> | Date | string | null
   }
@@ -9120,7 +11675,6 @@ export namespace Prisma {
     AND?: KlineWhereInput | KlineWhereInput[]
     OR?: KlineWhereInput[]
     NOT?: KlineWhereInput | KlineWhereInput[]
-    id?: StringFilter<"Kline"> | string
     market?: StringFilter<"Kline"> | string
     interval?: EnumKlineIntervalFilter<"Kline"> | $Enums.KlineInterval
     openTime?: DateTimeFilter<"Kline"> | Date | string
@@ -9131,12 +11685,9 @@ export namespace Prisma {
     close?: BigIntFilter<"Kline"> | bigint | number
     volume?: BigIntFilter<"Kline"> | bigint | number
     tradeCount?: IntFilter<"Kline"> | number
-    createdAt?: DateTimeFilter<"Kline"> | Date | string
-    updatedAt?: DateTimeFilter<"Kline"> | Date | string
   }
 
   export type KlineOrderByWithRelationInput = {
-    id?: SortOrder
     market?: SortOrder
     interval?: SortOrder
     openTime?: SortOrder
@@ -9147,12 +11698,9 @@ export namespace Prisma {
     close?: SortOrder
     volume?: SortOrder
     tradeCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type KlineWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
     market_interval_openTime?: KlineMarketIntervalOpenTimeCompoundUniqueInput
     AND?: KlineWhereInput | KlineWhereInput[]
     OR?: KlineWhereInput[]
@@ -9167,12 +11715,9 @@ export namespace Prisma {
     close?: BigIntFilter<"Kline"> | bigint | number
     volume?: BigIntFilter<"Kline"> | bigint | number
     tradeCount?: IntFilter<"Kline"> | number
-    createdAt?: DateTimeFilter<"Kline"> | Date | string
-    updatedAt?: DateTimeFilter<"Kline"> | Date | string
-  }, "id" | "market_interval_openTime">
+  }, "market_interval_openTime">
 
   export type KlineOrderByWithAggregationInput = {
-    id?: SortOrder
     market?: SortOrder
     interval?: SortOrder
     openTime?: SortOrder
@@ -9183,8 +11728,6 @@ export namespace Prisma {
     close?: SortOrder
     volume?: SortOrder
     tradeCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
     _count?: KlineCountOrderByAggregateInput
     _avg?: KlineAvgOrderByAggregateInput
     _max?: KlineMaxOrderByAggregateInput
@@ -9196,7 +11739,6 @@ export namespace Prisma {
     AND?: KlineScalarWhereWithAggregatesInput | KlineScalarWhereWithAggregatesInput[]
     OR?: KlineScalarWhereWithAggregatesInput[]
     NOT?: KlineScalarWhereWithAggregatesInput | KlineScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"Kline"> | string
     market?: StringWithAggregatesFilter<"Kline"> | string
     interval?: EnumKlineIntervalWithAggregatesFilter<"Kline"> | $Enums.KlineInterval
     openTime?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
@@ -9207,8 +11749,86 @@ export namespace Prisma {
     close?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
     volume?: BigIntWithAggregatesFilter<"Kline"> | bigint | number
     tradeCount?: IntWithAggregatesFilter<"Kline"> | number
-    createdAt?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Kline"> | Date | string
+  }
+
+  export type CandleWhereInput = {
+    AND?: CandleWhereInput | CandleWhereInput[]
+    OR?: CandleWhereInput[]
+    NOT?: CandleWhereInput | CandleWhereInput[]
+    market?: StringFilter<"Candle"> | string
+    resolution?: StringFilter<"Candle"> | string
+    openTime?: DateTimeFilter<"Candle"> | Date | string
+    closeTime?: DateTimeFilter<"Candle"> | Date | string
+    open?: BigIntFilter<"Candle"> | bigint | number
+    high?: BigIntFilter<"Candle"> | bigint | number
+    low?: BigIntFilter<"Candle"> | bigint | number
+    close?: BigIntFilter<"Candle"> | bigint | number
+    volume?: BigIntFilter<"Candle"> | bigint | number
+    tradeCount?: IntFilter<"Candle"> | number
+  }
+
+  export type CandleOrderByWithRelationInput = {
+    market?: SortOrder
+    resolution?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type CandleWhereUniqueInput = Prisma.AtLeast<{
+    market_resolution_openTime?: CandleMarketResolutionOpenTimeCompoundUniqueInput
+    AND?: CandleWhereInput | CandleWhereInput[]
+    OR?: CandleWhereInput[]
+    NOT?: CandleWhereInput | CandleWhereInput[]
+    market?: StringFilter<"Candle"> | string
+    resolution?: StringFilter<"Candle"> | string
+    openTime?: DateTimeFilter<"Candle"> | Date | string
+    closeTime?: DateTimeFilter<"Candle"> | Date | string
+    open?: BigIntFilter<"Candle"> | bigint | number
+    high?: BigIntFilter<"Candle"> | bigint | number
+    low?: BigIntFilter<"Candle"> | bigint | number
+    close?: BigIntFilter<"Candle"> | bigint | number
+    volume?: BigIntFilter<"Candle"> | bigint | number
+    tradeCount?: IntFilter<"Candle"> | number
+  }, "market_resolution_openTime">
+
+  export type CandleOrderByWithAggregationInput = {
+    market?: SortOrder
+    resolution?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+    _count?: CandleCountOrderByAggregateInput
+    _avg?: CandleAvgOrderByAggregateInput
+    _max?: CandleMaxOrderByAggregateInput
+    _min?: CandleMinOrderByAggregateInput
+    _sum?: CandleSumOrderByAggregateInput
+  }
+
+  export type CandleScalarWhereWithAggregatesInput = {
+    AND?: CandleScalarWhereWithAggregatesInput | CandleScalarWhereWithAggregatesInput[]
+    OR?: CandleScalarWhereWithAggregatesInput[]
+    NOT?: CandleScalarWhereWithAggregatesInput | CandleScalarWhereWithAggregatesInput[]
+    market?: StringWithAggregatesFilter<"Candle"> | string
+    resolution?: StringWithAggregatesFilter<"Candle"> | string
+    openTime?: DateTimeWithAggregatesFilter<"Candle"> | Date | string
+    closeTime?: DateTimeWithAggregatesFilter<"Candle"> | Date | string
+    open?: BigIntWithAggregatesFilter<"Candle"> | bigint | number
+    high?: BigIntWithAggregatesFilter<"Candle"> | bigint | number
+    low?: BigIntWithAggregatesFilter<"Candle"> | bigint | number
+    close?: BigIntWithAggregatesFilter<"Candle"> | bigint | number
+    volume?: BigIntWithAggregatesFilter<"Candle"> | bigint | number
+    tradeCount?: IntWithAggregatesFilter<"Candle"> | number
   }
 
   export type UserCreateInput = {
@@ -9219,6 +11839,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
   }
@@ -9231,6 +11852,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
   }
@@ -9243,6 +11865,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
   }
@@ -9255,6 +11878,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -9336,6 +11960,75 @@ export namespace Prisma {
   export type TradingBalanceUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceCreateInput = {
+    id?: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutAssetBalancesInput
+  }
+
+  export type AssetBalanceUncheckedCreateInput = {
+    id?: string
+    userId: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
+  }
+
+  export type AssetBalanceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutAssetBalancesNestedInput
+  }
+
+  export type AssetBalanceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceCreateManyInput = {
+    id?: string
+    userId: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
+  }
+
+  export type AssetBalanceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
     available?: BigIntFieldUpdateOperationsInput | bigint | number
     locked?: BigIntFieldUpdateOperationsInput | bigint | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9549,6 +12242,8 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
     user: UserCreateNestedOneWithoutTransfersInput
@@ -9562,6 +12257,8 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
   }
@@ -9573,6 +12270,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     user?: UserUpdateOneRequiredWithoutTransfersNestedInput
@@ -9586,6 +12285,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -9598,6 +12299,8 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
   }
@@ -9609,6 +12312,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -9621,12 +12326,13 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type KlineCreateInput = {
-    id?: string
     market: string
     interval: $Enums.KlineInterval
     openTime: Date | string
@@ -9637,12 +12343,9 @@ export namespace Prisma {
     close: bigint | number
     volume: bigint | number
     tradeCount?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type KlineUncheckedCreateInput = {
-    id?: string
     market: string
     interval: $Enums.KlineInterval
     openTime: Date | string
@@ -9653,12 +12356,9 @@ export namespace Prisma {
     close: bigint | number
     volume: bigint | number
     tradeCount?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type KlineUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     market?: StringFieldUpdateOperationsInput | string
     interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
     openTime?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9669,12 +12369,9 @@ export namespace Prisma {
     close?: BigIntFieldUpdateOperationsInput | bigint | number
     volume?: BigIntFieldUpdateOperationsInput | bigint | number
     tradeCount?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type KlineUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     market?: StringFieldUpdateOperationsInput | string
     interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
     openTime?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9685,12 +12382,9 @@ export namespace Prisma {
     close?: BigIntFieldUpdateOperationsInput | bigint | number
     volume?: BigIntFieldUpdateOperationsInput | bigint | number
     tradeCount?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type KlineCreateManyInput = {
-    id?: string
     market: string
     interval: $Enums.KlineInterval
     openTime: Date | string
@@ -9701,12 +12395,9 @@ export namespace Prisma {
     close: bigint | number
     volume: bigint | number
     tradeCount?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
   }
 
   export type KlineUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     market?: StringFieldUpdateOperationsInput | string
     interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
     openTime?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9717,12 +12408,9 @@ export namespace Prisma {
     close?: BigIntFieldUpdateOperationsInput | bigint | number
     volume?: BigIntFieldUpdateOperationsInput | bigint | number
     tradeCount?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type KlineUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     market?: StringFieldUpdateOperationsInput | string
     interval?: EnumKlineIntervalFieldUpdateOperationsInput | $Enums.KlineInterval
     openTime?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9733,8 +12421,97 @@ export namespace Prisma {
     close?: BigIntFieldUpdateOperationsInput | bigint | number
     volume?: BigIntFieldUpdateOperationsInput | bigint | number
     tradeCount?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CandleCreateInput = {
+    market: string
+    resolution: string
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume?: bigint | number
+    tradeCount?: number
+  }
+
+  export type CandleUncheckedCreateInput = {
+    market: string
+    resolution: string
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume?: bigint | number
+    tradeCount?: number
+  }
+
+  export type CandleUpdateInput = {
+    market?: StringFieldUpdateOperationsInput | string
+    resolution?: StringFieldUpdateOperationsInput | string
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CandleUncheckedUpdateInput = {
+    market?: StringFieldUpdateOperationsInput | string
+    resolution?: StringFieldUpdateOperationsInput | string
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CandleCreateManyInput = {
+    market: string
+    resolution: string
+    openTime: Date | string
+    closeTime: Date | string
+    open: bigint | number
+    high: bigint | number
+    low: bigint | number
+    close: bigint | number
+    volume?: bigint | number
+    tradeCount?: number
+  }
+
+  export type CandleUpdateManyMutationInput = {
+    market?: StringFieldUpdateOperationsInput | string
+    resolution?: StringFieldUpdateOperationsInput | string
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type CandleUncheckedUpdateManyInput = {
+    market?: StringFieldUpdateOperationsInput | string
+    resolution?: StringFieldUpdateOperationsInput | string
+    openTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    closeTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    open?: BigIntFieldUpdateOperationsInput | bigint | number
+    high?: BigIntFieldUpdateOperationsInput | bigint | number
+    low?: BigIntFieldUpdateOperationsInput | bigint | number
+    close?: BigIntFieldUpdateOperationsInput | bigint | number
+    volume?: BigIntFieldUpdateOperationsInput | bigint | number
+    tradeCount?: IntFieldUpdateOperationsInput | number
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -9788,6 +12565,12 @@ export namespace Prisma {
     isNot?: TradingBalanceWhereInput | null
   }
 
+  export type AssetBalanceListRelationFilter = {
+    every?: AssetBalanceWhereInput
+    some?: AssetBalanceWhereInput
+    none?: AssetBalanceWhereInput
+  }
+
   export type OrderListRelationFilter = {
     every?: OrderWhereInput
     some?: OrderWhereInput
@@ -9803,6 +12586,10 @@ export namespace Prisma {
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
+  }
+
+  export type AssetBalanceOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type OrderOrderByRelationAggregateInput = {
@@ -9962,6 +12749,51 @@ export namespace Prisma {
     _sum?: NestedBigIntFilter<$PrismaModel>
     _min?: NestedBigIntFilter<$PrismaModel>
     _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
+  export type AssetBalanceUserIdMarketCompoundUniqueInput = {
+    userId: string
+    market: string
+  }
+
+  export type AssetBalanceCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    market?: SortOrder
+    asset?: SortOrder
+    available?: SortOrder
+    locked?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AssetBalanceAvgOrderByAggregateInput = {
+    available?: SortOrder
+    locked?: SortOrder
+  }
+
+  export type AssetBalanceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    market?: SortOrder
+    asset?: SortOrder
+    available?: SortOrder
+    locked?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AssetBalanceMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    market?: SortOrder
+    asset?: SortOrder
+    available?: SortOrder
+    locked?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AssetBalanceSumOrderByAggregateInput = {
+    available?: SortOrder
+    locked?: SortOrder
   }
 
   export type EnumOrderTypeFilter<$PrismaModel = never> = {
@@ -10159,6 +12991,17 @@ export namespace Prisma {
     not?: NestedEnumTransferStatusFilter<$PrismaModel> | $Enums.TransferStatus
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -10178,12 +13021,15 @@ export namespace Prisma {
     status?: SortOrder
     idempotencyKey?: SortOrder
     vaultlyRef?: SortOrder
+    attempts?: SortOrder
+    lastAttemptAt?: SortOrder
     createdAt?: SortOrder
     resolvedAt?: SortOrder
   }
 
   export type BalanceTransferAvgOrderByAggregateInput = {
     amountInPaise?: SortOrder
+    attempts?: SortOrder
   }
 
   export type BalanceTransferMaxOrderByAggregateInput = {
@@ -10194,6 +13040,8 @@ export namespace Prisma {
     status?: SortOrder
     idempotencyKey?: SortOrder
     vaultlyRef?: SortOrder
+    attempts?: SortOrder
+    lastAttemptAt?: SortOrder
     createdAt?: SortOrder
     resolvedAt?: SortOrder
   }
@@ -10206,12 +13054,15 @@ export namespace Prisma {
     status?: SortOrder
     idempotencyKey?: SortOrder
     vaultlyRef?: SortOrder
+    attempts?: SortOrder
+    lastAttemptAt?: SortOrder
     createdAt?: SortOrder
     resolvedAt?: SortOrder
   }
 
   export type BalanceTransferSumOrderByAggregateInput = {
     amountInPaise?: SortOrder
+    attempts?: SortOrder
   }
 
   export type EnumTransferDirectionWithAggregatesFilter<$PrismaModel = never> = {
@@ -10232,6 +13083,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumTransferStatusFilter<$PrismaModel>
     _max?: NestedEnumTransferStatusFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -10255,17 +13122,6 @@ export namespace Prisma {
     not?: NestedEnumKlineIntervalFilter<$PrismaModel> | $Enums.KlineInterval
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type KlineMarketIntervalOpenTimeCompoundUniqueInput = {
     market: string
     interval: $Enums.KlineInterval
@@ -10273,7 +13129,6 @@ export namespace Prisma {
   }
 
   export type KlineCountOrderByAggregateInput = {
-    id?: SortOrder
     market?: SortOrder
     interval?: SortOrder
     openTime?: SortOrder
@@ -10284,8 +13139,6 @@ export namespace Prisma {
     close?: SortOrder
     volume?: SortOrder
     tradeCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type KlineAvgOrderByAggregateInput = {
@@ -10298,7 +13151,6 @@ export namespace Prisma {
   }
 
   export type KlineMaxOrderByAggregateInput = {
-    id?: SortOrder
     market?: SortOrder
     interval?: SortOrder
     openTime?: SortOrder
@@ -10309,12 +13161,9 @@ export namespace Prisma {
     close?: SortOrder
     volume?: SortOrder
     tradeCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type KlineMinOrderByAggregateInput = {
-    id?: SortOrder
     market?: SortOrder
     interval?: SortOrder
     openTime?: SortOrder
@@ -10325,8 +13174,6 @@ export namespace Prisma {
     close?: SortOrder
     volume?: SortOrder
     tradeCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
   }
 
   export type KlineSumOrderByAggregateInput = {
@@ -10348,26 +13195,80 @@ export namespace Prisma {
     _max?: NestedEnumKlineIntervalFilter<$PrismaModel>
   }
 
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
+  export type CandleMarketResolutionOpenTimeCompoundUniqueInput = {
+    market: string
+    resolution: string
+    openTime: Date | string
+  }
+
+  export type CandleCountOrderByAggregateInput = {
+    market?: SortOrder
+    resolution?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type CandleAvgOrderByAggregateInput = {
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type CandleMaxOrderByAggregateInput = {
+    market?: SortOrder
+    resolution?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type CandleMinOrderByAggregateInput = {
+    market?: SortOrder
+    resolution?: SortOrder
+    openTime?: SortOrder
+    closeTime?: SortOrder
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
+  }
+
+  export type CandleSumOrderByAggregateInput = {
+    open?: SortOrder
+    high?: SortOrder
+    low?: SortOrder
+    close?: SortOrder
+    volume?: SortOrder
+    tradeCount?: SortOrder
   }
 
   export type TradingBalanceCreateNestedOneWithoutUserInput = {
     create?: XOR<TradingBalanceCreateWithoutUserInput, TradingBalanceUncheckedCreateWithoutUserInput>
     connectOrCreate?: TradingBalanceCreateOrConnectWithoutUserInput
     connect?: TradingBalanceWhereUniqueInput
+  }
+
+  export type AssetBalanceCreateNestedManyWithoutUserInput = {
+    create?: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput> | AssetBalanceCreateWithoutUserInput[] | AssetBalanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AssetBalanceCreateOrConnectWithoutUserInput | AssetBalanceCreateOrConnectWithoutUserInput[]
+    createMany?: AssetBalanceCreateManyUserInputEnvelope
+    connect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
   }
 
   export type OrderCreateNestedManyWithoutUserInput = {
@@ -10388,6 +13289,13 @@ export namespace Prisma {
     create?: XOR<TradingBalanceCreateWithoutUserInput, TradingBalanceUncheckedCreateWithoutUserInput>
     connectOrCreate?: TradingBalanceCreateOrConnectWithoutUserInput
     connect?: TradingBalanceWhereUniqueInput
+  }
+
+  export type AssetBalanceUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput> | AssetBalanceCreateWithoutUserInput[] | AssetBalanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AssetBalanceCreateOrConnectWithoutUserInput | AssetBalanceCreateOrConnectWithoutUserInput[]
+    createMany?: AssetBalanceCreateManyUserInputEnvelope
+    connect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
   }
 
   export type OrderUncheckedCreateNestedManyWithoutUserInput = {
@@ -10430,6 +13338,20 @@ export namespace Prisma {
     update?: XOR<XOR<TradingBalanceUpdateToOneWithWhereWithoutUserInput, TradingBalanceUpdateWithoutUserInput>, TradingBalanceUncheckedUpdateWithoutUserInput>
   }
 
+  export type AssetBalanceUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput> | AssetBalanceCreateWithoutUserInput[] | AssetBalanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AssetBalanceCreateOrConnectWithoutUserInput | AssetBalanceCreateOrConnectWithoutUserInput[]
+    upsert?: AssetBalanceUpsertWithWhereUniqueWithoutUserInput | AssetBalanceUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AssetBalanceCreateManyUserInputEnvelope
+    set?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    disconnect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    delete?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    connect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    update?: AssetBalanceUpdateWithWhereUniqueWithoutUserInput | AssetBalanceUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AssetBalanceUpdateManyWithWhereWithoutUserInput | AssetBalanceUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AssetBalanceScalarWhereInput | AssetBalanceScalarWhereInput[]
+  }
+
   export type OrderUpdateManyWithoutUserNestedInput = {
     create?: XOR<OrderCreateWithoutUserInput, OrderUncheckedCreateWithoutUserInput> | OrderCreateWithoutUserInput[] | OrderUncheckedCreateWithoutUserInput[]
     connectOrCreate?: OrderCreateOrConnectWithoutUserInput | OrderCreateOrConnectWithoutUserInput[]
@@ -10466,6 +13388,20 @@ export namespace Prisma {
     delete?: TradingBalanceWhereInput | boolean
     connect?: TradingBalanceWhereUniqueInput
     update?: XOR<XOR<TradingBalanceUpdateToOneWithWhereWithoutUserInput, TradingBalanceUpdateWithoutUserInput>, TradingBalanceUncheckedUpdateWithoutUserInput>
+  }
+
+  export type AssetBalanceUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput> | AssetBalanceCreateWithoutUserInput[] | AssetBalanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AssetBalanceCreateOrConnectWithoutUserInput | AssetBalanceCreateOrConnectWithoutUserInput[]
+    upsert?: AssetBalanceUpsertWithWhereUniqueWithoutUserInput | AssetBalanceUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AssetBalanceCreateManyUserInputEnvelope
+    set?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    disconnect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    delete?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    connect?: AssetBalanceWhereUniqueInput | AssetBalanceWhereUniqueInput[]
+    update?: AssetBalanceUpdateWithWhereUniqueWithoutUserInput | AssetBalanceUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AssetBalanceUpdateManyWithWhereWithoutUserInput | AssetBalanceUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AssetBalanceScalarWhereInput | AssetBalanceScalarWhereInput[]
   }
 
   export type OrderUncheckedUpdateManyWithoutUserNestedInput = {
@@ -10516,6 +13452,20 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutTradingBalanceInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutTradingBalanceInput, UserUpdateWithoutTradingBalanceInput>, UserUncheckedUpdateWithoutTradingBalanceInput>
+  }
+
+  export type UserCreateNestedOneWithoutAssetBalancesInput = {
+    create?: XOR<UserCreateWithoutAssetBalancesInput, UserUncheckedCreateWithoutAssetBalancesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAssetBalancesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutAssetBalancesNestedInput = {
+    create?: XOR<UserCreateWithoutAssetBalancesInput, UserUncheckedCreateWithoutAssetBalancesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAssetBalancesInput
+    upsert?: UserUpsertWithoutAssetBalancesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAssetBalancesInput, UserUpdateWithoutAssetBalancesInput>, UserUncheckedUpdateWithoutAssetBalancesInput>
   }
 
   export type UserCreateNestedOneWithoutOrdersInput = {
@@ -10670,6 +13620,14 @@ export namespace Prisma {
     set?: $Enums.TransferStatus
   }
 
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
   }
@@ -10684,14 +13642,6 @@ export namespace Prisma {
 
   export type EnumKlineIntervalFieldUpdateOperationsInput = {
     set?: $Enums.KlineInterval
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -10950,6 +13900,22 @@ export namespace Prisma {
     _max?: NestedEnumTransferStatusFilter<$PrismaModel>
   }
 
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -10981,22 +13947,6 @@ export namespace Prisma {
     _max?: NestedEnumKlineIntervalFilter<$PrismaModel>
   }
 
-  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
   export type TradingBalanceCreateWithoutUserInput = {
     id?: string
     available?: bigint | number
@@ -11014,6 +13964,34 @@ export namespace Prisma {
   export type TradingBalanceCreateOrConnectWithoutUserInput = {
     where: TradingBalanceWhereUniqueInput
     create: XOR<TradingBalanceCreateWithoutUserInput, TradingBalanceUncheckedCreateWithoutUserInput>
+  }
+
+  export type AssetBalanceCreateWithoutUserInput = {
+    id?: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
+  }
+
+  export type AssetBalanceUncheckedCreateWithoutUserInput = {
+    id?: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
+  }
+
+  export type AssetBalanceCreateOrConnectWithoutUserInput = {
+    where: AssetBalanceWhereUniqueInput
+    create: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput>
+  }
+
+  export type AssetBalanceCreateManyUserInputEnvelope = {
+    data: AssetBalanceCreateManyUserInput | AssetBalanceCreateManyUserInput[]
+    skipDuplicates?: boolean
   }
 
   export type OrderCreateWithoutUserInput = {
@@ -11069,6 +14047,8 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
   }
@@ -11080,6 +14060,8 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
   }
@@ -11117,6 +14099,35 @@ export namespace Prisma {
     available?: BigIntFieldUpdateOperationsInput | bigint | number
     locked?: BigIntFieldUpdateOperationsInput | bigint | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceUpsertWithWhereUniqueWithoutUserInput = {
+    where: AssetBalanceWhereUniqueInput
+    update: XOR<AssetBalanceUpdateWithoutUserInput, AssetBalanceUncheckedUpdateWithoutUserInput>
+    create: XOR<AssetBalanceCreateWithoutUserInput, AssetBalanceUncheckedCreateWithoutUserInput>
+  }
+
+  export type AssetBalanceUpdateWithWhereUniqueWithoutUserInput = {
+    where: AssetBalanceWhereUniqueInput
+    data: XOR<AssetBalanceUpdateWithoutUserInput, AssetBalanceUncheckedUpdateWithoutUserInput>
+  }
+
+  export type AssetBalanceUpdateManyWithWhereWithoutUserInput = {
+    where: AssetBalanceScalarWhereInput
+    data: XOR<AssetBalanceUpdateManyMutationInput, AssetBalanceUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type AssetBalanceScalarWhereInput = {
+    AND?: AssetBalanceScalarWhereInput | AssetBalanceScalarWhereInput[]
+    OR?: AssetBalanceScalarWhereInput[]
+    NOT?: AssetBalanceScalarWhereInput | AssetBalanceScalarWhereInput[]
+    id?: StringFilter<"AssetBalance"> | string
+    userId?: StringFilter<"AssetBalance"> | string
+    market?: StringFilter<"AssetBalance"> | string
+    asset?: StringFilter<"AssetBalance"> | string
+    available?: BigIntFilter<"AssetBalance"> | bigint | number
+    locked?: BigIntFilter<"AssetBalance"> | bigint | number
+    updatedAt?: DateTimeFilter<"AssetBalance"> | Date | string
   }
 
   export type OrderUpsertWithWhereUniqueWithoutUserInput = {
@@ -11182,6 +14193,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFilter<"BalanceTransfer"> | $Enums.TransferStatus
     idempotencyKey?: StringFilter<"BalanceTransfer"> | string
     vaultlyRef?: StringNullableFilter<"BalanceTransfer"> | string | null
+    attempts?: IntFilter<"BalanceTransfer"> | number
+    lastAttemptAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
     createdAt?: DateTimeFilter<"BalanceTransfer"> | Date | string
     resolvedAt?: DateTimeNullableFilter<"BalanceTransfer"> | Date | string | null
   }
@@ -11193,6 +14206,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
+    assetBalances?: AssetBalanceCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
   }
@@ -11204,6 +14218,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
+    assetBalances?: AssetBalanceUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
   }
@@ -11231,6 +14246,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
+    assetBalances?: AssetBalanceUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
   }
@@ -11242,6 +14258,71 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
+    assetBalances?: AssetBalanceUncheckedUpdateManyWithoutUserNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutAssetBalancesInput = {
+    id?: string
+    vaultlyUserId: string
+    email?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
+    tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
+    orders?: OrderCreateNestedManyWithoutUserInput
+    transfers?: BalanceTransferCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutAssetBalancesInput = {
+    id?: string
+    vaultlyUserId: string
+    email?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    welcomeBonusCredited?: boolean
+    tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
+    orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutAssetBalancesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutAssetBalancesInput, UserUncheckedCreateWithoutAssetBalancesInput>
+  }
+
+  export type UserUpsertWithoutAssetBalancesInput = {
+    update: XOR<UserUpdateWithoutAssetBalancesInput, UserUncheckedUpdateWithoutAssetBalancesInput>
+    create: XOR<UserCreateWithoutAssetBalancesInput, UserUncheckedCreateWithoutAssetBalancesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutAssetBalancesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutAssetBalancesInput, UserUncheckedUpdateWithoutAssetBalancesInput>
+  }
+
+  export type UserUpdateWithoutAssetBalancesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vaultlyUserId?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
+    tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
+    orders?: OrderUpdateManyWithoutUserNestedInput
+    transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutAssetBalancesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vaultlyUserId?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
+    tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -11254,6 +14335,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferCreateNestedManyWithoutUserInput
   }
 
@@ -11265,6 +14347,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceUncheckedCreateNestedManyWithoutUserInput
     transfers?: BalanceTransferUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -11352,6 +14435,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUpdateManyWithoutUserNestedInput
   }
 
@@ -11363,6 +14447,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUncheckedUpdateManyWithoutUserNestedInput
     transfers?: BalanceTransferUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -11596,6 +14681,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
   }
 
@@ -11607,6 +14693,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     welcomeBonusCredited?: boolean
     tradingBalance?: TradingBalanceUncheckedCreateNestedOneWithoutUserInput
+    assetBalances?: AssetBalanceUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -11634,6 +14721,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
   }
 
@@ -11645,7 +14733,17 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     welcomeBonusCredited?: BoolFieldUpdateOperationsInput | boolean
     tradingBalance?: TradingBalanceUncheckedUpdateOneWithoutUserNestedInput
+    assetBalances?: AssetBalanceUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type AssetBalanceCreateManyUserInput = {
+    id?: string
+    market: string
+    asset: string
+    available?: bigint | number
+    locked?: bigint | number
+    updatedAt?: Date | string
   }
 
   export type OrderCreateManyUserInput = {
@@ -11671,8 +14769,37 @@ export namespace Prisma {
     status?: $Enums.TransferStatus
     idempotencyKey: string
     vaultlyRef?: string | null
+    attempts?: number
+    lastAttemptAt?: Date | string | null
     createdAt?: Date | string
     resolvedAt?: Date | string | null
+  }
+
+  export type AssetBalanceUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssetBalanceUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    market?: StringFieldUpdateOperationsInput | string
+    asset?: StringFieldUpdateOperationsInput | string
+    available?: BigIntFieldUpdateOperationsInput | bigint | number
+    locked?: BigIntFieldUpdateOperationsInput | bigint | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type OrderUpdateWithoutUserInput = {
@@ -11734,6 +14861,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -11745,6 +14874,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -11756,6 +14887,8 @@ export namespace Prisma {
     status?: EnumTransferStatusFieldUpdateOperationsInput | $Enums.TransferStatus
     idempotencyKey?: StringFieldUpdateOperationsInput | string
     vaultlyRef?: NullableStringFieldUpdateOperationsInput | string | null
+    attempts?: IntFieldUpdateOperationsInput | number
+    lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }

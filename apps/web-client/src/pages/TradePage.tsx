@@ -15,7 +15,9 @@ import { MarketHeaderBar } from '../components/MarketHeaderBar'
 import { BottomPanel } from '../components/BottomPanel'
 import { WalletButton } from '../components/WalletButton'
 import { TradeFeed } from '../components/TradeFeed'
+import { ConnectWalletModal } from '../components/ConnectWalletModal'
 import { useToast } from '../components/ToastProvider'
+import { connectVaultly } from '../lib/auth'
 import { MarketSidebar } from '../components/MarketSidebar'
 
 const GRID_TEMPLATE_COLUMNS_OPEN = '250px 1fr 272px 300px'
@@ -35,11 +37,13 @@ export default function TradePage(): React.JSX.Element {
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [connected, setConnected] = useState(false)
+    const [connectModalOpen, setConnectModalOpen] = useState(false)
 
     const { bids, asks, dispatchDelta, resetBook, seedBook } = useOrderBook()
     const { trades, dispatchTrade, resetFeed, seedFeed } = useTradeFeed()
     const { stats, onTrade, seedStats, reset: resetStats } = useMarketStats()
     const openOrders = useOpenOrders()
+    const [accountRefreshKey, setAccountRefreshKey] = useState(0)
 
     useEffect(() => {
         let cancelled = false
@@ -56,14 +60,19 @@ export default function TradePage(): React.JSX.Element {
             if (event.kind === 'BOOK_DELTA') {
                 dispatchDelta(event.payload, event.eventId)
                 openOrders.applyDelta(event.payload, event.eventId)
+                if (event.payload.type === 'CANCEL' || event.payload.type === 'MARKET_ORDER_SETTLED') {
+                    setTimeout(() => setAccountRefreshKey(k => k + 1), 500)
+                }
             }
             if (event.kind === 'TRADE') {
                 dispatchTrade(event.payload)
                 onTrade(event.payload)
+                setTimeout(() => setAccountRefreshKey(k => k + 1), 500)
             }
             if (event.kind === 'COMMAND_REJECTED') {
                 if (event.commandId) openOrders.removeByCommandId(event.commandId)
                 addToast('error', 'Command Rejected', event.payload.rejectReason)
+                setTimeout(() => setAccountRefreshKey(k => k + 1), 500)
             }
         },
         [dispatchDelta, dispatchTrade, onTrade, openOrders, addToast, connected]
@@ -151,10 +160,7 @@ export default function TradePage(): React.JSX.Element {
                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${connected ? 'bg-bull' : 'bg-lo'}`} />
                             {connected ? 'CONNECTED' : 'CONNECTING...'}
                         </div>
-                        <div className="flex items-center gap-3 border border-line rounded-full pl-3 pr-1 py-1 bg-base">
-                            <span className="font-mono tabular-nums text-[12px] font-bold text-hi">-</span>
-                            <WalletButton onBonusGranted={onBonusGranted} />
-                        </div>
+                        <WalletButton onBonusGranted={onBonusGranted} />
                     </div>
                 </header>
 
@@ -163,7 +169,7 @@ export default function TradePage(): React.JSX.Element {
                     className="flex flex-col min-h-0 overflow-hidden bg-panel transition-colors z-20 border-r border-line"
                 >
                     <div className={`w-[250px] h-full flex-shrink-0 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        <MarketSidebar selectedMarket={selectedMarket} onMarketChange={handleMarketChange} />
+                        <MarketSidebar selectedMarket={selectedMarket} onMarketChange={handleMarketChange} visible={isSidebarOpen} />
                     </div>
                 </div>
 
@@ -171,7 +177,7 @@ export default function TradePage(): React.JSX.Element {
                     style={{ gridColumn: '2', gridRow: '2' }}
                     className="flex flex-col min-h-0 overflow-hidden bg-base"
                 >
-                    <Chart trades={trades} lastTradePrice={stats.lastPrice} config={config} />
+                    <Chart key={selectedMarket} trades={trades} lastTradePrice={stats.lastPrice} config={config} />
                 </div>
 
                 <div
@@ -214,9 +220,11 @@ export default function TradePage(): React.JSX.Element {
                             config={config}
                             bestBidPrice={bestBidPrice}
                             bestAskPrice={bestAskPrice}
+                            onRequireAuth={() => setConnectModalOpen(true)}
                             onPlaceSubmitted={onPlaceSubmitted}
                             onPlaceAccepted={onPlaceAccepted}
                             onPlaceFailed={onPlaceFailed}
+                            accountRefreshKey={accountRefreshKey}
                         />
                     </div>
                 </div>
@@ -229,6 +237,7 @@ export default function TradePage(): React.JSX.Element {
                         config={config}
                         openOrders={openOrders.openOrders}
                         selectedMarket={selectedMarket}
+                        accountRefreshKey={accountRefreshKey}
                     />
                 </div>
 
@@ -254,6 +263,12 @@ export default function TradePage(): React.JSX.Element {
                     </div>
                 </div>
             </div>
+            {connectModalOpen && (
+                <ConnectWalletModal
+                    onClose={() => setConnectModalOpen(false)}
+                    onConnect={() => { setConnectModalOpen(false); connectVaultly() }}
+                />
+            )}
         </div>
     )
 }

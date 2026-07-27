@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { LandingMarketPreview } from '../components/LandingMarketPreview'
-import { clearToken, isLoggedIn, redirectToVaultlyLogin } from '../lib/auth'
+import { clearToken, isLoggedIn, connectVaultly } from '../lib/auth'
 import { MARKETS } from '../types/market'
 
 export default function LandingPage(): React.JSX.Element {
@@ -61,7 +61,7 @@ export default function LandingPage(): React.JSX.Element {
                             Log out
                         </button>
                     ) : (
-                        <button onClick={redirectToVaultlyLogin} className="text-[13px] font-bold text-hi bg-panel hover:bg-raised transition-colors px-4 py-2 rounded-lg border border-line">
+                        <button onClick={connectVaultly} className="text-[13px] font-bold text-hi bg-panel hover:bg-raised transition-colors px-4 py-2 rounded-lg border border-line">
                             Log in
                         </button>
                     )}

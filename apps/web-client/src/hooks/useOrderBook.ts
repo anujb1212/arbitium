@@ -20,6 +20,7 @@ export type DisplayLevel = {
     price: string;
     qty: bigint;
     total: bigint;
+    actualPct: number;
     depthPct: number;
 };
 
@@ -147,15 +148,17 @@ function toDisplayLevels(
         ? descSorted.slice(0, limit)
         : descSorted.reverse().slice(0, limit);
 
+    const maxQty = levels.reduce((m, [, q]) => q > m ? q : m, 0n);
     let running = 0n;
     const withTotals = levels.map(([price, qty]) => {
         running += qty;
-        return { price, qty, total: running, depthPct: 0 };
+        return { price, qty, total: running, actualPct: 0, depthPct: 0 };
     });
 
     const maxTotal = withTotals.at(-1)?.total ?? 1n;
     return withTotals.map((lvl) => ({
         ...lvl,
+        actualPct: Number((lvl.qty * 10000n) / maxQty) / 100,
         depthPct: Number((lvl.total * 10000n) / maxTotal) / 100,
     }));
 }

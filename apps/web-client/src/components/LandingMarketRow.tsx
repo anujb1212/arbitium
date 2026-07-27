@@ -2,21 +2,25 @@ import React from 'react'
 import { getMarketConfig } from '../types/market'
 import { formatPrice, formatQty } from '../lib/format'
 import { ChangeCell } from './ChangeCell'
-import { TickerSnapshot } from '../lib/apiClient'
+import { Sparkline } from './Sparkline'
+import { Logo } from './Logo'
+import type { TickerSnapshot, SparklineCandle } from '../lib/apiClient'
 
 type Props = {
     market: string;
     displayName: string;
     ticker: TickerSnapshot | null;
+    sparklineCandles: SparklineCandle[] | null;
     isSelected: boolean;
     onSelect: (marketId: string) => void;
 }
 
-const LandingMarketRow = React.memo(function LandingMarketRow({ market, displayName, ticker, isSelected, onSelect }: Props): React.JSX.Element {
+const LandingMarketRow = React.memo(function LandingMarketRow({ market, displayName, ticker, sparklineCandles, isSelected, onSelect }: Props): React.JSX.Element {
     const config = getMarketConfig(market)!
     const lastPrice = ticker?.lastPrice ?? null
     const pctStr = ticker?.priceChangePct24h ?? undefined
     const volume = ticker?.volume24h ?? "0"
+    const pct = pctStr ? parseFloat(pctStr) : 0
 
     const handleClick = React.useCallback(() => onSelect(market), [onSelect, market])
 
@@ -27,9 +31,7 @@ const LandingMarketRow = React.memo(function LandingMarketRow({ market, displayN
         >
             <td className="px-4 py-3 md:px-6 md:py-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-[inset_0_0_10px_rgba(255,255,255,0.1)]" style={{ backgroundColor: market.length % 2 === 0 ? '#F7931A' : '#627EEA' }}>
-                        <span className="text-[12px] font-bold text-white shadow-sm">{market.slice(0, 1)}</span>
-                    </div>
+                    <Logo market={market} size={32} />
                     <div className="flex flex-col items-start justify-center">
                         <div className="text-[14px] font-bold text-hi leading-tight">{displayName.split(' ')[0] || displayName}</div>
                         <div className="text-[11px] font-mono font-medium text-lo">{market.replace('-', '/')}</div>
@@ -55,7 +57,7 @@ const LandingMarketRow = React.memo(function LandingMarketRow({ market, displayN
             </td>
             <td className="px-4 py-3 md:px-6 md:py-4 hidden md:table-cell">
                 <div className="flex justify-end">
-                    <span className="text-[10px] text-lo">-</span>
+                    <Sparkline candles={sparklineCandles} positive={pct >= 0} />
                 </div>
             </td>
         </tr>

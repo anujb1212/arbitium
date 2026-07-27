@@ -19,6 +19,9 @@ const prismaClientSingleton = () => {
 
     return new PrismaClient({
         datasources: { db: { url } },
+        transactionOptions: {
+            timeout: 15000
+        },
         log: [
             { emit: "stdout", level: "error" },
             { emit: "stdout", level: "warn" },
@@ -52,6 +55,7 @@ const db = new Proxy(
 export default db;
 export { db as prisma };
 
+export * from "./assetBalanceService";
 export * from "./balanceService";
 export * from "./klineService";
 export * from "./orderQueryService";

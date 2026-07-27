@@ -1,7 +1,8 @@
-import React, { useState, useId } from 'react'
-import type { MarketConfig } from '../types/market'
-import { placeLimitOrder, placeMarketOrder } from '../lib/apiClient'
-import { Eye, Plus, Minus, Download, Upload } from 'lucide-react'
+import React, { useState, useId, useEffect, useCallback } from 'react'
+import { getMarketConfig, type MarketConfig } from '../types/market'
+import { placeLimitOrder, placeMarketOrder, fetchTradingBalance, fetchHoldings, type HoldingDTO } from '../lib/apiClient'
+import { isLoggedIn } from '../lib/auth'
+import { Plus, Minus } from 'lucide-react'
 
 type Side = 'BUY' | 'SELL'
 type OrderType = 'LIMIT' | 'MARKET'
@@ -15,9 +16,11 @@ type Props = {
     config: MarketConfig
     bestBidPrice?: string | null
     bestAskPrice?: string | null
+    onRequireAuth?: () => void
     onPlaceSubmitted?: (draft: { orderId: string; side: Side; price: string; qty: string }) => void
     onPlaceAccepted?: (info: { orderId: string; commandId: string }) => void
     onPlaceFailed?: (info: { orderId: string; message: string }) => void
+    accountRefreshKey: number
 }
 
 function toFixedPoint(humanPrice: string, scale: number): string {
@@ -67,8 +70,29 @@ function parseApiError(raw: string): string {
 
 export const OrderForm = React.memo(function OrderForm({
     config, bestBidPrice, bestAskPrice,
-    onPlaceSubmitted, onPlaceAccepted, onPlaceFailed
+    onRequireAuth, onPlaceSubmitted, onPlaceAccepted, onPlaceFailed,
+    accountRefreshKey
 }: Props): React.JSX.Element {
+    const [balance, setBalance] = useState<{ available: bigint; locked: bigint } | null>(null)
+    const [holdings, setHoldings] = useState<HoldingDTO[]>([])
+
+    const loadBalance = useCallback(async () => {
+        if (!isLoggedIn()) return
+        try {
+            const data = await fetchTradingBalance()
+            setBalance({ available: BigInt(data.available), locked: BigInt(data.locked) })
+            const h = await fetchHoldings()
+            setHoldings(h)
+        } catch { /* silent */ }
+    }, [])
+
+    useEffect(() => {
+        loadBalance()
+        const onFocus = () => loadBalance()
+        window.addEventListener('focus', onFocus)
+        return () => window.removeEventListener('focus', onFocus)
+    }, [loadBalance, accountRefreshKey])
+
     const [orderType, setOrderType] = useState<OrderType>('LIMIT')
     const [side, setSide] = useState<Side>('BUY')
     const [price, setPrice] = useState('')
@@ -86,6 +110,11 @@ export const OrderForm = React.memo(function OrderForm({
     async function handlePlace(e: React.FormEvent): Promise<void> {
         e.preventDefault()
         if (!canSubmit) return
+
+        if (!isLoggedIn()) {
+            onRequireAuth?.()
+            return
+        }
 
         const orderId = crypto.randomUUID()
         setStatus({ tag: 'submitting' })
@@ -260,36 +289,58 @@ export const OrderForm = React.memo(function OrderForm({
             <div className="p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between text-[11px] font-bold text-hi tracking-widest uppercase">
                     <span>BALANCE</span>
-                    <Eye className="w-3.5 h-3.5 text-lo hover:text-hi cursor-pointer transition-colors" />
                 </div>
-                
+
                 <div className="flex flex-col gap-2.5">
                     <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-lo font-medium">Available Balance</span>
-                        <span className="font-mono text-hi font-medium">-</span>
+                        <span className="text-lo font-medium">Available</span>
+                        <span className="font-mono text-hi font-medium">
+                            {balance !== null ? `₹${(Number(balance.available) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
+                        </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-lo font-medium">Used Balance</span>
-                        <span className="font-mono text-hi font-medium">-</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[11px] pt-1 mt-1 border-t border-line border-dashed">
-                        <span className="text-lo font-medium">Total Balance</span>
-                        <span className="font-mono text-hi font-medium">-</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-lo font-medium">Buying Power</span>
-                        <span className="font-mono text-hi font-medium">-</span>
+                        <span className="text-lo font-medium">Locked</span>
+                        <span className="font-mono text-hi font-medium">
+                            {balance !== null ? `₹${(Number(balance.locked) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
+                        </span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                    <button className="flex items-center justify-center gap-2 py-2.5 border border-line rounded-[4px] text-[11px] font-bold text-hi hover:bg-raised transition-colors active:scale-[0.98]">
-                        <Download className="w-3.5 h-3.5 text-lo" /> DEPOSIT
-                    </button>
-                    <button className="flex items-center justify-center gap-2 py-2.5 border border-line rounded-[4px] text-[11px] font-bold text-hi hover:bg-raised transition-colors active:scale-[0.98]">
-                        <Upload className="w-3.5 h-3.5 text-lo" /> WITHDRAW
-                    </button>
-                </div>
+                {holdings.length > 0 && (
+                    <div className="flex flex-col gap-3 pt-3 mt-1 border-t border-line">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-lo tracking-widest uppercase">
+                            <span>HOLDINGS</span>
+                        </div>
+                        {holdings
+                            .sort((a, b) => {
+                                if (a.market === config.market) return -1;
+                                if (b.market === config.market) return 1;
+                                return 0;
+                            })
+                            .map((h) => {
+                            const cfg = getMarketConfig(h.market)
+                            const qtyScale = cfg?.qtyScale ?? 0
+                            const priceScale = cfg?.priceScale ?? 2
+                            const availableHuman = (Number(h.availableQty) / Math.pow(10, qtyScale)).toFixed(qtyScale)
+                            const lockedHuman = (Number(h.lockedQty) / Math.pow(10, qtyScale)).toFixed(qtyScale)
+                            const netHuman = (Number(h.netQty) / Math.pow(10, qtyScale)).toFixed(qtyScale)
+                            const avgPriceHuman = (Number(h.avgBuyPrice) / Math.pow(10, priceScale)).toFixed(priceScale)
+                            const isCurrentMarket = h.market === config.market
+                            return (
+                                <div key={h.market} className={`flex items-center justify-between ${isCurrentMarket ? 'bg-raised/50 -mx-1 px-1 py-0.5 rounded' : ''}`}>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[11px] font-bold leading-tight ${isCurrentMarket ? 'text-accent' : 'text-hi'}`}>{h.asset}</span>
+                                        <span className="text-[9px] font-mono text-lo">Free {availableHuman} / Locked {lockedHuman}</span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="font-mono text-[11px] font-medium text-hi">{netHuman}</span>
+                                        <span className="text-[9px] font-mono text-lo">Avg ₹{avgPriceHuman}</span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
 
         </div>

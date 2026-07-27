@@ -19,7 +19,7 @@ export class ClientSession {
 
     public constructor(
         private readonly socket: WebSocket,
-        public readonly userId: string
+        public readonly userId: string | null
     ) { }
 
     public readonly onEvent: EventListener = (envelope: EventEnvelope): void => {

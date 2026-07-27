@@ -82,7 +82,7 @@ export function MarketOverviewTable({ marketData }: { marketData: Map<string, Ma
                                     <td className="px-8 py-5">
                                         <div className="flex justify-end pr-4">
                                             <Sparkline
-                                                trades={trades.slice(0, 30)}
+                                                candles={null}
                                                 positive={pctNumeric >= 0}
                                             />
                                         </div>

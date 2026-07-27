@@ -4,7 +4,7 @@ import { clampMinBigInt, parseBigIntDecimal } from "../lib/bigint";
 import { OpenOrderDTO } from "../lib/apiClient";
 
 
-export type OpenOrderStatus = "SUBMITTING" | "OPEN";
+export type OpenOrderStatus = "SUBMITTING" | "PENDING" | "OPEN" | "PARTIALLY_FILLED";
 
 const MAX_SEEN_EVENT_IDS = 2000
 
@@ -47,7 +47,7 @@ function applyFillToOrder(order: OpenOrder, fillQty: string): OpenOrder | null {
     const nextRemaining = clampMinBigInt(remaining - filled, 0n);
 
     if (nextRemaining === 0n) return null;
-    return { ...order, remainingQty: nextRemaining.toString() };
+    return { ...order, remainingQty: nextRemaining.toString(), status: "PARTIALLY_FILLED" };
 }
 
 function reducer(state: State, action: Action): State {
@@ -165,6 +165,9 @@ function reducer(state: State, action: Action): State {
 
 export function dbOrderToOpenOrder(dto: OpenOrderDTO): OpenOrder {
     const remainingQty = (BigInt(dto.qty) - BigInt(dto.filledQty)).toString()
+    const status: OpenOrderStatus = dto.status === "PENDING" ? "SUBMITTING"
+        : dto.status === "PARTIALLY_FILLED" ? "PARTIALLY_FILLED"
+        : "OPEN";
     return {
         orderId: dto.orderId,
         commandId: dto.commandId,
@@ -172,7 +175,7 @@ export function dbOrderToOpenOrder(dto: OpenOrderDTO): OpenOrder {
         price: dto.price,
         originalQty: dto.qty,
         remainingQty,
-        status: dto.status === "PENDING" ? "SUBMITTING" : "OPEN",
+        status,
         createdAtMs: dto.createdAtMs,
     }
 }

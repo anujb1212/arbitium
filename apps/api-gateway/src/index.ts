@@ -3,7 +3,7 @@ import express from "express";
 import { ordersRouter } from "./routes/orders";
 import { connectRedis, disconnectRedis, getRedisClient } from "./redis";
 import cors from "cors"
-import { recoverRollbackPendingWithdrawals, transfersRouter } from "./routes/transfers";
+import { reconcilePendingTransfers, transfersRouter } from "./routes/transfers";
 import { marketRouter } from "./routes/market";
 import { prisma } from "@arbitium/db";
 
@@ -37,7 +37,8 @@ async function shutdown(server: ReturnType<typeof app.listen>): Promise<void> {
 
 async function main(): Promise<void> {
     await connectRedis();
-    await recoverRollbackPendingWithdrawals();
+    await reconcilePendingTransfers();
+    setInterval(() => reconcilePendingTransfers().catch((e) => console.error("[reconcile] sweep failed:", e)), 60_000);
     const server = app.listen(PORT, () => {
         console.log(`api-gateway listening on :${PORT}`);
     });

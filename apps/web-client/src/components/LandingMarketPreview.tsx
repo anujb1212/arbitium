@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { MARKETS } from '../types/market'
-import { fetchTicker, TickerSnapshot } from '../lib/apiClient'
+import { fetchTicker, fetchBatchSparklines, TickerSnapshot, SparklineCandle } from '../lib/apiClient'
 import { useMarketFeed } from '../ws/useMarketFeed'
 import { WireEventEnvelope } from '../types/wire'
 import { LandingMarketRow } from './LandingMarketRow'
@@ -11,9 +11,12 @@ export type MarketData = { ticker: TickerSnapshot | null }
 const PREVIEW_MARKETS = MARKETS.slice(0, 8)
 const PREVIEW_MARKET_IDS = PREVIEW_MARKETS.map(m => m.market)
 const BATCH_FLUSH_MS = 500
+const SPARKLINE_HOURS = 24
+const EMPTY_SPARKLINES: Record<string, SparklineCandle[]> = {}
 
 export function LandingMarketPreview(): React.JSX.Element {
     const [marketData, setMarketData] = useState<Map<string, MarketData>>(new Map())
+    const [sparklineData, setSparklineData] = useState<Map<string, SparklineCandle[]>>(new Map())
     const [selectedMarketId, setSelectedMarketId] = useState<string>(PREVIEW_MARKETS[0].market)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(false)
@@ -24,15 +27,25 @@ export function LandingMarketPreview(): React.JSX.Element {
         let isMounted = true
         setLoading(true)
         setError(false)
-        Promise.all(
-            PREVIEW_MARKETS.map(async (m): Promise<[string, MarketData]> => {
-                const ticker = await fetchTicker(m.market).catch(() => null)
-                return [m.market, { ticker }]
-            })
-        )
-            .then((entries) => {
+
+        const to = Date.now()
+        const from = to - SPARKLINE_HOURS * 60 * 60 * 1000
+
+        Promise.all([
+            Promise.all(
+                PREVIEW_MARKETS.map(async (m): Promise<[string, MarketData]> => {
+                    const ticker = await fetchTicker(m.market).catch(() => null)
+                    return [m.market, { ticker }]
+                })
+            ),
+            fetchBatchSparklines({ markets: PREVIEW_MARKET_IDS, from, to })
+                .then(r => r.sparklines)
+                .catch(() => EMPTY_SPARKLINES)
+        ])
+            .then(([tickerEntries, sparklines]) => {
                 if (isMounted) {
-                    setMarketData(new Map(entries))
+                    setMarketData(new Map(tickerEntries))
+                    setSparklineData(new Map(Object.entries(sparklines)))
                     setLoading(false)
                 }
             })
@@ -111,7 +124,7 @@ export function LandingMarketPreview(): React.JSX.Element {
                             <th className="text-right px-4 py-4 md:px-6 md:py-5 text-[10px] font-bold text-lo uppercase tracking-wider">Price</th>
                             <th className="text-right px-4 py-4 md:px-6 md:py-5 text-[10px] font-bold text-lo uppercase tracking-wider">24h Change</th>
                             <th className="text-right px-4 py-4 md:px-6 md:py-5 text-[10px] font-bold text-lo uppercase tracking-wider hidden sm:table-cell">24h Volume</th>
-                            <th className="text-right px-4 py-4 md:px-6 md:py-5 text-[10px] font-bold text-lo uppercase tracking-wider hidden md:table-cell">7d Trend</th>
+                            <th className="text-right px-4 py-4 md:px-6 md:py-5 text-[10px] font-bold text-lo uppercase tracking-wider hidden md:table-cell">24h Trend</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-line/50">
@@ -128,12 +141,14 @@ export function LandingMarketPreview(): React.JSX.Element {
                         ) : (
                             PREVIEW_MARKETS.map((m) => {
                                 const data = marketData.get(m.market)
+                                const candles = sparklineData.get(m.market) ?? null
                                 return (
                                     <LandingMarketRow
                                         key={m.market}
                                         market={m.market}
                                         displayName={m.displayName}
                                         ticker={data?.ticker ?? null}
+                                        sparklineCandles={candles}
                                         isSelected={selectedMarketId === m.market}
                                         onSelect={handleSelect}
                                     />

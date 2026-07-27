@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1
+# Build args:
+#   VITE_API_URL     - backend API endpoint (e.g. https://arbitium.example.com/api)
+#   VITE_WS_URL      - WebSocket endpoint (e.g. wss://arbitium.example.com/ws)
+#   VITE_VAULTLY_URL - Vaultly auth endpoint (e.g. https://vaultly.example.com)
+# Example:
+#   docker build -f docker/Dockerfile.web \
+#     --build-arg VITE_API_URL=https://arbitium.example.com/api \
+#     --build-arg VITE_WS_URL=wss://arbitium.example.com/ws \
+#     --build-arg VITE_VAULTLY_URL=https://vaultly.example.com \
+#     -t arbitium-web-client .
+
+FROM node:22-slim AS builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ARG VITE_VAULTLY_URL
+
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_WS_URL=${VITE_WS_URL}
+ENV VITE_VAULTLY_URL=${VITE_VAULTLY_URL}
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/web-client/package.json apps/web-client/
+COPY tsconfig.base.json tsconfig.base.json
+
+RUN pnpm install --frozen-lockfile
+
+COPY apps/web-client apps/web-client/
+
+RUN pnpm --filter @arbitium/web-client build
+
+FROM nginx:alpine
+COPY apps/web-client/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/apps/web-client/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

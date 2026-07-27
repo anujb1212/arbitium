@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import { prisma } from "@arbitium/db";
+import { prisma, querySparklineCandles, queryBatchSparklines } from "@arbitium/db";
 import { getRedisClient } from "../redis";
-import { MarketQuerySchema, KlineQuerySchema, TradesQuerySchema } from "../schemas";
+import { MarketQuerySchema, KlineQuerySchema, TradesQuerySchema, SparklineQuerySchema, BatchSparklineBodySchema } from "../schemas";
 
 export const marketRouter = Router();
 
@@ -133,4 +133,26 @@ marketRouter.get("/ticker", async (req: Request, res: Response) => {
             ? ((Number(priceChange24h) / Number(open24h)) * 100).toFixed(2)
             : "0.00",
     });
+});
+
+marketRouter.get("/sparkline", async (req: Request, res: Response) => {
+    const parsed = SparklineQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+    }
+    const { market, from, to } = parsed.data;
+    const candles = await querySparklineCandles(prisma, market, from, to);
+    res.json({ market, resolution: "1h", candles });
+});
+
+marketRouter.post("/sparklines", async (req: Request, res: Response) => {
+    const parsed = BatchSparklineBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+    }
+    const { markets, from, to } = parsed.data;
+    const sparklines = await queryBatchSparklines(prisma, markets, from, to);
+    res.json({ sparklines });
 });

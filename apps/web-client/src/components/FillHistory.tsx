@@ -3,9 +3,9 @@ import type { MarketConfig } from "../types/market"
 import { fetchFillHistory, type FillDTO } from "../lib/apiClient"
 import { formatPrice, formatQty } from "../lib/format"
 
-type Props = { market: string; config: MarketConfig }
+type Props = { market: string; config: MarketConfig; refreshKey: number }
 
-export function FillHistory({ market, config }: Props): React.JSX.Element {
+export function FillHistory({ market, config, refreshKey }: Props): React.JSX.Element {
     const [fills, setFills] = useState<FillDTO[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -17,7 +17,7 @@ export function FillHistory({ market, config }: Props): React.JSX.Element {
             .then(setFills)
             .catch((err) => setError((err as Error).message))
             .finally(() => setLoading(false))
-    }, [market])
+    }, [market, refreshKey])
 
     if (loading) return <div className="flex items-center justify-center h-full text-[13px] font-medium text-lo">Loading data...</div>
     if (error) return <div className="flex items-center justify-center h-full text-[13px] font-medium text-bear">Failed to load history</div>

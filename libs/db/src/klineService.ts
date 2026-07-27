@@ -1,4 +1,4 @@
-import { KlineInterval, Prisma } from "../generated/prisma";
+import { KlineInterval, Prisma, PrismaClient } from "../generated/prisma";
 
 export { KlineInterval };
 
@@ -10,6 +10,25 @@ export type UpsertKlineArgs = {
     closeTime: Date;
     tradePrice: bigint;
     tradeQty: bigint;
+};
+
+export type KlineBarDTO = {
+    openTime: number;
+    closeTime: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+    volume: string;
+    tradeCount: number;
+};
+
+export type SparklineCandleDTO = {
+    time: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
 };
 
 export function getOpenTime(tradeTime: Date, interval: KlineInterval): Date {
@@ -37,36 +56,106 @@ export function getCloseTime(openTime: Date, interval: KlineInterval): Date {
 export async function upsertKline(args: UpsertKlineArgs): Promise<void> {
     const { tx, market, interval, openTime, closeTime, tradePrice, tradeQty } = args;
 
-    const existing = await tx.kline.findUnique({
-        where: { market_interval_openTime: { market, interval, openTime } },
-    });
+    await tx.$executeRawUnsafe(
+        `INSERT INTO "Kline" (market, interval, "openTime", "closeTime", open, high, low, close, volume, "tradeCount")
+         VALUES ($1, $2::"KlineInterval", $3, $4, $5, $5, $5, $5, $6, 1)
+         ON CONFLICT (market, interval, "openTime") DO UPDATE SET
+             high = GREATEST("Kline".high, $5),
+             low = LEAST("Kline".low, $5),
+             close = $5,
+             "closeTime" = $4,
+             volume = "Kline".volume + $6,
+             "tradeCount" = "Kline"."tradeCount" + 1`,
+        market,
+        interval,
+        openTime,
+        closeTime,
+        tradePrice,
+        tradeQty,
+    );
+}
 
-    if (!existing) {
-        await tx.kline.create({
-            data: {
-                market,
-                interval,
-                openTime,
-                closeTime,
-                open: tradePrice,
-                high: tradePrice,
-                low: tradePrice,
-                close: tradePrice,
-                volume: tradeQty,
-                tradeCount: 1,
-            },
+export async function querySparklineCandles(
+    client: Prisma.TransactionClient | PrismaClient,
+    market: string,
+    fromMs: number,
+    toMs: number,
+): Promise<SparklineCandleDTO[]> {
+    const rows = await client.$queryRawUnsafe<Array<{
+        bucket: Date;
+        open: bigint;
+        high: bigint;
+        low: bigint;
+        close: bigint;
+    }>>(
+        `SELECT
+            "openTime" AS bucket,
+            open,
+            high,
+            low,
+            close
+        FROM "Kline"
+        WHERE market = $1
+          AND interval = 'ONE_HOUR'
+          AND "openTime" >= to_timestamp($2::bigint / 1000)
+          AND "openTime" <= to_timestamp($3::bigint / 1000)
+        ORDER BY "openTime" ASC`,
+        market,
+        fromMs,
+        toMs,
+    );
+
+    return rows.map((r) => ({
+        time: r.bucket.getTime(),
+        open: r.open.toString(),
+        high: r.high.toString(),
+        low: r.low.toString(),
+        close: r.close.toString(),
+    }));
+}
+
+export async function queryBatchSparklines(
+    client: Prisma.TransactionClient | PrismaClient,
+    markets: string[],
+    fromMs: number,
+    toMs: number,
+): Promise<Record<string, SparklineCandleDTO[]>> {
+    const rows = await client.$queryRawUnsafe<Array<{
+        market: string;
+        bucket: Date;
+        open: bigint;
+        high: bigint;
+        low: bigint;
+        close: bigint;
+    }>>(
+        `SELECT
+            market,
+            "openTime" AS bucket,
+            open,
+            high,
+            low,
+            close
+        FROM "Kline"
+        WHERE market = ANY($1::text[])
+          AND interval = 'ONE_HOUR'
+          AND "openTime" >= to_timestamp($2::bigint / 1000)
+          AND "openTime" <= to_timestamp($3::bigint / 1000)
+        ORDER BY market, "openTime" ASC`,
+        markets,
+        fromMs,
+        toMs,
+    );
+
+    const result: Record<string, SparklineCandleDTO[]> = {};
+    for (const r of rows) {
+        if (!result[r.market]) result[r.market] = [];
+        result[r.market].push({
+            time: r.bucket.getTime(),
+            open: r.open.toString(),
+            high: r.high.toString(),
+            low: r.low.toString(),
+            close: r.close.toString(),
         });
-        return;
     }
-
-    await tx.kline.update({
-        where: { market_interval_openTime: { market, interval, openTime } },
-        data: {
-            high: existing.high > tradePrice ? existing.high : tradePrice,
-            low: existing.low < tradePrice ? existing.low : tradePrice,
-            close: tradePrice,
-            volume: { increment: tradeQty },
-            tradeCount: { increment: 1 },
-        },
-    });
+    return result;
 }

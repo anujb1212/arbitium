@@ -1,0 +1,17 @@
+node_modules
+.git
+.env
+.env.*
+**/snapshots
+dist
+coverage
+*.log
+.cache
+.commandcode
+DATA_SERVICE_DIAGRAM.md
+DESIGN.md
+ANIMATIONS.md
+IMPLEMENTATION_PLAN.md
+TIMESCALEDB_PLAN.md
+DEPLOYMENT.md
+docker

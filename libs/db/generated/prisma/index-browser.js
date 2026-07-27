@@ -138,6 +138,16 @@ exports.Prisma.TradingBalanceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.AssetBalanceScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  market: 'market',
+  asset: 'asset',
+  available: 'available',
+  locked: 'locked',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.OrderScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -174,12 +184,13 @@ exports.Prisma.BalanceTransferScalarFieldEnum = {
   status: 'status',
   idempotencyKey: 'idempotencyKey',
   vaultlyRef: 'vaultlyRef',
+  attempts: 'attempts',
+  lastAttemptAt: 'lastAttemptAt',
   createdAt: 'createdAt',
   resolvedAt: 'resolvedAt'
 };
 
 exports.Prisma.KlineScalarFieldEnum = {
-  id: 'id',
   market: 'market',
   interval: 'interval',
   openTime: 'openTime',
@@ -189,9 +200,20 @@ exports.Prisma.KlineScalarFieldEnum = {
   low: 'low',
   close: 'close',
   volume: 'volume',
-  tradeCount: 'tradeCount',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  tradeCount: 'tradeCount'
+};
+
+exports.Prisma.CandleScalarFieldEnum = {
+  market: 'market',
+  resolution: 'resolution',
+  openTime: 'openTime',
+  closeTime: 'closeTime',
+  open: 'open',
+  high: 'high',
+  low: 'low',
+  close: 'close',
+  volume: 'volume',
+  tradeCount: 'tradeCount'
 };
 
 exports.Prisma.SortOrder = {
@@ -250,10 +272,12 @@ exports.KlineInterval = exports.$Enums.KlineInterval = {
 exports.Prisma.ModelName = {
   User: 'User',
   TradingBalance: 'TradingBalance',
+  AssetBalance: 'AssetBalance',
   Order: 'Order',
   Trade: 'Trade',
   BalanceTransfer: 'BalanceTransfer',
-  Kline: 'Kline'
+  Kline: 'Kline',
+  Candle: 'Candle'
 };
 
 /**

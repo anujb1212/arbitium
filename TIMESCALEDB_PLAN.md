@@ -29,11 +29,15 @@ docker run -d --name arbitium-postgres \
   -e POSTGRES_USER=arbitium \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=arbitium \
-  -p 5432:5432 \
+  -p 5433:5432 \
   timescale/timescaledb:latest-pg17
 ```
 
-Same port, same DATABASE_URL — no application config changes.
+Port 5433 avoids collision with the Windows-side postgres that WSL2's localhost forwarding intercepts on 5432. Update `DATABASE_URL` in all 4 `.env` files:
+
+```bash
+sed -i 's/localhost:5432/localhost:5433/g' libs/db/.env apps/api-gateway/.env services/data-service/.env services/market-maker/.env
+```
 
 ### 1.2 Prisma compatibility
 
@@ -41,18 +45,47 @@ TimescaleDB is a PostgreSQL extension. Prisma works transparently for:
 - `CREATE TABLE` (model definitions)
 - `INSERT`, `UPDATE`, `SELECT`, `DELETE`
 
-Hypertable conversion and compression policies require raw SQL (not Prisma migrations).
+Hypertable conversion and compression policies require raw SQL (not Prisma migrations). Use `prisma migrate dev --create-only` to generate the migration, append raw SQL, then `prisma migrate dev` to apply atomically — avoids schema drift.
+
+### 1.3 Data preservation
+
+Existing `Trade`/`Kline` data will be lost on image switch. Either:
+- `pg_dump` the current database → restore into TimescaleDB container, or
+- Accept data loss and re-seed (30 markets are re-created by seed script + market maker anyway)
 
 ---
 
 ## 2. Schema Changes
 
-### 2.1 Convert existing `Kline` table to hypertable
+### 2.1 Fix existing `Kline` table for hypertable compatibility
 
-**Note**: Prisma generates column names matching the schema field names (camelCase). All raw SQL must quote them.
+TimescaleDB requires all unique constraints/PKs to include the partition column (`openTime`). The current Kline PK likely doesn't include it.
 
+**Prisma schema fix** (before hypertable conversion):
+```prisma
+model Kline {
+  // Remove any standalone @id field — use composite PK
+  market     String
+  interval   String
+  openTime   DateTime
+  closeTime  DateTime
+  open       BigInt
+  high       BigInt
+  low        BigInt
+  close      BigInt
+  volume     BigInt
+  tradeCount Int
+
+  @@id([market, interval, openTime])
+}
+```
+
+**Hypertable SQL** (with `migrate_data` for existing rows):
 ```sql
-SELECT create_hypertable('"Kline"', 'openTime', chunk_time_interval => INTERVAL '1 day');
+SELECT create_hypertable('"Kline"', 'openTime',
+  chunk_time_interval => INTERVAL '1 day',
+  migrate_data => TRUE
+);
 
 ALTER TABLE "Kline" SET (
   timescaledb.compress,
@@ -65,12 +98,10 @@ SELECT add_compression_policy('"Kline"', INTERVAL '7 days');
 
 ### 2.2 Add `Candle` table (new model in schema.prisma)
 
-**Purpose**: Dedicated hypertable for sparkline and sub-minute candle data.
+**Purpose**: Dedicated hypertable for sparkline and sub-minute candle data. Uses composite PK (no standalone `id`) so hypertable creation succeeds.
 
-**Definition** (add to `schema.prisma`):
 ```prisma
 model Candle {
-  id          String   @id @default(cuid())
   market      String
   resolution  String   // '1m', '5m', '15m', '1h'
   openTime    DateTime
@@ -82,12 +113,12 @@ model Candle {
   volume      BigInt   @default(0)
   tradeCount  Int      @default(0)
 
-  @@unique([market, resolution, openTime])
+  @@id([market, resolution, openTime])
   @@index([market, resolution, openTime])
 }
 ```
 
-**Migration SQL** (run after `prisma migrate dev`):
+**Migration SQL** (appended to the same Prisma migration):
 ```sql
 SELECT create_hypertable('"Candle"', 'openTime', chunk_time_interval => INTERVAL '1 day');
 
@@ -98,12 +129,14 @@ ALTER TABLE "Candle" SET (
 );
 
 SELECT add_compression_policy('"Candle"', INTERVAL '7 days');
-SELECT add_retention_policy('"Candle"', INTERVAL '30 days');
+SELECT add_retention_policy('"Candle"', INTERVAL '90 days');
 ```
 
 ### 2.3 Continuous aggregates
 
-**Hourly candles** (from 1m Candles):
+**Critical**: Always filter to a single resolution to avoid mixing candle intervals in aggregates.
+
+**Hourly candles** (from 1m Candles only):
 ```sql
 CREATE MATERIALIZED VIEW "CandleHourly"
 WITH (timescaledb.continuous) AS
@@ -117,6 +150,7 @@ SELECT
   SUM(volume) AS volume,
   SUM("tradeCount") AS trade_count
 FROM "Candle"
+WHERE resolution = '1m'
 GROUP BY bucket, market
 WITH NO DATA;
 
@@ -127,7 +161,7 @@ SELECT add_continuous_aggregate_policy('"CandleHourly"',
 );
 ```
 
-**Daily candles** (from hourly):
+**Daily candles** (from raw `Candle`, NOT from `CandleHourly` — cagg-on-cagg can't reference source table columns like `openTime`):
 ```sql
 CREATE MATERIALIZED VIEW "CandleDaily"
 WITH (timescaledb.continuous) AS
@@ -140,7 +174,8 @@ SELECT
   LAST(close, "openTime") AS close,
   SUM(volume) AS volume,
   SUM("tradeCount") AS trade_count
-FROM "CandleHourly"
+FROM "Candle"
+WHERE resolution = '1m'
 GROUP BY bucket, market
 WITH NO DATA;
 
@@ -159,7 +194,7 @@ SELECT add_continuous_aggregate_policy('"CandleDaily"',
 
 **Problem**: Currently only writes to `Trade` table. Candle computation happens client-side.
 
-**Solution**: When processing a TRADE event, upsert into both `Trade` (existing) and `Candle` (new):
+**Solution**: When processing a TRADE event, upsert into both `Trade` (existing) and `Candle` (new). Must update `closeTime` on conflict.
 
 ```typescript
 // New: upsert 1m candle
@@ -171,6 +206,7 @@ await prisma.$executeRaw`
     high = GREATEST("Candle".high, ${price}),
     low = LEAST("Candle".low, ${price}),
     close = ${price},
+    "closeTime" = ${closeTime},
     volume = "Candle".volume + ${qty},
     "tradeCount" = "Candle"."tradeCount" + 1;
 `;
@@ -193,22 +229,43 @@ await prisma.$executeRaw`
 
 **Problem**: No dedicated sparkline endpoint. Frontend computes sparkline from raw trades.
 
-**Solution**:
+**Solution**: Single endpoint accepting one market, consistent time units in milliseconds.
 ```
 GET /market/sparkline?market=NVDA-INR&from=1710600000000&to=1710686400000
 ```
-Response:
+Response (all times in **milliseconds**):
 ```json
 {
   "market": "NVDA-INR",
   "resolution": "1m",
   "candles": [
-    { "time": 1710600000, "open": "15000", "high": "15100", "low": "14980", "close": "15050" }
+    { "time": 1710600000000, "open": "15000", "high": "15100", "low": "14980", "close": "15050" }
   ]
 }
 ```
 
-### 4.2 Optimize `GET /market/klines`
+### 4.2 Batch sparkline endpoint: `POST /market/sparklines`
+
+**Problem**: Landing page needs sparklines for 8 markets — 8 separate HTTP requests is wasteful.
+
+**Solution**: Single batched request for all preview markets.
+```
+POST /market/sparklines
+Content-Type: application/json
+
+{ "markets": ["NVDA-INR", "AAPL-INR", "TSLA-INR", ...], "from": 1710600000000, "to": 1710686400000 }
+```
+Response:
+```json
+{
+  "sparklines": {
+    "NVDA-INR": [{ "time": 1710600000000, "open": "15000", "high": "15100", "low": "14980", "close": "15050" }],
+    "AAPL-INR": [{ "time": 1710600000000, "open": "22000", "high": "22100", "low": "21980", "close": "22050" }]
+  }
+}
+```
+
+### 4.3 Optimize `GET /market/klines`
 
 - Query continuous aggregates for larger intervals (instant)
 - Add `limit` parameter for pagination
@@ -241,7 +298,7 @@ On mount, fetch sparkline data. On WebSocket TRADE events, update the last candl
 
 ### 5.3 Landing page sparkline
 
-Each `LandingMarketRow` gets a mini sparkline component. Data fetched from `/market/sparkline` in a single batched request for all 8 preview markets.
+Each `LandingMarketRow` gets a mini sparkline component. Data fetched from `POST /market/sparklines` in a single batched request for all 8 preview markets.
 
 ---
 
@@ -249,13 +306,13 @@ Each `LandingMarketRow` gets a mini sparkline component. Data fetched from `/mar
 
 | Step | Description | Files affected |
 |------|-------------|----------------|
-| 1 | Switch Docker image to TimescaleDB | docker-compose / run command |
-| 2 | Add `Candle` model to `schema.prisma` | `libs/db/prisma/schema.prisma` |
-| 3 | Run `prisma migrate dev` + raw SQL for hypertable | — |
-| 4 | Update `eventHandler.ts` to upsert into `Candle` | `services/data-service/src/eventHandler.ts` |
+| 1 | Switch Docker image to TimescaleDB (port 5433, dump/restore or re-seed) | docker-compose / run command, all `.env` files |
+| 2 | Fix `Kline` PK + add `Candle` model to `schema.prisma` | `libs/db/prisma/schema.prisma` |
+| 3 | `prisma migrate dev --create-only`, append hypertable/cagg SQL, `prisma migrate dev` | migration file |
+| 4 | Update `eventHandler.ts` to upsert into `Candle` (with `closeTime` fix) | `services/data-service/src/eventHandler.ts` |
 | 5 | Update `klineService.ts` for continuous aggregates | `libs/db/src/klineService.ts` |
-| 6 | Add `GET /market/sparkline` endpoint | `apps/api-gateway/src/routes/market.ts` |
+| 6 | Add `GET /market/sparkline` + `POST /market/sparklines` endpoints | `apps/api-gateway/src/routes/market.ts` |
 | 7 | Rewrite `Sparkline` component for TimescaleDB data | `apps/web-client/src/components/Sparkline.tsx` |
 | 8 | Remove `buildCandlesFromTrades` from `Chart` | `apps/web-client/src/components/Chart.tsx` |
-| 9 | Add compression and retention policies | raw SQL migration |
+| 9 | Verify compression and retention policies active | raw SQL check |
 | 10 | Backfill historical candle data from `Trade` table | one-time script |

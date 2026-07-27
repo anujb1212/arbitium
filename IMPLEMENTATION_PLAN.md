@@ -1,455 +1,309 @@
-# Arbitium Implementation Plan
+# Vaultly ↔ Arbitium Integration Plan
 
-## Phase 0: Fix Docker & Database
+Wallet-connect (popup OAuth-style) + deposit/withdraw money rail between **Vaultly** (wallet app, Next.js) and **Arbitium** (exchange, this monorepo).
 
-### Problem
+> Previous phases (Docker/DB, ticker symbols, seed, market-maker, landing/trade page optimization, TimescaleDB) are complete and live in git history. This document supersedes them.
 
-PostgreSQL is not running. The user tried starting a Docker container but Docker daemon isn't accessible, and the local `postgresql.service` is `inactive (dead)`. On top of that, Prisma migration fails with `P1000: Authentication failed` because the `arbitium` user doesn't exist in the database.
+**How to use this document:**
+- **PART A (Arbitium)** is implemented in this repo.
+- **PART B (Vaultly)** is self-contained — hand it to the Vaultly workspace agent verbatim.
+- **SECTION 0 (Shared Contract)** is the single source of truth. Neither side may deviate from endpoint paths, parameter names, payload shapes, status codes, or env var names. If a change is needed, both sides change together.
 
-### Solution
+---
 
-Two approaches are available:
+## SECTION 0 — Shared Contract (both sides, no deviation)
 
-**Option A** — Start local PostgreSQL (already installed, just needs enabling):
-```bash
-sudo service postgresql start
-```
-Then create the `arbitium` user and database, or use the existing `postgres` superuser. Update all `.env` files to match.
+### 0.1 Topology (local dev)
 
-**Option B** — Fix Docker and use container:
-```bash
-# Start Docker daemon
-sudo systemctl start docker
-# Remove old container if exists
-docker rm -f arbitium-postgres 2>/dev/null
-# Ensure port 5432 is free
-sudo lsof -i :5432
-# Start with correct user
-docker run -d --name arbitium-postgres \
-  -e POSTGRES_USER=arbitium \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=arbitium \
-  -p 5432:5432 \
-  postgres:latest
-```
+| Component | URL |
+|---|---|
+| Vaultly app | `http://localhost:3001` |
+| Arbitium web-client | `http://localhost:5173` |
+| Arbitium api-gateway | `http://localhost:3002` |
+| Arbitium ws-gateway | `ws://localhost:8080` |
 
-After either option: run `npx prisma migrate dev` from `libs/db/`.
+### 0.2 Environment variables
 
-### DATABASE_URL inconsistencies
-
-| File | Current (wrong) | Fix |
+| Var | Lives in | Value / notes |
 |---|---|---|
-| `apps/api-gateway/.env` | `postgresql://postgres:postgres@localhost:5432/arbitium` | → `postgresql://arbitium:postgres@localhost:5432/arbitium` |
-| `libs/db/.env` | `postgresql://postgres:postgres@localhost:5432/arbitium` | → `postgresql://arbitium:postgres@localhost:5432/arbitium` |
-| `services/data-service/.env` | `postgresql://postgres:postgres@localhost:5432/arbitium` | → `postgresql://arbitium:postgres@localhost:5432/arbitium` |
-| `services/market-maker/.env` | `postgresql://postgres:postgres@localhost:5432/arbitium` | → `postgresql://arbitium:postgres@localhost:5432/arbitium` |
+| `JWT_SECRET` | Vaultly **and** Arbitium api-gateway, ws-gateway | **Same value on both sides.** Signs + verifies `arbitium_token` (HS256). |
+| `BRIDGE_SECRET` | Vaultly **and** Arbitium api-gateway | **Same value.** Server-to-server only. Never in any `NEXT_PUBLIC_*` / `VITE_*` var. |
+| `NEXT_PUBLIC_ARBITIUM_URL` | Vaultly | `http://localhost:5173` — used for redirect allowlist. |
+| `ARBITIUM_SYSTEM_USER_ID` | Vaultly | Pooled system account (already seeded). |
+| `VAULTLY_URL` | Arbitium api-gateway | `http://localhost:3001` |
+| `VITE_VAULTLY_URL` | Arbitium web-client | `http://localhost:3001` |
+| `VITE_API_URL` | Arbitium web-client | `http://localhost:3002` (already exists) |
+| `VITE_WS_URL` | Arbitium web-client | `ws://localhost:8080` (already exists) |
 
-All four use `postgres:postgres` as credentials, which won't work with the `arbitium` database user created by Docker Option B.
+### 0.3 Token format (`arbitium_token`)
 
----
+Minted by Vaultly, verified by Arbitium. **Unchanged from current Vaultly behavior:**
+- HS256, secret = `JWT_SECRET`, expiry 7 days.
+- Payload: `{ userId: string, email: string, phone: string }`.
+- Arbitium treats `payload.userId` as `vaultlyUserId`.
 
-## Phase 1: Switch Backend Market Names to Ticker Symbols
-
-### Problem
-
-The frontend (`market.ts`) defines markets with ticker symbols (`NVDA-INR`, `GOOGL-INR`, `AAPL-INR`, `005930.KS-INR`, etc.). The backend services use company names (`NVIDIA-INR`, `ALPHABET-INR`, `APPLE-INR`, `SAMSUNG-INR`, etc.). Since the frontend sends market names in API requests and WebSocket subscriptions, the backend rejects them as unknown markets.
-
-Additionally, `ws-gateway` and `data-service` still use the old test markets (`TATA-INR, RELIANCE-INR, INFY-INR`) instead of the 30 new ones.
-
-### Solution
-
-Update all backend `.env` files and seed script to use ticker symbols matching the frontend.
-
-### Mapping
+### 0.4 Connect flow (popup)
 
 ```
-NVIDIA-INR       → NVDA-INR
-ALPHABET-INR     → GOOGL-INR
-APPLE-INR        → AAPL-INR
-MICROSOFT-INR    → MSFT-INR
-AMAZON-INR       → AMZN-INR
-TSMC-INR         → TSM-INR
-BROADCOM-INR     → AVGO-INR
-META-INR         → META-INR
-TESLA-INR        → TSLA-INR
-SAMSUNG-INR      → 005930.KS-INR
-SK-HYNIX-INR     → 000660.KS-INR
-TENCENT-INR      → TCEHY-INR
-ASML-INR         → ASML-INR
-MICRON-INR       → MU-INR
-ORACLE-INR       → ORCL-INR
-AMD-INR          → AMD-INR
-NETFLIX-INR      → NFLX-INR
-PALANTIR-INR     → PLTR-INR
-CISCO-INR        → CSCO-INR
-ALIBABA-INR      → BABA-INR
-LAM-RESEARCH-INR → LRCX-INR
-INTEL-INR        → INTC-INR
-APPLIED-MATERIALS-INR → AMAT-INR
-KLA-INR          → KLAC-INR
-IBM-INR          → IBM-INR
-ARISTA-INR       → ANET-INR
-TEXAS-INSTRUMENTS-INR → TXN-INR
-ARM-INR          → ARM-INR
-SAP-INR          → SAP-INR
-ANALOG-DEVICES-INR → ADI-INR
+1. Arbitium web-client: state = crypto.randomUUID()
+   → sessionStorage["vaultly_connect_state"] = state   (BEFORE opening popup)
+   → window.open(`${VAULTLY}/connect/arbitium?redirect_uri=${ORIGIN}/auth/callback&state=${state}`)
+2. Vaultly /connect/arbitium: validate params → session check
+   (no session → /signin?callbackUrl=<back to consent>) → render consent screen
+3. User approves → GET /api/arbitium/token?redirectTo=<redirect_uri>&state=<state>
+4. Vaultly mints JWT → HTTP 307 → <ARBITIUM>/auth/callback?arbitium_token=<JWT>&state=<state>
+5. Arbitium /auth/callback (inside popup): validates state →
+   window.opener.postMessage({type:"arbitium:connected", token, state}, <ARBITIUM ORIGIN>) → window.close()
+6. Arbitium main window: validates event.origin === own origin + state match
+   → stores token (localStorage["arbitium_token"]) → dispatches window event "arbitium:auth"
 ```
 
-### Files to update
+Deny path: consent screen links to `<redirect_uri>?error=access_denied&state=<state>`; callback page postMessages `{type:"arbitium:connect_error", error:"access_denied", state}` and shows a closable message.
 
-| File | What to change |
-|------|----------------|
-| `apps/engine-ts/.env` | Replace entire `MARKETS=` value with comma-separated ticker symbols |
-| `apps/api-gateway/.env` | Same as above |
-| `apps/ws-gateway/.env` | Replace `MARKETS=TATA-INR,RELIANCE-INR,INFY-INR` with full 30-market ticker list |
-| `services/data-service/.env` | Same as ws-gateway |
-| `libs/db/prisma/seed.ts` | Replace `["TATA-INR", "RELIANCE-INR", "INFY-INR"]` with all 30 ticker symbols |
-| `services/market-maker/src/config.ts` | Replace `DEFAULT_MID_PRICE_BY_MARKET` keys from company names to ticker symbols |
+**Parameter name asymmetry (intentional, do not "fix"):** the consent page takes `redirect_uri` (OAuth-style); the token route keeps its existing `redirectTo` param name.
 
----
+**postMessage contract:**
+- Success: `{ type: "arbitium:connected", token: string, state: string }`
+- Failure: `{ type: "arbitium:connect_error", error: string, state: string }`
+- Always sent with explicit targetOrigin = Arbitium origin. Receiver always validates `event.origin === window.location.origin` (the popup navigates back to Arbitium origin before messaging, so the message is same-origin).
 
-## Phase 2: MarketHeaderBar — Show Ticker + Display Name
+**Popup-blocked fallback:** full-page navigation to the same `/connect/arbitium?...` URL. Callback page detects missing `window.opener` → stores token directly → navigates to `/`. Both paths must work.
 
-### Problem
+**sessionStorage note:** popup inherits a copy of the opener's sessionStorage at `window.open` time (per-origin) — this is why `state` is written before opening. Main window re-validates `state` from the postMessage regardless; this is the authoritative check.
 
-The `MarketHeaderBar` currently shows only the market symbol (e.g., `NVDA-INR`). A trader can't tell what company this symbol represents without external knowledge. Since the frontend `market.ts` has a `displayName` field (e.g., "NVIDIA"), that information should be visible on the trade page.
+### 0.5 Bridge API (money rail)
 
-### Solution
+`POST http://localhost:3001/api/arbitium/bridge`
 
-Add a subtitle/description row below the ticker symbol in `MarketHeaderBar` showing `config.displayName` in a smaller, lower-opacity font. Clean, professional exchange-style header.
+Headers: `Content-Type: application/json`, `x-bridge-secret: <BRIDGE_SECRET>`
 
-**File**: `apps/web-client/src/components/MarketHeaderBar.tsx`
-
----
-
-## Phase 3: Seed Script Update
-
-### Problem
-
-The seed script (`libs/db/prisma/seed.ts`) hardcodes only 3 old markets: `["TATA-INR", "RELIANCE-INR", "INFY-INR"]`. When the system starts, only these 3 markets have bot inventory (filled orders + trades). The remaining 27 markets have no seeded liquidity, no bot holdings, and no trade history.
-
-### Solution
-
-Replace the 3 hardcoded markets with all 30 ticker-symbol markets. The seed script:
-1. Creates/upserts bot user `mm-bot-1` with sufficient balance
-2. Creates/upserts counterparty user `mm-seed-counterparty`
-3. For each of the 30 markets: creates a filled SELL order (counterparty) + filled BUY order (bot) + a matching Trade record
-4. Ensures `mm-bot-1`'s balance covers all 30 markets (sum of per-market price × qty)
-
-### Per-market seed prices
-
-Use realistic approximate INR prices (converted from USD equivalents). Do NOT use a flat ~10000 for all — that over/under-funds the bot balance dramatically.
-
-| Ticker | Seed price (INR, approx) |
-|--------|--------------------------|
-| NVDA-INR | 12500 |
-| GOOGL-INR | 17500 |
-| AAPL-INR | 22500 |
-| MSFT-INR | 42000 |
-| AMZN-INR | 18500 |
-| TSM-INR | 16500 |
-| AVGO-INR | 10500 |
-| META-INR | 9500 |
-| TSLA-INR | 11500 |
-| 005930.KS-INR | 5500 |
-| 000660.KS-INR | 8500 |
-| TCEHY-INR | 4500 |
-| ASML-INR | 9500 |
-| MU-INR | 6500 |
-| ORCL-INR | 14000 |
-| AMD-INR | 8500 |
-| NFLX-INR | 65000 |
-| PLTR-INR | 7500 |
-| CSCO-INR | 5500 |
-| BABA-INR | 7500 |
-| LRCX-INR | 6500 |
-| INTC-INR | 2500 |
-| AMAT-INR | 6500 |
-| KLAC-INR | 9500 |
-| IBM-INR | 11500 |
-| ANET-INR | 16500 |
-| TXN-INR | 18500 |
-| ARM-INR | 12500 |
-| SAP-INR | 22500 |
-| ADI-INR | 22500 |
-
-Bot balance = `sum(price × qty)` across all 30 markets + buffer. With qty=10 per market, total ≈ `sum(prices) × 10` ≈ ~500K INR. Allocate 600K INR to `mm-bot-1` for headroom.
-
-**File**: `libs/db/prisma/seed.ts`
-
----
-
-## Phase 4: Market Maker — Multi-Market Support
-
-### Problem
-
-The market maker runs as a single-market process. The `MARKET` env var (default `TATA-INR`) controls which market it trades. To provide liquidity across all 30 markets, 30 separate processes would be needed.
-
-### Solution
-
-Modify the market maker to handle multiple markets in a single process.
-
-### `config.ts` changes
-- Accept comma-separated `MARKETS` env var (default: `NVDA-INR,GOOGL-INR,AAPL-INR`)
-- Add mid-price defaults for all 30 ticker-symbol markets using realistic per-market prices (see Phase 3 table — same values)
-- Remove single `MARKET` export, export `MARKETS` array
-
-### `index.ts` changes
-- Loop over all configured markets
-- Maintain `Map<market, PendingOrder[]>` instead of a single `activeOrders` array
-- Each refresh cycle:
-  1. Cancel all orders across all markets (parallel)
-  2. Build and place fresh grids for each market (parallel)
-  3. Log per-market summary
-- Run all market operations concurrently via `Promise.allSettled`
-- **Concurrency cap**: process markets in batches of 5 using a simple `chunk` helper. This prevents overwhelming the engine with 30× grid_size orders simultaneously. Use `Promise.allSettled` per batch, then proceed to next batch.
-- Add `REFRESH_INTERVAL_MS` env var (default: 5000) — with 30 markets, refresh cycles take longer; make tunable.
-
-**Files**: `services/market-maker/src/config.ts`, `services/market-maker/src/index.ts`
-
----
-
-## Phase 5: LandingPage Optimization
-
-### Problem
-
-`LandingMarketPreview` makes **16 HTTP requests** and **1 WebSocket connection with 8 subscriptions** on mount:
-- 8 × `fetchTicker(market)` — GET ticker stats
-- 8 × `fetchRecentTrades(market)` — GET recent trades
-- 1 × WebSocket → subscribes to all 8 markets
-
-These network calls slow down page load and put unnecessary load on the server. The trades data is only needed for the sparkline visualization, which is a secondary visual element.
-
-Additionally, the component has re-render issues:
-- `onSelect` is an inline arrow function → new reference every render
-- `trades={data?.trades ?? []}` creates a new `[]` reference every render
-- No `React.memo` on `LandingMarketRow`, `LandingMarketPanel`, `ChangeCell`, `Sparkline`
-- Every WebSocket TRADE event calls `setMarketData` synchronously → React re-renders on every trade
-
-### Solution
-
-### 5.1 Network call reduction
-
-| Action | Keep/Remove | Reason |
-|--------|-------------|--------|
-| `fetchTicker` (8 calls) | **Keep** | Needed for initial 24h stats (price, change, volume) |
-| `fetchRecentTrades` (8 calls) | **Remove** | Trades only needed for sparkline; not critical for landing page |
-| WebSocket (1 connection) | **Keep** | Provides real-time price updates via TRADE events |
-| WebSocket → Sparkline data | **Deferred** | See Phase 9 — TimescaleDB will provide sparkline data via REST |
-
-### 5.2 Batch WebSocket updates
-
-Accumulate TRADE events in a `useRef` buffer. Flush to React state via `setInterval` every 500ms. This prevents React from re-rendering on every individual trade event.
-
-### 5.3 Sparkline
-
-Keep the SVG-based component as-is. Initially shows `-` placeholder until WebSocket trades arrive. Will be replaced with TimescaleDB-backed data in Phase 9.
-
-### 5.4 Re-render fixes
-
-| Component | Problem | Fix |
-|-----------|---------|-----|
-| `LandingMarketPreview` | `onSelect` inline arrow → new reference every render | Extract `handleSelect` with `useCallback` |
-| `LandingMarketPreview` | `trades={data?.trades ?? []}` → new `[]` | Hoist `EMPTY_TRADES: RecentTrade[] = []` constant |
-| `LandingMarketPreview` | `selectedMarketConfig` computed every render | Keep existing `useMemo` |
-| `LandingMarketRow` | Re-renders on every parent render | Add `React.memo` |
-| `LandingMarketPanel` | Re-renders even when props unchanged | Add `React.memo` |
-| `ChangeCell` | No memo, re-renders with parent | Add `React.memo` |
-| `Sparkline` | No memo, re-renders with parent | Add `React.memo` |
-
-**Files**:
-- `apps/web-client/src/components/LandingMarketPreview.tsx`
-- `apps/web-client/src/components/LandingMarketRow.tsx`
-- `apps/web-client/src/components/LandingMarketPanel.tsx`
-- `apps/web-client/src/components/ChangeCell.tsx`
-- `apps/web-client/src/components/Sparkline.tsx`
-
----
-
-## Phase 6: TradePage Re-render Optimization
-
-### Critical issue #1: `eventCount` causes full-page cascade
-
-**Problem**: `const [eventCount, setEventCount] = useState(0)` with `setEventCount((n) => n + 1)` in `handleEvent`. Every single WebSocket event (BOOK_DELTA, TRADE, COMMAND_REJECTED) updates this state, causing TradePage to re-render completely. Since **no child component uses `React.memo`**, the entire tree (Chart, OrderBook, OrderForm, BottomPanel, MarketSidebar, WalletButton, TradeFeed, MarketHeaderBar) re-renders on every event.
-
-**Solution**: Replace `eventCount` state with `useRef`. The visual status indicator only needs to know "have we received at least one event?" — not a live counter.
-
-### Critical issue #2: `onBonusGranted` causes `fetchTradingBalance()` on every render
-
-**Problem**: `onBonusGranted={() => addToast(...)}` is an inline arrow function in TradePage. WalletButton's `useCallback` for `loadBalance` depends on `onBonusGranted`. Since the inline arrow is a new reference every TradePage render, `loadBalance` is recreated, which causes the initial `useEffect` to re-run `fetchTradingBalance()` on **every single render**.
-
-**Solution**: Wrap in `useCallback`:
-```ts
-const onBonusGranted = useCallback(
-  () => addToast('success', 'Bonus Credited', 'INR 500 added to your account'),
-  [addToast]
-)
+Body:
+```json
+{ "vaultlyUserId": "string", "amountInPaise": 12345, "direction": "DEPOSIT" | "WITHDRAW", "idempotencyKey": "string (1–128 chars)" }
 ```
 
-### Critical issue #3: `tradeCandles` in Chart deps causes `fetchKlines()` on every trade
+Direction semantics (from Vaultly's perspective):
+- `DEPOSIT` = user → Arbitium. Vaultly user balance decreases, system account increases.
+- `WITHDRAW` = Arbitium → user. System account decreases, Vaultly user balance increases.
 
-**Problem**: Chart klines fetch effect depends on `[config.market, config.priceScale, selectedInterval, tradeCandles]`. The `tradeCandles` useMemo depends on `trades`, which changes on every WebSocket TRADE event. This means every incoming trade triggers a new `fetchKlines()` API call.
+Responses:
 
-**Solution**: Remove `tradeCandles` from the fetch dependency array — klines should only re-fetch when `config.market` or `selectedInterval` changes. **But** keep real-time updates working by using lightweight-charts' `series.update()` API directly on each TRADE event. The Chart should:
-1. Fetch klines only on mount / market change / interval change (deps: `[config.market, selectedInterval]`)
-2. On each incoming trade, call `candleSeries.update(lastBar)` with the updated last candle — computed in-place from the trade, no API call needed
-3. Keep `buildCandlesFromTrades` only for updating the *last* candle, not for re-fetching
+| Status | Body | Meaning |
+|---|---|---|
+| 200 | `{ success: true, ref: string, replayed?: true }` | Done. `ref` = `ArbitiumBridgeTransaction.id`. `replayed: true` if this key already executed. |
+| 400 | `{ error }` | Zod validation failed |
+| 401 | `{ error }` | Bad `x-bridge-secret` |
+| 409 | `{ error: "IDEMPOTENCY_MISMATCH" }` | Same key, different userId/amount/direction |
+| 422 | `{ error: "INSUFFICIENT_BALANCE" \| "INSUFFICIENT_SYSTEM_BALANCE" }` | Definitive business failure — safe to surface to user |
+| 500 | `{ error }` | Generic failure |
 
-This preserves real-time chart updates without the API spam.
+Arbitium-side classification: 200/400/401/409/422 = **definitive**. Network error, timeout (10s), or 5xx = **ambiguous** (Vaultly may have committed) → never finalize locally; resolve via reconcile sweep retrying with the **same** idempotencyKey.
 
-### Issue #4: `openOrders` object identity poisons `handleEvent`
+### 0.6 Idempotency invariants (both sides)
 
-**Problem**: `useOpenOrders` returns a new object literal `{ openOrders, addOptimistic, ackAccepted, ... }` every render. `handleEvent`'s `useCallback` depends on this object, so every render creates a new `handleEvent`. This cascades into `useMarketFeed` re-registering the handler.
+1. Every transfer has exactly one `idempotencyKey` (UUID), generated by the Arbitium web-client per user intent, reused on every retry at every layer.
+2. Arbitium: `BalanceTransfer.idempotencyKey` is unique. Vaultly: `ArbitiumBridgeTransaction.idempotencyKey` unique + ledger `externalRef = "p2p:<key>"` unique.
+3. Replay with matching payload → return original result, no side effects. Replay with mismatched payload → 409, no side effects.
+4. Replay short-circuit happens **before** any balance mutation on both sides.
+5. Ambiguous outcomes are never marked failed — they stay `PENDING`/`ROLLBACK_PENDING` until the reconcile sweep resolves them.
 
-**Solution**: Wrap the return value of `useOpenOrders` in `useMemo`.
+---
 
-### Issue #5: `stats` object new reference every render
+## PART A — ARBITIUM (this repo)
 
-**Problem**: `useMarketStats` returns `{ stats: { lastPrice, direction, ... }, ... }` where `stats` is a plain object literal created every render. This makes `React.memo` on `MarketHeaderBar` ineffective since `stats` is always a new reference.
+### Phase A1: Public market data (ws-gateway)
 
-**Solution**: Wrap `stats` in `useMemo`.
+**Problem:** ws-gateway closes every connection without a token (`4001`), so logged-out users see no orderbook/chart/trades. Real exchanges stream public market data to everyone; auth is only needed for user-scoped actions.
 
-### Issue #6: `toDisplayLevels` creates new arrays/objects every render
+**Files:** `apps/ws-gateway/src/index.ts`, `apps/ws-gateway/src/session/ClientSession.ts`, `apps/ws-gateway/src/session/messageHandler.ts`
 
-**Problem**: `useOrderBook` calls `toDisplayLevels(state.bids, ...)` and `toDisplayLevels(state.asks, ...)` at the return statement. These create brand new `DisplayLevel[]` arrays with new objects every render, even when the underlying order book data hasn't changed.
+1. `index.ts` connection handler:
+   - `const token = url.searchParams.get("token")`
+   - Token **absent** → create session with `userId: null` (anonymous).
+   - Token **present but invalid/expired** → keep current behavior: `socket.close(4001, "Unauthorized")` (lets the client react to a bad token).
+2. `ClientSession`: constructor `userId: string | null`. `onEvent` already filters `COMMAND_REJECTED` by `ownedCommandIds`, and anonymous sessions can never own command IDs — no event leakage.
+3. `messageHandler.ts`: `register_command` → if `session.userId === null` → `session.sendError("UNAUTHORIZED")`, return. `subscribe`/`unsubscribe` unchanged (anonymous allowed; `MAX_SUBSCRIPTIONS_PER_CLIENT` still applies).
+4. `apps/web-client/src/ws/useMarketFeed.ts`: on close code `4001` → `clearToken()` (token expired/invalid), dispatch `arbitium:auth`, and reconnect anonymously instead of giving up. Token is already appended only when present — no other change.
 
-**Solution**: Wrap both calls in `useMemo`:
-```ts
-const bids = useMemo(() => toDisplayLevels(state.bids, "BUY", DISPLAY_LEVELS), [state.bids])
-const asks = useMemo(() => toDisplayLevels(state.asks, "SELL", DISPLAY_LEVELS), [state.asks])
+### Phase A2: Popup wallet connect (web-client)
+
+**Problem:** connect flow is a full-page redirect with no consent screen — bad UX, feels broken. Replace with popup + postMessage per Section 0.4.
+
+**`apps/web-client/src/lib/auth.ts`** (extend, keep existing exports):
+- `connectVaultly()`: generate `state = crypto.randomUUID()` → `sessionStorage.setItem("vaultly_connect_state", state)` → build `url = ${VITE_VAULTLY_URL}/connect/arbitium?redirect_uri=${location.origin}/auth/callback&state=${state}` → `window.open(url, "vaultly-connect", "width=480,height=640")`. If popup blocked (`null`) → `location.href = url` (full-page fallback, same URL).
+- `initConnectListener()`: register once in `main.tsx`. On `message`: require `event.origin === location.origin` and `event.data.state === sessionStorage.getItem("vaultly_connect_state")`; on `arbitium:connected` → `storeToken(token)`, remove state key; on `arbitium:connect_error` → remove state key (UI shows a "connection cancelled" toast via `arbitium:auth` listeners).
+- `storeToken` / `clearToken`: after mutation, `window.dispatchEvent(new Event("arbitium:auth"))`.
+- `captureTokenFromUrl()` stays (used by callback page fallback path) — add state validation before storing.
+
+**`apps/web-client/src/pages/AuthCallbackPage.tsx`** (new) + route `/auth/callback` in `App.tsx`:
+- Parse `arbitium_token`, `state`, `error` from query.
+- If `window.opener` exists → postMessage success or error per contract (targetOrigin = `location.origin`) → `window.close()`. If close fails (some browsers), render "Connected — you can close this window".
+- If no `window.opener` (full-page fallback) → validate `state` against sessionStorage → `storeToken` → `navigate("/", { replace: true })`. Mismatched state → render error, do not store.
+
+**Callers:** `WalletButton.tsx` `onConnect` → `connectVaultly()`; `LandingPage.tsx` connect button → `connectVaultly()`.
+
+**Auth-change reactions:** `WalletButton` listens for `arbitium:auth` → reload balance or flip to disconnected. `useMarketFeed` listens → reconnect (picks up/clears token).
+
+**Order placement gate:** `TradePage` owns `connectModalOpen` state, renders `ConnectWalletModal` (`onConnect → connectVaultly()`), passes `onRequireAuth={() => setConnectModalOpen(true)}` to `OrderForm`. In `OrderForm` submit (`placeLimitOrder`/`placeMarketOrder` call sites, ~lines 97/104): if `!isLoggedIn()` → call `onRequireAuth()` and return. Trade page itself stays viewable logged-out (public data per A1); `RequireAuth` in `App.tsx` remains a passthrough.
+
+### Phase A3: Deposit / withdraw UI (web-client)
+
+**`apps/web-client/src/components/TransferModal.tsx`** (new):
+- Tabs: Deposit / Withdraw.
+- Amount input in ₹ (2 decimals) → paise integer string; validate `> 0`; quick chips ₹100 / ₹500 / ₹1000 / Max (Max = available trading balance, withdraw tab only).
+- Shows current available trading balance (from `GET /transfers/balance`, already fetched by WalletButton — pass as prop).
+- `idempotencyKey = crypto.randomUUID()` created **once per modal open**; submit disabled while pending; on failure, Retry reuses the **same** key.
+- States: idle → pending → success (toast + `arbitium:auth` refresh + close) / error (inline message: 422 → "Insufficient balance", 409 → "Duplicate request mismatch — retry with a new amount", else generic).
+- Footer: last 5 transfers from `GET /transfers/history` (direction, amount ₹, status, time).
+
+**`apps/web-client/src/lib/apiClient.ts`** (add, following existing authed-fetch pattern):
+- `depositFunds({ amountInPaise: string, idempotencyKey: string })` → `POST /transfers/deposit`
+- `withdrawFunds({ amountInPaise: string, idempotencyKey: string })` → `POST /transfers/withdraw`
+- `fetchTransferHistory()` → `GET /transfers/history`
+- Response types: `{ transferId: string, status: "PENDING"|"COMPLETED"|"FAILED"|"ROLLBACK_PENDING" }`; history rows `{ id, direction, amountInPaise: string, status, createdAt }`.
+- Treat HTTP 202 same as 200 (pending is not an error — show "processing" state).
+
+**`WalletButton.tsx`:** dropdown gains "Deposit" and "Withdraw" items → open `TransferModal` on the corresponding tab.
+
+### Phase A4: Money-rail hardening (api-gateway)
+
+**`apps/api-gateway/src/vautlyClient.ts` → rename `vaultlyClient.ts`:**
+- Add `signal: AbortSignal.timeout(10_000)` to the fetch.
+- Return type becomes:
+  ```ts
+  type BridgeCallResult =
+    | { success: true; ref: string | null; replayed: boolean }
+    | { success: false; ambiguous: boolean; error: string }
+  ```
+  - 200 → parse `{ ref, replayed }`. 400/401/409/422 → `ambiguous: false`. Network error / abort / 5xx → `ambiguous: true`.
+
+**`apps/api-gateway/src/routes/transfers.ts`:**
+1. **Replay mismatch check** (both `/deposit` and `/withdraw`): when `BalanceTransfer` exists for `idempotencyKey`, verify `userId`, `amountInPaise`, `direction` match the request → mismatch → `409 { error: "IDEMPOTENCY_MISMATCH" }`.
+2. **Ambiguous handling:** `bridgeResult.ambiguous === true` →
+   - Deposit: leave status `PENDING`, respond `202 { transferId, status: "PENDING" }`.
+   - Withdraw: leave status `ROLLBACK_PENDING`, respond `202 { transferId, status: "ROLLBACK_PENDING" }`.
+   - Never mark `FAILED` on ambiguity.
+3. **Store `vaultlyRef`** on success (both routes).
+4. **Reconcile sweep** — generalize `recoverRollbackPendingWithdrawals()` → `reconcilePendingTransfers()`:
+   - Runs at boot (existing call site) + every 60s interval.
+   - Sweeps `PENDING` deposits and `ROLLBACK_PENDING` withdraws; increments `attempts` each try; skips records with `attempts >= 10` (log error for manual review).
+   - Re-calls bridge with the **same** idempotencyKey (safe per Section 0.5/0.6).
+   - Success → complete: deposit = credit + `COMPLETED` in one `$transaction`; withdraw = mark `COMPLETED`. Store `vaultlyRef`.
+   - Definitive failure → deposit: mark `FAILED`; withdraw: rollback-credit + `FAILED` in one `$transaction`.
+5. **`GET /transfers/history`** (requireAuth + resolveArbitiumUser): latest 20 `BalanceTransfer` for the user, BigInt serialized as string.
+6. **Rate limit:** in-memory `Map<userId, timestamps[]>`, 10 requests/min/user on `/transfers/deposit` + `/transfers/withdraw` → 429.
+
+**`libs/db/prisma/schema.prisma` — `BalanceTransfer` additions:**
+```prisma
+attempts      Int       @default(0)
+lastAttemptAt DateTime?
 ```
+Migration: `npx prisma migrate dev --name transfer_attempts` (additive, no data backfill needed). Remember `DATABASE_URL` env must point at port 5433 when running prisma CLI.
 
-### Issue #7: Unstable callbacks in TradePage
+### Phase A5: Hygiene
 
-**Problem**: `handleMarketChange`, `onPlaceSubmitted`, `onPlaceAccepted`, `onPlaceFailed` are inline or plain function declarations — new references every render.
-
-**Solution**: Wrap all in `useCallback`.
-
-### Issue #8: No `React.memo` on children
-
-**Problem**: Every child component lacks `React.memo`. Fixing `eventCount` alone won't stop cascade if other state changes (like `selectedMarket` or `bookTab`) cause re-renders.
-
-**Solution**: Add `React.memo` to all child components. **Critical ordering**: `React.memo` with default shallow comparison is useless if object/array props are recreated every render. Issues #4–#6 (useMemo on `openOrders`, `stats`, `bids`/`asks`) and Issue #7 (useCallback on handlers) **must land first** — they guarantee referential stability of the props that `React.memo` compares. Without those upstream fixes, memo never bails out.
-
-| Component | Props to compare | Requires upstream fix |
-|-----------|-----------------|----------------------|
-| `MarketHeaderBar` | `config`, `stats`, `bestBidPrice`, `bestAskPrice` | Issue #5 (stats useMemo) |
-| `OrderBook` | `bids`, `asks`, `config` | Issue #6 (bids/asks useMemo) |
-| `BookRow` (inner) | `level`, `side`, `config` | None (primitives) |
-| `OrderForm` | `config`, `bestBidPrice`, `bestAskPrice`, callbacks | Issue #7 (useCallback) |
-| `BottomPanel` | `config`, `openOrders`, `selectedMarket` | Issue #4 (openOrders useMemo) |
-| `TradeFeed` | `trades`, `config` | None if trades is stable ref |
-| `MarketSidebar` | `selectedMarket`, `onMarketChange` | Issue #7 (useCallback) |
-| `Chart` | `trades`, `lastTradePrice`, `config` | Issue #3 fix |
-| `WalletButton` | `onBonusGranted` | Issue #2 (useCallback) |
-
-If any upstream useMemo/useCallback is skipped, the corresponding `React.memo` will never prevent a re-render. Implement Issues #2–#7 before applying Issue #8.
-
-### Issue #9: `renderMarketItem` inline function in MarketSidebar
-
-**Problem**: `renderMarketItem` is defined inside the component body. Every render creates a new function. Called inside `.map()` for every market, generating new onClick handlers.
-
-**Solution**: Extract `MarketItem` as a separate memoized component.
-
-### Issue #10: Filtered/searched markets not memoized
-
-**Problem**: `filteredMarkets`, `favorites`, `indices`, `equities` arrays are derived every render via `.filter()`, creating new array references that cascade to child elements.
-
-**Solution**: Wrap in `useMemo`.
-
-### Files affected
-
-| File | Changes |
-|------|---------|
-| `apps/web-client/src/pages/TradePage.tsx` | Issue 1, 2, 7 |
-| `apps/web-client/src/components/Chart.tsx` | Issue 3, 8 |
-| `apps/web-client/src/hooks/useOpenOrders.ts` | Issue 4 |
-| `apps/web-client/src/hooks/useMarketStats.ts` | Issue 5 |
-| `apps/web-client/src/hooks/useOrderBook.ts` | Issue 6 |
-| `apps/web-client/src/components/MarketHeaderBar.tsx` | Issue 8 |
-| `apps/web-client/src/components/OrderBook.tsx` | Issue 8 |
-| `apps/web-client/src/components/OrderForm.tsx` | Issue 8 |
-| `apps/web-client/src/components/BottomPanel.tsx` | Issue 8 |
-| `apps/web-client/src/components/TradeFeed.tsx` | Issue 8 |
-| `apps/web-client/src/components/MarketSidebar.tsx` | Issue 8, 9, 10 |
-| `apps/web-client/src/components/WalletButton.tsx` | Issue 8 |
+- `apps/web-client/.env.example`: `VITE_VAULTLY_URL`, `VITE_API_URL`, `VITE_WS_URL`.
+- `apps/api-gateway/.env` already has `JWT_SECRET`, `BRIDGE_SECRET`, `VAULTLY_URL` — confirm `JWT_SECRET` matches Vaultly's value.
+- `pnpm -r exec tsc --noEmit` clean across all packages.
 
 ---
 
-## Phase 7: Chart Cleanup (lightweight-charts Polish)
+## PART B — VAULTLY (hand to Vaultly workspace agent)
 
-### Problem
+> **Context for the Vaultly agent:** Arbitium is a separate exchange app (React web-client `http://localhost:5173`, api-gateway `http://localhost:3002`) that uses Vaultly as its wallet/identity provider. The integration already has: `GET /api/arbitium/token` (session → JWT → 307 redirect) and `POST /api/arbitium/bridge` (server-to-server money movement against a pooled system account, with ledger + `ArbitiumBridgeTransaction`). Two things are being added: (1) a **money-critical idempotency bug fix** in the bridge, and (2) a **popup wallet-connect flow** with a consent screen, replacing the bare redirect. Arbitium's side is being built in parallel against the Shared Contract below — do not deviate from it.
 
-The current Chart works but has:
-- **Duplicate price display** — price shown in both Chart header and `MarketHeaderBar`
-- **Default TradingView look** — generic dark theme without clear branding
-- **No spread/bid-ask context** — the order book is in a separate panel
-- **Bulky interval selector** — takes up unnecessary space
+### Shared Contract (identical to Section 0 above — implement exactly)
 
-### Solution
+- `arbitium_token`: HS256 JWT, secret `JWT_SECRET`, 7d expiry, payload `{userId, email, phone}`. **Unchanged.**
+- Connect URLs:
+  - Consent page: `GET /connect/arbitium?redirect_uri=<url>&state=<nonce>`
+  - Token route (existing): `GET /api/arbitium/token?redirectTo=<url>&state=<nonce>` → 307 → `<redirectTo>?arbitium_token=<JWT>&state=<state>`
+  - Note the intentional param-name asymmetry: consent page uses `redirect_uri`, token route keeps `redirectTo`.
+  - Valid redirect target: origin === origin of `NEXT_PUBLIC_ARBITIUM_URL` (default `http://localhost:5173`) **and** pathname === `/auth/callback`.
+- Deny redirect: `<redirect_uri>?error=access_denied&state=<state>`.
+- Bridge: `POST /api/arbitium/bridge`, header `x-bridge-secret`, body `{vaultlyUserId, amountInPaise, direction: "DEPOSIT"|"WITHDRAW", idempotencyKey}`.
+  - Responses: 200 `{success:true, ref, replayed?}` / 400 validation / 401 bad secret / 409 `IDEMPOTENCY_MISMATCH` / 422 `INSUFFICIENT_BALANCE`|`INSUFFICIENT_SYSTEM_BALANCE` / 500 generic.
+  - Arbitium retries ambiguous outcomes (timeout/5xx/network) with the **same** idempotencyKey — replays must be side-effect-free.
+- Idempotency rule: replay short-circuit (findUnique + payload match check) happens **before** any balance mutation; mismatch → 409.
 
-- Remove the duplicate price from Chart header (keep it in `MarketHeaderBar` only)
-- Refine the dark theme: cleaner grid lines, tighter spacing, gradient backgrounds
-- Add a compact spread indicator overlay on the price axis
-- Polish the interval selector to be more compact and match the UI design system
-- Use consistent colors with the order book (green/red for up/down)
+### Phase V1: Fix bridge idempotency bug + hardening (MONEY-CRITICAL)
 
-**File**: `apps/web-client/src/components/Chart.tsx`
+**File:** `apps/user-app/app/api/arbitium/bridge/route.ts`
+
+**Bug:** today the balance mutation executes before the replay short-circuit. A retry with the same `idempotencyKey` double-moves funds while the ledger/bridge records no-op → balance/ledger divergence.
+
+**Fix — restructure the `$transaction` in this exact order:**
+1. **First statement inside the tx:** `tx.arbitiumBridgeTransaction.findUnique({ where: { idempotencyKey } })`.
+   - Exists + `userId`/`amountInPaise`/`direction` all match → short-circuit: return `200 { success: true, replayed: true, ref: existing.id }` (no mutations).
+   - Exists + any mismatch → `409 { error: "IDEMPOTENCY_MISMATCH" }` (no mutations).
+2. Existing steps unchanged: upsert both `Balance` rows → `SELECT ... FOR UPDATE` in ascending-id order → balance checks (422s) → apply debit/credit → `postP2PLedger` (keep `externalRef = p2p:<idempotencyKey>` and `assertExistingTxnMatches`; a ledger mismatch must also surface as 409, not silent success).
+3. **Replace** the final `arbitiumBridgeTransaction.upsert({ where: { idempotencyKey }, update: {} })` with **`create`**. A concurrent duplicate key raises P2002 → the **entire transaction rolls back** (balances untouched) → catch outside the tx → re-read the existing record → verify payload match → return replayed success (or 409 on mismatch).
+
+**Also:**
+- `x-bridge-secret` compare → timing-safe: equal-length `Buffer`s + `crypto.timingSafeEqual` (length mismatch → 401).
+- Success response becomes `{ success: true, ref: <bridgeRecord.id> }` (add `replayed: true` on replays). Arbitium stores `ref`.
+- Add `Cache-Control: no-store` to this route and `/api/arbitium/token`.
+- `ARBITIUM_SYSTEM_USER_ID` pooled account + seed: unchanged.
+
+**V1 tests:**
+- Same key + same payload twice → one balance movement, second response `{replayed: true}`.
+- Same key + different amount → 409, zero balance movement.
+- Two concurrent requests, same key → exactly one succeeds; balances moved once.
+- DEPOSIT beyond user balance → 422 `INSUFFICIENT_BALANCE`; WITHDRAW beyond system float → 422 `INSUFFICIENT_SYSTEM_BALANCE`.
+
+### Phase V2: Consent page + token route updates
+
+**New file:** `apps/user-app/app/connect/arbitium/page.tsx` (server component + small client consent card)
+
+1. Read `searchParams`: `redirect_uri`, `state` — both **required**.
+2. Validate `redirect_uri`: parseable URL; `origin === new URL(process.env.NEXT_PUBLIC_ARBITIUM_URL ?? "http://localhost:5173").origin`; `pathname === "/auth/callback"`. Invalid → render a plain 400 error page. **Never redirect to an unvalidated URI.**
+3. Validate `state`: string, 16–128 chars, `/^[A-Za-z0-9-]+$/`. Invalid → 400 page.
+4. `const session = await getServerSession(authOptions)`; if none → `redirect(`/signin?callbackUrl=${encodeURIComponent(`/connect/arbitium?redirect_uri=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}`)}`)`.
+5. Render consent card (Vaultly design system):
+   - Title: "Connect to Arbitium Exchange"
+   - Permissions list: "View account identity (email, phone)", "Deposit and withdraw funds"
+   - Approve → plain `<a href={`/api/arbitium/token?redirectTo=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}`}>` (GET, existing route does the rest).
+   - Deny → `<a href={`${redirect_uri}?error=access_denied&state=${encodeURIComponent(state)}`}>`.
+
+**Update:** `apps/user-app/app/api/arbitium/token/route.ts`
+- Accept optional `state` param; if present validate 16–128 chars and append `&state=${encodeURIComponent(state)}` to the final redirect URL.
+- Tighten `redirectTo` validation: keep exact-origin check, **add** `pathname === "/auth/callback"` requirement.
+- Keep everything else unchanged (session check → signin chaining, JWT payload/expiry, 307).
+
+### Phase V3: Connected Apps entry point
+
+- Dashboard: "Connected Apps" card listing **Arbitium Exchange** with status Connected.
+- Reuse the existing bridge-transaction display pipeline (`GET /api/user/transactions` → `response.arbitium`, already merged into recent activity + transactions page) — link the card to the transactions view filtered to Arbitium.
+- "Manage" action re-opens `/connect/arbitium?redirect_uri=${NEXT_PUBLIC_ARBITIUM_URL}/auth/callback&state=<fresh UUID>` (generating state client-side is fine here — it only needs to be a nonce Arbitium echoes).
+
+### Vaultly verification
+
+1. Bridge replay/mismatch/concurrency tests from V1 all pass.
+2. Popup flow: Arbitium opens `/connect/arbitium` → not logged in → signin → back to consent → approve → popup lands on Arbitium `/auth/callback` with token + state → closes. Deny → lands with `error=access_denied`.
+3. Full-page (popup-blocked) flow works through the same URLs.
+4. Deposit from Arbitium → Vaultly activity shows "Deposited to Arbitium Exchange"; withdraw → "Withdrawn from Arbitium Exchange". Retried bridge call with same key does not create a second activity row.
 
 ---
 
-## Phase 8: Component Cleanup
+## Parallelization & Sync Points
 
-### Problem
+| Workstream | Depends on | Can start |
+|---|---|---|
+| V1 (Vaultly bridge fix) | — | Immediately |
+| A1 (public market data) | — | Immediately, fully independent |
+| A2 (popup connect, Arbitium) | Contract 0.4 only — not V2 | Immediately (integration test needs V2) |
+| V2 (consent page) | Contract 0.4 | Immediately |
+| A3 (transfer UI) | Contract 0.5 | Immediately |
+| A4 (gateway hardening) | V1 response shape (`ref`, `replayed`, 409) | Implement against contract; test after V1 |
+| V3 (connected apps UI) | V2 | After V2 |
 
-Several UI elements contribute to code complexity and potential performance issues without adding proportional value.
+**Hard sync points (must match exactly):** URLs + param names in 0.4, postMessage types in 0.4, bridge status codes + body keys in 0.5, env var names in 0.2.
 
-### Items to address
+## Joint Acceptance Checklist
 
-| Location | Problem | Solution |
-|----------|---------|----------|
-| `TradePage` grid | Inline style objects created every render (`style={{ gridColumn: ... }}`) on 8+ elements | Extract to CSS module or constants |
-| `TradePage` sidebar collapse | `gridTemplateColumns` transition controlled via inline style with JS calculation | CSS class toggle with predefined grid classes |
-| `LandingPage` | 30+ absolute-positioned divs for decorative speed trails — high DOM overhead | Reduce to 10–12 higher-impact elements with better z-index management |
-| `WalletButton` | `ConnectWalletModal` defined in same file — ~50 lines of inline modal | Extract to `ConnectWalletModal.tsx` |
-| `Chart` interval buttons | 5+ inline `onClick` handlers that create new functions | Single handler via `data-interval` attribute |
-
-### Files affected
-
-- `apps/web-client/src/pages/TradePage.tsx`
-- `apps/web-client/src/pages/LandingPage.tsx`
-- `apps/web-client/src/components/WalletButton.tsx`
-- `apps/web-client/src/components/Chart.tsx`
-
----
-
-## Phase 9: TimescaleDB Integration (Deferred)
-
-See [TIMESCALEDB_PLAN.md](./TIMESCALEDB_PLAN.md) for the full deferred plan.
-
-### Summary
-
-- Convert `Kline` table to TimescaleDB hypertable
-- Add `Candle` hypertable for sparkline data
-- Use continuous aggregates for hourly/daily candles
-- Server-side candle computation (remove `buildCandlesFromTrades`)
-- New `/market/sparkline` REST endpoint
-- lightweight-charts sparkline fed by TimescaleDB data
-- Compression and retention policies for historical data
-
----
-
-## Execution Order
-
-```
-Phase 0: Docker & Database          → Unlocks all development
-Phase 1: Ticker symbols             → Frontend-backend alignment
-Phase 2: MarketHeaderBar            → UX improvement
-Phase 3: Seed script                → Bot liquidity for all markets
-Phase 4: Market maker multi-market  → Liquidity automation
-Phase 5: LandingPage optimization   → Load time + render perf
-Phase 6: TradePage re-renders       → Runtime performance
-Phase 7: Chart polish               → UI refinement
-Phase 8: Component cleanup          → Code quality
-Phase 9: TimescaleDB                → Data infrastructure (future)
-```
+1. Logged-out user sees live orderbook/chart/trades; placing an order prompts connect.
+2. Connect via popup: consent → approve → popup closes, balance appears, WS reconnects — no full-page reload. Deny and popup-blocked paths work.
+3. Deposit ₹500: Arbitium balance +₹500, Vaultly shows the activity row. Withdraw reverse.
+4. Same idempotencyKey replayed at either side → original result, no double movement. Mismatched replay → 409.
+5. Kill Vaultly mid-deposit → transfer stays `PENDING` → Vaultly restarts → reconcile sweep completes it. Same for withdraw (`ROLLBACK_PENDING` → `COMPLETED`).
+6. `pnpm -r exec tsc --noEmit` clean (Arbitium); Vaultly typecheck + V1 tests pass.

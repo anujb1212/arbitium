@@ -3,12 +3,14 @@ import { MARKETS, getMarketConfig } from "../types/market"
 import { fetchTicker } from "../lib/apiClient"
 import { formatPrice } from "../lib/format"
 import { Search, Star, ChevronDown, Plus } from "lucide-react"
+import { Logo } from "./Logo"
 
 type MiniTicker = { lastPrice: string | null; changePct: string | null }
 
 type Props = {
     selectedMarket: string
     onMarketChange: (market: string) => void
+    visible?: boolean
 }
 
 type MarketItemProps = {
@@ -32,9 +34,7 @@ const MarketItem = React.memo(function MarketItem({ market: m, ticker: t, isActi
                 ${isActive ? "bg-raised border-l-2 border-accent pl-[18px]" : "border-l-2 border-transparent"}`}
         >
             <div className="flex items-center gap-3">
-                <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-[inset_0_0_10px_rgba(255,255,255,0.1)]" style={{ backgroundColor: m.market.length % 2 === 0 ? '#F7931A' : '#627EEA' }}>
-                    {m.market.slice(0, 1)}
-                </div>
+                <Logo market={m.market} size={22} />
                 <div className="text-left">
                     <div className={`text-[12px] font-bold leading-none ${isActive ? 'text-hi' : 'text-mid group-hover:text-hi'}`}>{m.displayName}</div>
                     <div className="text-[9px] font-mono font-medium text-lo mt-1 uppercase">{config.market}</div>
@@ -43,12 +43,12 @@ const MarketItem = React.memo(function MarketItem({ market: m, ticker: t, isActi
             <div className="text-right">
                 {t?.lastPrice ? (
                     <div className="font-mono tabular-nums text-[12px] font-bold text-hi leading-none tracking-tight">
-                        ₹{formatPrice(t.lastPrice, config.priceScale)}
+                        {formatPrice(t.lastPrice, config.priceScale)}
                     </div>
                 ) : (
                     <div className="text-lo text-[12px] leading-none">-</div>
                 )}
-                {t?.changePct && (
+                {t?.changePct != null && t.changePct !== "" && (
                     <div className={`font-mono tabular-nums text-[10px] font-bold mt-1 tracking-tight ${pctColor}`}>
                         {pct! > 0 ? "+" : ""}{t.changePct}%
                     </div>
@@ -58,11 +58,12 @@ const MarketItem = React.memo(function MarketItem({ market: m, ticker: t, isActi
     )
 })
 
-export const MarketSidebar = React.memo(function MarketSidebar({ selectedMarket, onMarketChange }: Props): React.JSX.Element {
+export const MarketSidebar = React.memo(function MarketSidebar({ selectedMarket, onMarketChange, visible = true }: Props): React.JSX.Element {
     const [tickers, setTickers] = useState<Map<string, MiniTicker>>(new Map())
     const [search, setSearch] = useState("")
 
     useEffect(() => {
+        if (!visible) return
         let active = true
         Promise.all(
             MARKETS.map((m) =>
@@ -74,7 +75,7 @@ export const MarketSidebar = React.memo(function MarketSidebar({ selectedMarket,
             if (active) setTickers(new Map(entries))
         })
         return () => { active = false }
-    }, [])
+    }, [visible])
 
     const filteredMarkets = useMemo(
         () => MARKETS.filter(m => m.displayName.toLowerCase().includes(search.toLowerCase()) || m.market.toLowerCase().includes(search.toLowerCase())),
